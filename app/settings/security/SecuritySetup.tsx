@@ -12,8 +12,10 @@ export default function SecuritySetup({ hasTotp }: { hasTotp: boolean }) {
   if (hasTotp) {
     return (
       <p className="msg">
-        ✅ Zwei-Faktor ist aktiv. Bewahre deine Wiederherstellungscodes an zwei sicheren,
-        physischen Orten auf.
+        ✅ Zwei-Faktor ist aktiv. Damit dich ein verlorenes Handy nicht aussperrt, nutze eine
+        Authenticator-App mit Cloud-Backup (z. B. iPhone-„Passwörter", 1Password oder Authy).
+        Geht der Zugang trotzdem verloren, kann der/die Haushalts-Eigentümer:in den zweiten
+        Faktor zurücksetzen.
       </p>
     );
   }
