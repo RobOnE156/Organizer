@@ -30,6 +30,7 @@ function TopBar({ childName }: { childName?: string }) {
       <nav className="topnav">
         <a className="iconlink" href="/settings/household">Haushalt</a>
         <a className="iconlink" href="/settings/security">2FA</a>
+        <a className="iconlink" href="/export">Export</a>
         <form action={signOut}>
           <button className="iconlink" style={{ background: "none", border: 0, cursor: "pointer" }}>Abmelden</button>
         </form>

@@ -88,6 +88,30 @@ export async function getPlaceSuggestions(supabase: SupabaseClient, householdId:
   return Array.from(seen).sort((a, b) => a.localeCompare(b, "de"));
 }
 
+// All entries in the household (across every child), enriched with their
+// child links — the basis for a full export/backup. RLS still applies, so a
+// parent exports exactly what they can see (shared entries + their own
+// private ones).
+export type ExportEntry = Entry & { child_ids: string[] };
+
+export async function getEntriesForExport(
+  supabase: SupabaseClient,
+  householdId: string,
+): Promise<ExportEntry[]> {
+  const { data } = await supabase
+    .from("entries")
+    .select("id, author_id, kind, title, body, event_date, is_private, place_name, created_at, entry_children(child_id)")
+    .eq("household_id", householdId)
+    .is("deleted_at", null)
+    .order("event_date", { ascending: true })
+    .order("created_at", { ascending: true });
+  const rows = (data as (Entry & { entry_children: { child_id: string }[] | null })[] | null) ?? [];
+  return rows.map((e) => {
+    const { entry_children, ...rest } = e;
+    return { ...rest, child_ids: (entry_children ?? []).map((c) => c.child_id) };
+  });
+}
+
 export async function getMediaForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Media[]> {
   if (entryIds.length === 0) return [];
   const { data } = await supabase
