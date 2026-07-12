@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { getUser, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/env";
 import SecuritySetup from "./SecuritySetup";
@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function SecurityPage() {
   const user = await getUser();
   if (!user) redirect("/login");
+  await enforceSecondFactor();
 
   let hasTotp = false;
   if (hasSupabaseEnv()) {

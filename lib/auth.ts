@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/env";
 
@@ -32,4 +33,12 @@ export async function needsSecondFactor(): Promise<boolean> {
   const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (!data) return false;
   return data.nextLevel === "aal2" && data.currentLevel !== "aal2";
+}
+
+// Guard for protected pages: if this session still owes a second factor,
+// send it to the MFA challenge. No-op before enrollment (nextLevel is aal1)
+// and right after verifying (the session is already aal2), so it never locks
+// a user out of enrolling or completing their challenge.
+export async function enforceSecondFactor(): Promise<void> {
+  if (await needsSecondFactor()) redirect("/login/mfa");
 }

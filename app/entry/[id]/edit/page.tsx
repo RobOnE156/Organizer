@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getMembership, getUser } from "@/lib/auth";
+import { getMembership, getUser, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getMediaForEntries, getPlaceSuggestions } from "@/lib/data";
 import EditEntryForm, { type ExistingMedia } from "./EditEntryForm";
@@ -20,6 +20,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const user = await getUser();
   if (!user) redirect("/login");
+  await enforceSecondFactor();
   const membership = await getMembership();
   if (!membership) redirect("/onboarding");
 

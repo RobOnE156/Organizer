@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUser, getMembership, needsSecondFactor } from "@/lib/auth";
+import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -94,7 +94,7 @@ export default async function Home() {
 
   const user = await getUser();
   if (!user) redirect("/login");
-  if (await needsSecondFactor()) redirect("/login/mfa");
+  await enforceSecondFactor();
   const membership = await getMembership();
   if (!membership) redirect("/onboarding");
 
