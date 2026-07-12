@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMembership } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
 import type { FormState } from "@/app/auth-types";
+import type { CreateEntryResult, MediaInput } from "@/app/content-types";
 
 const NOT_CONFIGURED = "Supabase ist noch nicht konfiguriert.";
 
@@ -82,4 +83,82 @@ export async function createEntry(_prev: FormState, formData: FormData): Promise
     if (linkErr) return { error: linkErr.message };
   }
   redirect("/");
+}
+
+// Like createEntry, but returns the ids so the client can upload media next
+// (browser → Storage) and then record the media rows. No redirect.
+export async function createEntryGetId(input: {
+  title: string;
+  body: string;
+  eventDate: string;
+  isPrivate: boolean;
+  childId: string;
+}): Promise<CreateEntryResult> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!input.title.trim() && !input.body.trim()) return { error: "Bitte einen Titel oder Text eingeben." };
+
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { data: entry, error } = await supabase
+    .from("entries")
+    .insert({
+      household_id: membership.household_id,
+      author_id: user.id,
+      created_by: user.id,
+      kind: "text",
+      title: input.title.trim() || null,
+      body: input.body.trim() || null,
+      event_date: input.eventDate || todayISO(),
+      is_private: input.isPrivate,
+    })
+    .select("id")
+    .single();
+  if (error || !entry) return { error: error?.message ?? "Speichern fehlgeschlagen." };
+
+  const entryId = (entry as { id: string }).id;
+  if (input.childId) {
+    const { error: linkErr } = await supabase
+      .from("entry_children")
+      .insert({ entry_id: entryId, child_id: input.childId });
+    if (linkErr) return { error: linkErr.message };
+  }
+  return { entryId, householdId: membership.household_id };
+}
+
+// Record uploaded media (already in Storage) against an entry.
+export async function recordMedia(
+  entryId: string,
+  householdId: string,
+  items: MediaInput[],
+): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (items.length === 0) return {};
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const rows = items.map((it) => ({
+    household_id: householdId,
+    entry_id: entryId,
+    author_id: user.id,
+    store: "supabase",
+    storage_key: it.storage_key,
+    kind: it.kind,
+    mime: it.mime,
+    bytes: it.bytes,
+    position: it.position,
+  }));
+  const { error } = await supabase.from("media").insert(rows);
+  if (error) return { error: error.message };
+  return {};
 }

@@ -19,6 +19,17 @@ export type Entry = {
 
 export type MemberProfile = { name: string; color: string };
 
+export type Media = {
+  id: string;
+  entry_id: string;
+  storage_key: string;
+  kind: string;
+  mime: string;
+  position: number;
+};
+
+export type SignedMedia = { kind: string; url: string };
+
 // Make sure the signed-in user has a profile row (for author display names),
 // without ever clobbering a name they set themselves.
 export async function ensureProfile(
@@ -56,6 +67,40 @@ export async function getEntriesForChild(
     .order("event_date", { ascending: false })
     .order("created_at", { ascending: false });
   return (data as unknown as Entry[] | null) ?? [];
+}
+
+export async function getMediaForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Media[]> {
+  if (entryIds.length === 0) return [];
+  const { data } = await supabase
+    .from("media")
+    .select("id, entry_id, storage_key, kind, mime, position")
+    .in("entry_id", entryIds)
+    .is("deleted_at", null)
+    .order("position", { ascending: true });
+  return (data as Media[] | null) ?? [];
+}
+
+// Build entry_id -> signed media URLs (private bucket → short-lived signed URLs).
+export async function signMediaByEntry(
+  supabase: SupabaseClient,
+  media: Media[],
+  expiresIn = 300,
+): Promise<Record<string, SignedMedia[]>> {
+  const byEntry: Record<string, SignedMedia[]> = {};
+  if (media.length === 0) return byEntry;
+
+  const keys = media.map((m) => m.storage_key);
+  const { data } = await supabase.storage.from("media").createSignedUrls(keys, expiresIn);
+  const urlByKey = new Map<string, string>();
+  for (const item of data ?? []) {
+    if (item.signedUrl && item.path) urlByKey.set(item.path, item.signedUrl);
+  }
+  for (const m of media) {
+    const url = urlByKey.get(m.storage_key);
+    if (!url) continue;
+    (byEntry[m.entry_id] ??= []).push({ kind: m.kind, url });
+  }
+  return byEntry;
 }
 
 // user_id -> { display name, colour } for everyone in the household.

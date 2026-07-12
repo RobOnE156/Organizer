@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(25);
+select plan(28);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -125,6 +125,25 @@ select lives_ok(format($f$ select public.redeem_household_invite(%L) $f$, :'invi
   'eve can redeem a valid invite code');
 select is((select count(*) from households where id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')::int, 1,
   'eve is now a member of household 1');
+
+-- =====================================================================
+-- storage: media objects are scoped to the household in their path
+-- (the 'media' bucket is created by migration 0004)
+-- =====================================================================
+-- alice may upload under her own household's path
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into storage.objects (bucket_id, name, owner)
+  values ('media','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/e1111111-1111-1111-1111-111111111111/1-a.jpg','11111111-1111-1111-1111-111111111111') $$,
+  'alice can upload a media object under her own household path');
+-- alice may NOT upload into another household's path
+select throws_ok($$ insert into storage.objects (bucket_id, name, owner)
+  values ('media','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/x/2-b.jpg','11111111-1111-1111-1111-111111111111') $$,
+  '42501', null, 'alice cannot upload into another household path (storage RLS)');
+
+-- carol (household 2) cannot see household 1's objects
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from storage.objects where name like 'aaaaaaaa-%')::int, 0,
+  'carol cannot see household 1 media objects');
 
 reset role;
 select * from finish();

@@ -2,7 +2,17 @@ import { redirect } from "next/navigation";
 import { getUser, getMembership, needsSecondFactor } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
-import { ensureProfile, getChildren, getEntriesForChild, getMemberProfiles, type Entry, type MemberProfile } from "@/lib/data";
+import {
+  ensureProfile,
+  getChildren,
+  getEntriesForChild,
+  getMediaForEntries,
+  getMemberProfiles,
+  signMediaByEntry,
+  type Entry,
+  type MemberProfile,
+  type SignedMedia,
+} from "@/lib/data";
 import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline";
 import { signOut } from "@/app/auth-actions";
 
@@ -26,7 +36,13 @@ function TopBar({ childName }: { childName?: string }) {
   );
 }
 
-function EntryCard({ entry, author }: { entry: Entry; author: MemberProfile }) {
+function MediaTile({ item }: { item: SignedMedia }) {
+  if (item.kind === "video") return <video controls preload="metadata" src={item.url} />;
+  if (item.kind === "audio") return <audio controls preload="metadata" src={item.url} style={{ width: "100%" }} />;
+  return <img src={item.url} alt="" loading="lazy" />;
+}
+
+function EntryCard({ entry, author, media }: { entry: Entry; author: MemberProfile; media: SignedMedia[] }) {
   return (
     <article className="entry">
       <div className="meta">
@@ -36,6 +52,13 @@ function EntryCard({ entry, author }: { entry: Entry; author: MemberProfile }) {
         <span className="when">{fmtDate(entry.event_date)}</span>
       </div>
       {entry.title ? <h3>{entry.title}</h3> : null}
+      {media.length > 0 ? (
+        <div className="mediagrid">
+          {media.map((m, i) => (
+            <MediaTile key={i} item={m} />
+          ))}
+        </div>
+      ) : null}
       {entry.body ? <p className="body">{entry.body}</p> : null}
     </article>
   );
@@ -85,6 +108,8 @@ export default async function Home() {
 
   const entries = await getEntriesForChild(supabase, membership.household_id, child.id);
   const authors = await getMemberProfiles(supabase, membership.household_id);
+  const media = await getMediaForEntries(supabase, entries.map((e) => e.id));
+  const mediaByEntry = await signMediaByEntry(supabase, media);
   const fallbackAuthor: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
 
   // Group entries by calendar month (already sorted newest-first).
@@ -116,7 +141,12 @@ export default async function Home() {
                 <span>· {child.name}{group.sub ? ` · ${group.sub}` : ""}</span>
               </div>
               {group.entries.map((e) => (
-                <EntryCard key={e.id} entry={e} author={authors[e.author_id] ?? fallbackAuthor} />
+                <EntryCard
+                  key={e.id}
+                  entry={e}
+                  author={authors[e.author_id] ?? fallbackAuthor}
+                  media={mediaByEntry[e.id] ?? []}
+                />
               ))}
             </section>
           ))

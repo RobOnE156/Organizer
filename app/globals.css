@@ -115,7 +115,18 @@ input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
 .entry .when { color: var(--muted); font-size: 0.78rem; margin-left: auto; }
 .privbadge { font-size: 0.7rem; font-weight: 700; color: var(--gold); border: 1px solid var(--faint); border-radius: 999px; padding: 2px 8px; }
 .entry h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: -0.01em; margin: 2px 0 6px; }
-.entry p.body { margin: 0; white-space: pre-wrap; }
+.entry p.body { margin: 8px 0 0; white-space: pre-wrap; }
+.mediagrid { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 8px; }
+.mediagrid img, .mediagrid video { width: 100%; border-radius: 12px; display: block; background: #000; max-height: 340px; object-fit: cover; }
+
+/* file picker + preview strip in the entry form */
+.filedrop { border: 1px dashed var(--faint); border-radius: 12px; padding: 12px; background: var(--surface-2); text-align: center; cursor: pointer; color: var(--muted); font-size: 0.88rem; }
+.filedrop:hover { border-color: var(--gold); color: var(--ink); }
+.filestrip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.filestrip .ft { position: relative; width: 74px; height: 74px; border-radius: 10px; overflow: hidden; background: #000; border: 1px solid var(--faint); flex: 0 0 auto; }
+.filestrip .ft img, .filestrip .ft video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.filestrip .ft .lbl { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 0.7rem; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+.filestrip .ft .x { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: rgba(10,8,12,0.72); color: #fff; border: 0; cursor: pointer; font-size: 0.66rem; display: grid; place-items: center; }
 .empty { text-align: center; color: var(--muted); padding: 40px 0; }
 .fab {
   position: fixed; right: clamp(16px, 4vw, 28px); bottom: 22px; z-index: 20;
