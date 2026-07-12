@@ -48,6 +48,7 @@ export async function createEntry(_prev: FormState, formData: FormData): Promise
   const body = str(formData, "body");
   const eventDate = str(formData, "event_date") || todayISO();
   const isPrivate = formData.get("is_private") === "on";
+  const place = str(formData, "place");
   const childId = str(formData, "child_id");
   if (!body && !title) return { error: "Bitte einen Titel oder Text eingeben." };
 
@@ -71,6 +72,7 @@ export async function createEntry(_prev: FormState, formData: FormData): Promise
       body: body || null,
       event_date: eventDate,
       is_private: isPrivate,
+      place_name: place || null,
     })
     .select("id")
     .single();
@@ -92,6 +94,7 @@ export async function createEntryGetId(input: {
   body: string;
   eventDate: string;
   isPrivate: boolean;
+  place: string;
   childId: string;
 }): Promise<CreateEntryResult> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
@@ -117,6 +120,7 @@ export async function createEntryGetId(input: {
       body: input.body.trim() || null,
       event_date: input.eventDate || todayISO(),
       is_private: input.isPrivate,
+      place_name: input.place.trim() || null,
     })
     .select("id")
     .single();
@@ -167,7 +171,7 @@ export async function recordMedia(
 // previous version automatically, so edits are never silently lost.
 export async function updateEntry(
   entryId: string,
-  input: { title: string; body: string; eventDate: string; isPrivate: boolean },
+  input: { title: string; body: string; eventDate: string; isPrivate: boolean; place: string },
 ): Promise<{ error?: string }> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
   if (!input.title.trim() && !input.body.trim()) return { error: "Bitte einen Titel oder Text eingeben." };
@@ -182,6 +186,7 @@ export async function updateEntry(
     title: input.title.trim() || null,
     body: input.body.trim() || null,
     is_private: input.isPrivate,
+    place_name: input.place.trim() || null,
     updated_by: user.id,
   };
   if (input.eventDate) patch.event_date = input.eventDate;

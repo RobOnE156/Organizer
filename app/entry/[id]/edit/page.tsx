@@ -12,6 +12,7 @@ type EntryRow = {
   body: string | null;
   event_date: string;
   is_private: boolean;
+  place_name: string | null;
 };
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,7 +25,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const supabase = await createClient();
   const { data } = await supabase
     .from("entries")
-    .select("id, author_id, title, body, event_date, is_private")
+    .select("id, author_id, title, body, event_date, is_private, place_name")
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
@@ -41,6 +42,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         initialBody={entry.body ?? ""}
         initialDate={entry.event_date}
         initialPrivate={entry.is_private}
+        initialPlace={entry.place_name ?? ""}
       />
     </main>
   );

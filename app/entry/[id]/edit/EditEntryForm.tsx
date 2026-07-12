@@ -10,12 +10,14 @@ export default function EditEntryForm({
   initialBody,
   initialDate,
   initialPrivate,
+  initialPlace,
 }: {
   entryId: string;
   initialTitle: string;
   initialBody: string;
   initialDate: string;
   initialPrivate: boolean;
+  initialPlace: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -31,6 +33,7 @@ export default function EditEntryForm({
       body: String(fd.get("body") ?? ""),
       eventDate: String(fd.get("event_date") ?? ""),
       isPrivate: fd.get("is_private") === "on",
+      place: String(fd.get("place") ?? ""),
     });
     if (res.error) {
       setError(res.error);
@@ -46,7 +49,7 @@ export default function EditEntryForm({
       <div>
         <p className="eyebrow">Erinnerung bearbeiten</p>
         <h1 className="title">Eintrag ändern</h1>
-        <p className="sub">Text, Datum und Sichtbarkeit anpassen. (Fotos ändern folgt bald.)</p>
+        <p className="sub">Text, Ort, Datum und Sichtbarkeit anpassen. (Fotos ändern folgt bald.)</p>
       </div>
 
       <div className="field">
@@ -62,6 +65,11 @@ export default function EditEntryForm({
       <div className="field">
         <label htmlFor="event_date">Zeitpunkt der Erinnerung</label>
         <input id="event_date" name="event_date" type="date" defaultValue={initialDate} />
+      </div>
+
+      <div className="field">
+        <label htmlFor="place">Ort (optional)</label>
+        <input id="place" name="place" type="text" maxLength={120} defaultValue={initialPlace} placeholder="z. B. Berlin, bei Oma" />
       </div>
 
       <label className="checkline">

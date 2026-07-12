@@ -64,6 +64,7 @@ function EntryCard({
         {isOwn ? <EntryMenu entryId={entry.id} /> : null}
       </div>
       {entry.title ? <h3>{entry.title}</h3> : null}
+      {entry.place_name ? <p className="place">📍 {entry.place_name}</p> : null}
       {media.length > 0 ? (
         <div className="mediagrid">
           {media.map((m, i) => (

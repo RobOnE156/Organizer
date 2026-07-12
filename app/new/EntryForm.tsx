@@ -52,6 +52,7 @@ export default function EntryForm({ childId, childName }: { childId: string; chi
         body: String(fd.get("body") ?? ""),
         eventDate: String(fd.get("event_date") ?? ""),
         isPrivate: fd.get("is_private") === "on",
+        place: String(fd.get("place") ?? ""),
         childId,
       });
       if (res.error || !res.entryId || !res.householdId) {
@@ -163,6 +164,11 @@ export default function EntryForm({ childId, childName }: { childId: string; chi
       <div className="field">
         <label htmlFor="event_date">Zeitpunkt der Erinnerung</label>
         <input id="event_date" name="event_date" type="date" defaultValue={todayISO()} />
+      </div>
+
+      <div className="field">
+        <label htmlFor="place">Ort (optional)</label>
+        <input id="place" name="place" type="text" maxLength={120} placeholder="z. B. Berlin, bei Oma" />
       </div>
 
       <label className="checkline">

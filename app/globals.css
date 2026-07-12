@@ -124,6 +124,7 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .emenu-item:hover { background: var(--surface-2); }
 .emenu-item.danger { color: var(--danger); }
 .entry h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: -0.01em; margin: 2px 0 6px; }
+.entry p.place { margin: 0 0 6px; font-size: 0.82rem; color: var(--muted); }
 .entry p.body { margin: 8px 0 0; white-space: pre-wrap; }
 .mediagrid { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 8px; }
 .mediagrid img, .mediagrid video { width: 100%; border-radius: 12px; display: block; background: #000; max-height: 340px; object-fit: cover; }
