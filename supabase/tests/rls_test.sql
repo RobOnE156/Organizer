@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(21);
+select plan(25);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -12,7 +12,8 @@ insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111','alice@example.com'),
   ('22222222-2222-2222-2222-222222222222','bob@example.com'),
   ('33333333-3333-3333-3333-333333333333','carol@example.com'),
-  ('44444444-4444-4444-4444-444444444444','dave@example.com');
+  ('44444444-4444-4444-4444-444444444444','dave@example.com'),
+  ('55555555-5555-5555-5555-555555555555','eve@example.com');
 
 -- Household 1: alice (owner) + bob (parent). Household 2: carol (owner).
 insert into households (id, name) values
@@ -104,6 +105,26 @@ select throws_ok($$ insert into entries (household_id, author_id, kind, title, c
 reset role; select set_config('request.jwt.claims', json_build_object('sub','44444444-4444-4444-4444-444444444444','role','authenticated')::text, true); set local role authenticated;
 select lives_ok($$ select public.create_household('Dave Family') $$, 'new user can bootstrap a household');
 select is((select count(*) from households)::int, 1, 'the new owner immediately sees their household');
+
+-- =====================================================================
+-- household invites: owner-only creation, redemption joins the household
+-- =====================================================================
+-- bob (parent, not owner) cannot create an invite
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select throws_ok($$ select public.create_household_invite('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') $$,
+  null, null, 'a non-owner cannot create a household invite');
+
+-- alice (owner) mints an invite code
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select public.create_household_invite('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') as invite_code \gset
+
+-- eve redeems it and joins household 1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','55555555-5555-5555-5555-555555555555','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from households)::int, 0, 'eve sees no household before redeeming');
+select lives_ok(format($f$ select public.redeem_household_invite(%L) $f$, :'invite_code'),
+  'eve can redeem a valid invite code');
+select is((select count(*) from households where id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')::int, 1,
+  'eve is now a member of household 1');
 
 reset role;
 select * from finish();

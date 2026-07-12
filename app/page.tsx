@@ -1,45 +1,51 @@
+import { redirect } from "next/navigation";
+import { getUser, getMembership, needsSecondFactor } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
+import { signOut } from "@/app/auth-actions";
 
-// Static landing/status page for the foundation build. Once auth + timeline
-// land, this becomes the app entry (redirect to /login or the timeline).
-export default function HomePage() {
-  const configured = hasSupabaseEnv();
+// Depends on the session cookie — never statically cache.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  // Before Supabase is configured, show a friendly foundation notice.
+  if (!hasSupabaseEnv()) {
+    return (
+      <main className="page">
+        <p className="eyebrow">Fundament</p>
+        <h1 className="title">Benni-Tagebuch</h1>
+        <p className="sub">
+          Supabase ist noch nicht konfiguriert. Folge <code>docs/setup-supabase.md</code>, lege eine
+          <code> .env.local</code> an und starte den Dev-Server neu.
+        </p>
+      </main>
+    );
+  }
+
+  const user = await getUser();
+  if (!user) redirect("/login");
+  if (await needsSecondFactor()) redirect("/login/mfa");
+  const membership = await getMembership();
+  if (!membership) redirect("/onboarding");
+
   return (
-    <main
-      style={{
-        maxWidth: 640,
-        margin: "0 auto",
-        padding: "12vh 24px 24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-      }}
-    >
-      <p style={{ letterSpacing: "0.16em", textTransform: "uppercase", fontSize: 12, color: "var(--gold)", margin: 0 }}>
-        Fundament
-      </p>
-      <h1 style={{ fontSize: "clamp(2rem, 6vw, 3rem)", margin: 0, letterSpacing: "-0.02em" }}>
-        Benni-Tagebuch
-      </h1>
-      <p style={{ color: "var(--muted)", margin: 0 }}>
-        Ein privates, sicheres digitales Tagebuch — EU-gehostet, DSGVO-konform und darauf ausgelegt,
-        18+ Jahre zu halten. Dieses Repository enthält das Sicherheits- und Datenfundament; die
-        Oberfläche folgt schrittweise.
-      </p>
-      <div
-        style={{
-          marginTop: 8,
-          padding: 16,
-          borderRadius: 14,
-          background: "var(--surface)",
-          border: "1px solid var(--faint)",
-          fontSize: 14,
-        }}
-      >
-        <strong>Status:</strong>{" "}
-        {configured
-          ? "Mit Supabase verbunden."
-          : "Supabase noch nicht konfiguriert — siehe .env.example und docs/."}
+    <main className="page">
+      <div className="spread">
+        <div>
+          <p className="eyebrow">Angemeldet</p>
+          <h1 className="title">Willkommen 👋</h1>
+        </div>
+        <form action={signOut}>
+          <button className="btn">Abmelden</button>
+        </form>
+      </div>
+      <p className="sub">{user.email}</p>
+      <div className="msg" style={{ marginTop: 8 }}>
+        Der Zeitstrahl und das Hinzufügen von Erinnerungen folgen als Nächstes. Das
+        Sicherheitsfundament — Login, Zwei-Faktor und Haushalt — steht.
+      </div>
+      <div className="row" style={{ marginTop: 18 }}>
+        <a className="btn" href="/settings/security">Zwei-Faktor einrichten</a>
+        <a className="btn" href="/settings/household">Haushalt &amp; Einladung</a>
       </div>
     </main>
   );
