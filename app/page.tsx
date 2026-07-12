@@ -16,6 +16,7 @@ import {
 import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline";
 import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
+import RefreshOnFocus from "@/app/RefreshOnFocus";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +140,7 @@ export default async function Home() {
 
   return (
     <>
+      <RefreshOnFocus />
       <TopBar childName={child.name} />
       <main className="tl">
         {entries.length === 0 ? (
