@@ -36,6 +36,7 @@ export default function EntryMenu({ entryId }: { entryId: string }) {
       </button>
       {open ? (
         <div className="emenu-pop">
+          <a className="emenu-item" href={`/entry/${entryId}/edit`}>Bearbeiten</a>
           <button className="emenu-item danger" type="button" onClick={onDelete} disabled={pending}>
             {pending ? "Löschen…" : "Löschen"}
           </button>

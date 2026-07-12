@@ -54,7 +54,7 @@ h1.title { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -0.02em; }
 .stack { display: flex; flex-direction: column; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
-input[type="text"], input[type="email"], input[type="password"] {
+input[type="text"], input[type="email"], input[type="password"], input[type="date"], textarea {
   width: 100%;
   padding: 11px 13px;
   border-radius: 11px;
@@ -62,8 +62,10 @@ input[type="text"], input[type="email"], input[type="password"] {
   background: var(--surface-2);
   color: var(--ink);
   font-size: 0.95rem;
+  font-family: inherit;
 }
-input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+textarea { resize: vertical; }
+input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 11px 18px; border-radius: 999px; border: 1px solid var(--faint);

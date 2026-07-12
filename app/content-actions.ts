@@ -163,6 +163,34 @@ export async function recordMedia(
   return {};
 }
 
+// Edit an entry's text (author-only via RLS). The revision trigger records the
+// previous version automatically, so edits are never silently lost.
+export async function updateEntry(
+  entryId: string,
+  input: { title: string; body: string; eventDate: string; isPrivate: boolean },
+): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!input.title.trim() && !input.body.trim()) return { error: "Bitte einen Titel oder Text eingeben." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const patch: Record<string, unknown> = {
+    title: input.title.trim() || null,
+    body: input.body.trim() || null,
+    is_private: input.isPrivate,
+    updated_by: user.id,
+  };
+  if (input.eventDate) patch.event_date = input.eventDate;
+
+  const { error } = await supabase.from("entries").update(patch).eq("id", entryId);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Soft-delete an entry (RLS allows this only for its author). It disappears
 // from the timeline but is not permanently destroyed.
 export async function deleteEntry(entryId: string): Promise<{ error?: string }> {
