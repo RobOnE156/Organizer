@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser, getMembership } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getChildren } from "@/lib/data";
+import { getChildren, getPlaceSuggestions } from "@/lib/data";
 import EntryForm from "./EntryForm";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +17,11 @@ export default async function NewEntryPage() {
   const child = children[0];
   if (!child) redirect("/children/new");
 
+  const placeSuggestions = await getPlaceSuggestions(supabase, membership.household_id);
+
   return (
     <main className="authwrap">
-      <EntryForm childId={child.id} childName={child.name} />
+      <EntryForm childId={child.id} childName={child.name} placeSuggestions={placeSuggestions} />
     </main>
   );
 }

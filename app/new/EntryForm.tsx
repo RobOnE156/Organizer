@@ -20,7 +20,15 @@ function sanitize(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-60);
 }
 
-export default function EntryForm({ childId, childName }: { childId: string; childName: string }) {
+export default function EntryForm({
+  childId,
+  childName,
+  placeSuggestions,
+}: {
+  childId: string;
+  childName: string;
+  placeSuggestions: string[];
+}) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -168,7 +176,22 @@ export default function EntryForm({ childId, childName }: { childId: string; chi
 
       <div className="field">
         <label htmlFor="place">Ort (optional)</label>
-        <input id="place" name="place" type="text" maxLength={120} placeholder="z. B. Berlin, bei Oma" />
+        <input
+          id="place"
+          name="place"
+          type="text"
+          maxLength={120}
+          placeholder="z. B. Berlin, bei Oma"
+          list="place-list"
+          autoComplete="off"
+        />
+        {placeSuggestions.length > 0 ? (
+          <datalist id="place-list">
+            {placeSuggestions.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
+        ) : null}
       </div>
 
       <label className="checkline">

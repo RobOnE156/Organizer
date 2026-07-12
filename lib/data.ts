@@ -70,6 +70,24 @@ export async function getEntriesForChild(
   return (data as unknown as Entry[] | null) ?? [];
 }
 
+// Distinct places already used in the household, for the "Ort" autocomplete.
+// RLS scopes the underlying entries to what the user may see, so private
+// places of the other parent never leak into the suggestions.
+export async function getPlaceSuggestions(supabase: SupabaseClient, householdId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("entries")
+    .select("place_name")
+    .eq("household_id", householdId)
+    .is("deleted_at", null)
+    .not("place_name", "is", null);
+  const seen = new Set<string>();
+  for (const row of (data as { place_name: string | null }[] | null) ?? []) {
+    const p = row.place_name?.trim();
+    if (p) seen.add(p);
+  }
+  return Array.from(seen).sort((a, b) => a.localeCompare(b, "de"));
+}
+
 export async function getMediaForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Media[]> {
   if (entryIds.length === 0) return [];
   const { data } = await supabase

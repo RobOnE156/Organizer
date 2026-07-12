@@ -28,6 +28,7 @@ export default function EditEntryForm({
   initialPlace,
   existingMedia,
   nextPosition,
+  placeSuggestions,
 }: {
   entryId: string;
   householdId: string;
@@ -38,6 +39,7 @@ export default function EditEntryForm({
   initialPlace: string;
   existingMedia: ExistingMedia[];
   nextPosition: number;
+  placeSuggestions: string[];
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -215,7 +217,23 @@ export default function EditEntryForm({
 
       <div className="field">
         <label htmlFor="place">Ort (optional)</label>
-        <input id="place" name="place" type="text" maxLength={120} defaultValue={initialPlace} placeholder="z. B. Berlin, bei Oma" />
+        <input
+          id="place"
+          name="place"
+          type="text"
+          maxLength={120}
+          defaultValue={initialPlace}
+          placeholder="z. B. Berlin, bei Oma"
+          list="place-list"
+          autoComplete="off"
+        />
+        {placeSuggestions.length > 0 ? (
+          <datalist id="place-list">
+            {placeSuggestions.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
+        ) : null}
       </div>
 
       <label className="checkline">

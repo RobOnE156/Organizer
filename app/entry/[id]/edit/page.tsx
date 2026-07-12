@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getMembership, getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getMediaForEntries } from "@/lib/data";
+import { getMediaForEntries, getPlaceSuggestions } from "@/lib/data";
 import EditEntryForm, { type ExistingMedia } from "./EditEntryForm";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +50,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     url: urlByKey.get(m.storage_key) ?? "",
   }));
   const nextPosition = mediaRows.reduce((max, m) => Math.max(max, m.position), -1) + 1;
+  const placeSuggestions = await getPlaceSuggestions(supabase, membership.household_id);
 
   return (
     <main className="authwrap">
@@ -63,6 +64,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         initialPlace={entry.place_name ?? ""}
         existingMedia={existingMedia}
         nextPosition={nextPosition}
+        placeSuggestions={placeSuggestions}
       />
     </main>
   );
