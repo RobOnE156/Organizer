@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  rls:
+    name: RLS security tests (pgTAP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL + pgTAP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-contrib postgresql-16-pgtap libtap-parser-sourcehandler-pgtap-perl
+          sudo pg_ctlcluster 16 main start || sudo systemctl start postgresql
+
+      - name: Make workspace readable by the postgres user
+        run: sudo chmod -R a+rX "$GITHUB_WORKSPACE"
+
+      - name: Run RLS pgTAP suite
+        run: sudo -u postgres bash tests/rls/run.sh
+
+  web:
+    name: Web app (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `next build` runs type-checking and lint, then compiles.
+      - run: npm run build
+        env:
+          # Build-time public placeholders; real values come from the host env.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key

@@ -1,0 +1,10 @@
+{
+  "name": "Benni-Tagebuch",
+  "short_name": "Benni",
+  "description": "Ein privates, sicheres digitales Tagebuch.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#15121a",
+  "theme_color": "#15121a",
+  "icons": []
+}
