@@ -18,11 +18,13 @@ jobs:
           sudo apt-get install -y postgresql postgresql-contrib postgresql-16-pgtap libtap-parser-sourcehandler-pgtap-perl
           sudo pg_ctlcluster 16 main start || sudo systemctl start postgresql
 
-      - name: Make workspace readable by the postgres user
-        run: sudo chmod -R a+rX "$GITHUB_WORKSPACE"
+      # Give the runner user its own superuser DB role (peer auth), so the suite
+      # runs as the file owner — the postgres OS user cannot traverse /home/runner.
+      - name: Grant the runner a superuser DB role
+        run: sudo -u postgres createuser --superuser "$USER" || true
 
       - name: Run RLS pgTAP suite
-        run: sudo -u postgres bash tests/rls/run.sh
+        run: bash tests/rls/run.sh
 
   web:
     name: Web app (typecheck + build)

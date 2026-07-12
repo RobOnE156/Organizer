@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Run the RLS pgTAP suite against a throwaway database.
 # Local:  sudo -u postgres bash tests/rls/run.sh
-# CI:     provide a superuser connection via standard PG* env vars.
+# CI:     run as a user that owns the files and has a superuser DB role
+#         (the workflow grants the runner user one via peer auth).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
