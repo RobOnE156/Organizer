@@ -167,6 +167,37 @@ export async function recordMedia(
   return {};
 }
 
+// Remove a single media item from an entry (author-only via RLS). Deletes
+// both the storage object and the database row, so a removed photo is
+// actually gone (not just hidden).
+export async function deleteMedia(mediaId: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  // RLS (media_select) only reveals rows the user may see; author-only
+  // delete is then enforced by the media_delete policy.
+  const { data: row } = await supabase
+    .from("media")
+    .select("id, storage_key")
+    .eq("id", mediaId)
+    .maybeSingle();
+  if (!row) return { error: "Medium nicht gefunden." };
+
+  const storageKey = (row as { storage_key: string | null }).storage_key;
+  if (storageKey) {
+    const { error: rmErr } = await supabase.storage.from("media").remove([storageKey]);
+    if (rmErr) return { error: rmErr.message };
+  }
+
+  const { error } = await supabase.from("media").delete().eq("id", mediaId);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Edit an entry's text (author-only via RLS). The revision trigger records the
 // previous version automatically, so edits are never silently lost.
 export async function updateEntry(

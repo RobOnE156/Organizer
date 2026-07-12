@@ -1,47 +1,129 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateEntry } from "@/app/content-actions";
+import { createClient } from "@/lib/supabase/client";
+import { updateEntry, recordMedia, deleteMedia } from "@/app/content-actions";
+import type { MediaInput, MediaKind } from "@/app/content-types";
+
+export type ExistingMedia = { id: string; kind: string; url: string };
+
+function kindOf(type: string): MediaKind {
+  if (type.startsWith("video")) return "video";
+  if (type.startsWith("audio")) return "audio";
+  return "image";
+}
+
+function sanitize(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-60);
+}
 
 export default function EditEntryForm({
   entryId,
+  householdId,
   initialTitle,
   initialBody,
   initialDate,
   initialPrivate,
   initialPlace,
+  existingMedia,
+  nextPosition,
 }: {
   entryId: string;
+  householdId: string;
   initialTitle: string;
   initialBody: string;
   initialDate: string;
   initialPrivate: boolean;
   initialPlace: string;
+  existingMedia: ExistingMedia[];
+  nextPosition: number;
 }) {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [existing, setExisting] = useState<ExistingMedia[]>(existingMedia);
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const previews = useMemo(
+    () => files.map((f) => ({ name: f.name, kind: kindOf(f.type), url: URL.createObjectURL(f) })),
+    [files],
+  );
+
+  function addFiles(list: FileList | null) {
+    if (!list) return;
+    setFiles((prev) => [...prev, ...Array.from(list)]);
+  }
+
+  function removeNewFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function onRemoveExisting(id: string) {
+    if (!window.confirm("Dieses Medium wirklich entfernen? Es wird dauerhaft gelöscht.")) return;
+    setError(null);
+    setRemovingId(id);
+    const res = await deleteMedia(id);
+    setRemovingId(null);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setExisting((prev) => prev.filter((m) => m.id !== id));
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setBusy(true);
-    const fd = new FormData(e.currentTarget);
-    const res = await updateEntry(entryId, {
-      title: String(fd.get("title") ?? ""),
-      body: String(fd.get("body") ?? ""),
-      eventDate: String(fd.get("event_date") ?? ""),
-      isPrivate: fd.get("is_private") === "on",
-      place: String(fd.get("place") ?? ""),
-    });
-    if (res.error) {
-      setError(res.error);
+    try {
+      const fd = new FormData(e.currentTarget);
+      const res = await updateEntry(entryId, {
+        title: String(fd.get("title") ?? ""),
+        body: String(fd.get("body") ?? ""),
+        eventDate: String(fd.get("event_date") ?? ""),
+        isPrivate: fd.get("is_private") === "on",
+        place: String(fd.get("place") ?? ""),
+      });
+      if (res.error) {
+        setError(res.error);
+        setBusy(false);
+        return;
+      }
+
+      if (files.length > 0) {
+        const supabase = createClient();
+        const items: MediaInput[] = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]!;
+          const position = nextPosition + i;
+          const path = `${householdId}/${entryId}/${position}-${sanitize(file.name)}`;
+          const { error: upErr } = await supabase.storage
+            .from("media")
+            .upload(path, file, { contentType: file.type || undefined, upsert: false });
+          if (upErr) {
+            setError(`Upload fehlgeschlagen: ${upErr.message}`);
+            setBusy(false);
+            return;
+          }
+          items.push({ storage_key: path, kind: kindOf(file.type), mime: file.type, bytes: file.size, position });
+        }
+        const rec = await recordMedia(entryId, householdId, items);
+        if (rec.error) {
+          setError(rec.error);
+          setBusy(false);
+          return;
+        }
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unbekannter Fehler.");
       setBusy(false);
-      return;
     }
-    router.push("/");
-    router.refresh();
   }
 
   return (
@@ -49,12 +131,76 @@ export default function EditEntryForm({
       <div>
         <p className="eyebrow">Erinnerung bearbeiten</p>
         <h1 className="title">Eintrag ändern</h1>
-        <p className="sub">Text, Ort, Datum und Sichtbarkeit anpassen. (Fotos ändern folgt bald.)</p>
+        <p className="sub">Text, Ort, Datum, Sichtbarkeit und Fotos/Videos anpassen.</p>
       </div>
 
       <div className="field">
         <label htmlFor="title">Titel (optional)</label>
         <input id="title" name="title" type="text" maxLength={80} defaultValue={initialTitle} />
+      </div>
+
+      <div className="field">
+        <label>Fotos / Videos</label>
+        {existing.length > 0 ? (
+          <div className="filestrip">
+            {existing.map((m) => (
+              <div className="ft" key={m.id}>
+                {m.kind === "image" ? (
+                  <img src={m.url} alt="" />
+                ) : m.kind === "video" ? (
+                  <video src={m.url} muted />
+                ) : (
+                  <span className="lbl">🎧</span>
+                )}
+                <button
+                  type="button"
+                  className="x"
+                  aria-label="Entfernen"
+                  disabled={removingId === m.id}
+                  onClick={() => onRemoveExisting(m.id)}
+                >
+                  {removingId === m.id ? "…" : "✕"}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ fontSize: "0.85rem", margin: "2px 0 0" }}>
+            Noch keine Medien in diesem Eintrag.
+          </p>
+        )}
+        <div className="filedrop" style={{ marginTop: 10 }} onClick={() => inputRef.current?.click()}>
+          ＋ Fotos/Videos hinzufügen (mehrere möglich)
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*,video/*,audio/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            addFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        {previews.length > 0 ? (
+          <div className="filestrip">
+            {previews.map((p, i) => (
+              <div className="ft" key={i}>
+                {p.kind === "image" ? (
+                  <img src={p.url} alt="" />
+                ) : p.kind === "video" ? (
+                  <video src={p.url} muted />
+                ) : (
+                  <span className="lbl">🎧</span>
+                )}
+                <button type="button" className="x" aria-label="Entfernen" onClick={() => removeNewFile(i)}>
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="field">

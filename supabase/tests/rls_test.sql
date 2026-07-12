@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(32);
+select plan(37);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -165,6 +165,24 @@ select throws_ok($$ insert into storage.objects (bucket_id, name, owner)
 reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
 select is((select count(*) from storage.objects where name like 'aaaaaaaa-%')::int, 0,
   'carol cannot see household 1 media objects');
+
+-- =====================================================================
+-- media delete: only the author may remove a media item (0008)
+-- =====================================================================
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+insert into media (household_id, entry_id, author_id, store, storage_key, kind, mime, bytes, position)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e1111111-1111-1111-1111-111111111111','11111111-1111-1111-1111-111111111111','supabase','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/e1111111-1111-1111-1111-111111111111/0-a.jpg','image','image/jpeg',1000,0);
+
+-- bob (co-parent) may SEE the media but NOT delete it (author-only)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from media where entry_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'co-parent can see media on a shared entry');
+select lives_ok($$ delete from media where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'co-parent delete raises no error but removes nothing');
+select is((select count(*) from media where entry_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'co-parent could not delete the media row');
+
+-- alice (author) can delete her own media
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ delete from media where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'author can delete her own media');
+select is((select count(*) from media where entry_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'the media row is gone after the author deletes it');
 
 reset role;
 select * from finish();
