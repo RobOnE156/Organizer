@@ -15,6 +15,7 @@ import {
 } from "@/lib/data";
 import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline";
 import { signOut } from "@/app/auth-actions";
+import EntryMenu from "@/app/EntryMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,17 @@ function MediaTile({ item }: { item: SignedMedia }) {
   return <img src={item.url} alt="" loading="lazy" />;
 }
 
-function EntryCard({ entry, author, media }: { entry: Entry; author: MemberProfile; media: SignedMedia[] }) {
+function EntryCard({
+  entry,
+  author,
+  media,
+  isOwn,
+}: {
+  entry: Entry;
+  author: MemberProfile;
+  media: SignedMedia[];
+  isOwn: boolean;
+}) {
   return (
     <article className="entry">
       <div className="meta">
@@ -50,6 +61,7 @@ function EntryCard({ entry, author, media }: { entry: Entry; author: MemberProfi
         <span className="nm">{author.name}</span>
         {entry.is_private ? <span className="privbadge">🔒 Privat</span> : null}
         <span className="when">{fmtDate(entry.event_date)}</span>
+        {isOwn ? <EntryMenu entryId={entry.id} /> : null}
       </div>
       {entry.title ? <h3>{entry.title}</h3> : null}
       {media.length > 0 ? (
@@ -146,6 +158,7 @@ export default async function Home() {
                   entry={e}
                   author={authors[e.author_id] ?? fallbackAuthor}
                   media={mediaByEntry[e.id] ?? []}
+                  isOwn={e.author_id === user.id}
                 />
               ))}
             </section>

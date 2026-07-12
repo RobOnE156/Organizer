@@ -162,3 +162,21 @@ export async function recordMedia(
   if (error) return { error: error.message };
   return {};
 }
+
+// Soft-delete an entry (RLS allows this only for its author). It disappears
+// from the timeline but is not permanently destroyed.
+export async function deleteEntry(entryId: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { error } = await supabase
+    .from("entries")
+    .update({ deleted_at: new Date().toISOString(), updated_by: user.id })
+    .eq("id", entryId);
+  if (error) return { error: error.message };
+  return {};
+}

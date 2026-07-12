@@ -114,6 +114,13 @@ input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
 .entry .nm { font-weight: 700; font-size: 0.9rem; }
 .entry .when { color: var(--muted); font-size: 0.78rem; margin-left: auto; }
 .privbadge { font-size: 0.7rem; font-weight: 700; color: var(--gold); border: 1px solid var(--faint); border-radius: 999px; padding: 2px 8px; }
+.emenu { position: relative; }
+.emenu-btn { background: none; border: 0; color: var(--muted); font-size: 1.15rem; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 8px; }
+.emenu-btn:hover { color: var(--ink); background: var(--surface-2); }
+.emenu-pop { position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--surface); border: 1px solid var(--faint); border-radius: 10px; box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.6); z-index: 5; overflow: hidden; min-width: 120px; }
+.emenu-item { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 9px 16px; font-size: 0.86rem; cursor: pointer; color: var(--ink); white-space: nowrap; }
+.emenu-item:hover { background: var(--surface-2); }
+.emenu-item.danger { color: var(--danger); }
 .entry h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: -0.01em; margin: 2px 0 6px; }
 .entry p.body { margin: 8px 0 0; white-space: pre-wrap; }
 .mediagrid { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 8px; }
