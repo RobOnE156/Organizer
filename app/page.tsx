@@ -14,8 +14,8 @@ export default async function Home() {
         <p className="eyebrow">Fundament</p>
         <h1 className="title">Benni-Tagebuch</h1>
         <p className="sub">
-          Supabase ist noch nicht konfiguriert. Folge <code>docs/setup-supabase.md</code>, lege eine
-          <code> .env.local</code> an und starte den Dev-Server neu.
+          Supabase ist noch nicht konfiguriert. Lege eine <code>.env.local</code> an
+          (siehe <code>.env.example</code>) und starte den Dev-Server neu.
         </p>
       </main>
     );

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/env";
 import type { FormState, EnrollResult, InviteState } from "@/app/auth-types";
 
-const NOT_CONFIGURED = "Supabase ist noch nicht konfiguriert — siehe .env.local und docs/setup-supabase.md.";
+const NOT_CONFIGURED = "Supabase ist noch nicht konfiguriert — bitte .env.local anlegen (NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_ANON_KEY).";
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
