@@ -18,10 +18,11 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
   const password = str(formData, "password");
   if (!email || password.length < 8) return { error: "Bitte E-Mail und ein Passwort (min. 8 Zeichen) angeben." };
 
+  const code = str(formData, "code");
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) return { error: error.message };
-  if (data.session) redirect("/onboarding");
+  if (data.session) redirect(code ? `/join?code=${encodeURIComponent(code)}` : "/onboarding");
   return { message: "Fast fertig! Bitte bestätige die E-Mail, die wir dir geschickt haben, und melde dich dann an." };
 }
 
@@ -29,15 +30,16 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
   const email = str(formData, "email");
   const password = str(formData, "password");
+  const code = str(formData, "code");
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
 
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
-    redirect("/login/mfa");
+    redirect(code ? `/login/mfa?code=${encodeURIComponent(code)}` : "/login/mfa");
   }
-  redirect("/");
+  redirect(code ? `/join?code=${encodeURIComponent(code)}` : "/");
 }
 
 export async function signOut(): Promise<void> {
@@ -49,6 +51,7 @@ export async function signOut(): Promise<void> {
 // ---- multi-factor (TOTP) -------------------------------------------
 export async function verifyMfa(_prev: FormState, formData: FormData): Promise<FormState> {
   const code = str(formData, "code");
+  const inviteCode = str(formData, "invite_code");
   const supabase = await createClient();
 
   const { data: factors, error: fErr } = await supabase.auth.mfa.listFactors();
@@ -61,7 +64,7 @@ export async function verifyMfa(_prev: FormState, formData: FormData): Promise<F
 
   const { error } = await supabase.auth.mfa.verify({ factorId: totp.id, challengeId: challenge.id, code });
   if (error) return { error: error.message };
-  redirect("/");
+  redirect(inviteCode ? `/join?code=${encodeURIComponent(inviteCode)}` : "/");
 }
 
 export async function enrollTotp(): Promise<EnrollResult> {
