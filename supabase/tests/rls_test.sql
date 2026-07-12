@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(28);
+select plan(32);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -92,6 +92,27 @@ select lives_ok($$ update entries set title='hacked by bob' where id='e1111111-1
   'bob''s update of a co-parent entry raises no error but touches no row');
 select is((select title from entries where id='e1111111-1111-1111-1111-111111111111'), 'edited by alice',
   'the co-parent entry is unchanged after bob''s attempt');
+
+-- =====================================================================
+-- soft-delete: an author can soft-delete their own entry (0006 fix).
+-- Setting deleted_at must not trip the SELECT policy. The author keeps
+-- visibility of the row (future trash/restore), the co-parent loses it,
+-- and the timeline query (deleted_at is null) drops it.
+-- =====================================================================
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+insert into entries (id, household_id, author_id, kind, title, created_by)
+  values ('e4444444-4444-4444-4444-444444444444','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','text','to be deleted','11111111-1111-1111-1111-111111111111');
+select lives_ok($$ update entries set deleted_at = now() where id='e4444444-4444-4444-4444-444444444444' $$,
+  'author can soft-delete their own entry (deleted_at update passes RLS)');
+select is((select count(*) from entries where id='e4444444-4444-4444-4444-444444444444')::int, 1,
+  'author still sees their own soft-deleted entry (enables trash/restore)');
+select is((select count(*) from entries where id='e4444444-4444-4444-4444-444444444444' and deleted_at is null)::int, 0,
+  'the timeline query (deleted_at is null) excludes the deleted entry');
+
+-- the co-parent can no longer see the soft-deleted entry
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from entries where id='e4444444-4444-4444-4444-444444444444')::int, 0,
+  'co-parent cannot see a soft-deleted entry');
 
 -- carol may NOT insert into household 1
 reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
