@@ -1,13 +1,47 @@
 import { redirect } from "next/navigation";
 import { getUser, getMembership, needsSecondFactor } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
+import { createClient } from "@/lib/supabase/server";
+import { ensureProfile, getChildren, getEntriesForChild, getMemberProfiles, type Entry, type MemberProfile } from "@/lib/data";
+import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline";
 import { signOut } from "@/app/auth-actions";
 
-// Depends on the session cookie — never statically cache.
 export const dynamic = "force-dynamic";
 
+function TopBar({ childName }: { childName?: string }) {
+  return (
+    <header className="topbar">
+      <div className="brand">
+        {childName ?? "Benni-Tagebuch"}
+        <small>Tagebuch</small>
+      </div>
+      <nav className="topnav">
+        <a className="iconlink" href="/settings/household">Haushalt</a>
+        <a className="iconlink" href="/settings/security">2FA</a>
+        <form action={signOut}>
+          <button className="iconlink" style={{ background: "none", border: 0, cursor: "pointer" }}>Abmelden</button>
+        </form>
+      </nav>
+    </header>
+  );
+}
+
+function EntryCard({ entry, author }: { entry: Entry; author: MemberProfile }) {
+  return (
+    <article className="entry">
+      <div className="meta">
+        <span className="ava" style={{ background: author.color }}>{initial(author.name)}</span>
+        <span className="nm">{author.name}</span>
+        {entry.is_private ? <span className="privbadge">🔒 Privat</span> : null}
+        <span className="when">{fmtDate(entry.event_date)}</span>
+      </div>
+      {entry.title ? <h3>{entry.title}</h3> : null}
+      {entry.body ? <p className="body">{entry.body}</p> : null}
+    </article>
+  );
+}
+
 export default async function Home() {
-  // Before Supabase is configured, show a friendly foundation notice.
   if (!hasSupabaseEnv()) {
     return (
       <main className="page">
@@ -27,26 +61,68 @@ export default async function Home() {
   const membership = await getMembership();
   if (!membership) redirect("/onboarding");
 
+  const supabase = await createClient();
+  await ensureProfile(supabase, user.id, user.email ?? undefined);
+  const children = await getChildren(supabase, membership.household_id);
+  const child = children[0];
+
+  if (!child) {
+    return (
+      <>
+        <TopBar />
+        <main className="tl">
+          <div className="empty">
+            <h2 style={{ marginBottom: 8 }}>Willkommen! 👶</h2>
+            <p>Lege zuerst ein Kind an, um Erinnerungen festzuhalten.</p>
+            <p style={{ marginTop: 16 }}>
+              <a className="btn btn-primary" href="/children/new">Kind anlegen</a>
+            </p>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  const entries = await getEntriesForChild(supabase, membership.household_id, child.id);
+  const authors = await getMemberProfiles(supabase, membership.household_id);
+  const fallbackAuthor: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
+
+  // Group entries by calendar month (already sorted newest-first).
+  const groups: { key: string; label: string; sub: string; entries: Entry[] }[] = [];
+  for (const e of entries) {
+    const key = monthKey(e.event_date);
+    let group = groups.find((g) => g.key === key);
+    if (!group) {
+      group = { key, label: monthLabel(e.event_date), sub: ageLabel(child.birth_date, e.event_date), entries: [] };
+      groups.push(group);
+    }
+    group.entries.push(e);
+  }
+
   return (
-    <main className="page">
-      <div className="spread">
-        <div>
-          <p className="eyebrow">Angemeldet</p>
-          <h1 className="title">Willkommen 👋</h1>
-        </div>
-        <form action={signOut}>
-          <button className="btn">Abmelden</button>
-        </form>
-      </div>
-      <p className="sub">{user.email}</p>
-      <div className="msg" style={{ marginTop: 8 }}>
-        Der Zeitstrahl und das Hinzufügen von Erinnerungen folgen als Nächstes. Das
-        Sicherheitsfundament — Login, Zwei-Faktor und Haushalt — steht.
-      </div>
-      <div className="row" style={{ marginTop: 18 }}>
-        <a className="btn" href="/settings/security">Zwei-Faktor einrichten</a>
-        <a className="btn" href="/settings/household">Haushalt &amp; Einladung</a>
-      </div>
-    </main>
+    <>
+      <TopBar childName={child.name} />
+      <main className="tl">
+        {entries.length === 0 ? (
+          <div className="empty">
+            <p>Noch keine Erinnerungen für {child.name}.</p>
+            <p className="muted">Tippe unten auf „Hinzufügen", um die erste festzuhalten.</p>
+          </div>
+        ) : (
+          groups.map((group) => (
+            <section key={group.key}>
+              <div className="msep">
+                <h2>{group.label}</h2>
+                <span>· {child.name}{group.sub ? ` · ${group.sub}` : ""}</span>
+              </div>
+              {group.entries.map((e) => (
+                <EntryCard key={e.id} entry={e} author={authors[e.author_id] ?? fallbackAuthor} />
+              ))}
+            </section>
+          ))
+        )}
+      </main>
+      <a className="fab" href="/new">＋ Hinzufügen</a>
+    </>
   );
 }
