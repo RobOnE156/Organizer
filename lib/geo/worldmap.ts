@@ -108,3 +108,62 @@ export function countryPaths(): CountryPath[] {
 export function projectPoint(lng: number, lat: number): { x: number; y: number } {
   return { x: projX(lng), y: projY(lat) };
 }
+
+// Projected (SVG-space) bounding box per feature, index-aligned with
+// `features` / `countryPaths()`. Note projY flips latitude, so maxLat maps to
+// the smaller y.
+type ProjBBox = { x0: number; y0: number; x1: number; y1: number };
+let projBBoxes: ProjBBox[] | null = null;
+function projectedBBoxes(): ProjBBox[] {
+  if (!projBBoxes) {
+    projBBoxes = bboxes.map((b) => ({
+      x0: projX(b.minX),
+      x1: projX(b.maxX),
+      y0: projY(b.maxY),
+      y1: projY(b.minY),
+    }));
+  }
+  return projBBoxes;
+}
+
+const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
+
+// A small detail map cropped around one point: the SVG viewBox to show, the
+// marker position, the containing country (to highlight), and only the country
+// paths that intersect the crop (so each entry's map stays light).
+export type MiniMap = {
+  viewBox: string;
+  width: number;
+  height: number;
+  marker: { x: number; y: number };
+  country: Country | null;
+  paths: CountryPath[];
+};
+
+const MINI_SPAN_LNG = 44; // degrees shown across → country + neighbours
+const MINI_SPAN_LAT = 30;
+
+export function miniMap(lng: number, lat: number): MiniMap {
+  const spanW = (MINI_SPAN_LNG / 360) * MAP_W;
+  const spanH = (MINI_SPAN_LAT / 180) * MAP_H;
+  const { x, y } = projectPoint(lng, lat);
+  const x0 = clamp(x - spanW / 2, 0, MAP_W - spanW);
+  const y0 = clamp(y - spanH / 2, 0, MAP_H - spanH);
+  const win = { x0, y0, x1: x0 + spanW, y1: y0 + spanH };
+
+  const all = countryPaths();
+  const pbb = projectedBBoxes();
+  const paths = all.filter((_, i) => {
+    const b = pbb[i]!;
+    return !(b.x1 < win.x0 || b.x0 > win.x1 || b.y1 < win.y0 || b.y0 > win.y1);
+  });
+
+  return {
+    viewBox: `${x0.toFixed(1)} ${y0.toFixed(1)} ${spanW.toFixed(1)} ${spanH.toFixed(1)}`,
+    width: spanW,
+    height: spanH,
+    marker: { x, y },
+    country: countryOfPoint(lng, lat),
+    paths,
+  };
+}

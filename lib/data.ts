@@ -24,6 +24,8 @@ export type Entry = {
   is_private: boolean;
   place_name: string | null;
   link: LinkMeta | null;
+  lat: number | null;
+  lng: number | null;
   created_at: string;
 };
 
@@ -123,7 +125,7 @@ export async function getEntriesForChild(
 ): Promise<Entry[]> {
   const { data } = await supabase
     .from("entries")
-    .select("id, author_id, kind, title, body, event_date, is_private, place_name, link, created_at, entry_children!inner(child_id)")
+    .select("id, author_id, kind, title, body, event_date, is_private, place_name, link, lat, lng, created_at, entry_children!inner(child_id)")
     .eq("household_id", householdId)
     .eq("entry_children.child_id", childId)
     .is("deleted_at", null)

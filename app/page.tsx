@@ -27,6 +27,7 @@ import EntryMedia from "@/app/EntryMedia";
 import EntryComments from "@/app/EntryComments";
 import ReactionBar from "@/app/ReactionBar";
 import HighlightStar from "@/app/HighlightStar";
+import EntryMiniMap from "@/app/EntryMiniMap";
 import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
@@ -106,6 +107,7 @@ function EntryCard({
           </div>
         </a>
       ) : null}
+      {entry.lat != null && entry.lng != null ? <EntryMiniMap lat={entry.lat} lng={entry.lng} /> : null}
       <ReactionBar targetType="entry" targetId={entry.id} householdId={householdId} initial={reactions} userId={userId} />
       <EntryComments
         entryId={entry.id}
