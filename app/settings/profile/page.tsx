@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfile, getMyProfile } from "@/lib/data";
+import { translator, normalizeLang } from "@/lib/i18n";
 import ProfileForm from "./ProfileForm";
 import AccessibilitySection from "./AccessibilitySection";
 import PasswordSection from "./PasswordSection";
+import LanguageSection from "./LanguageSection";
 
 export const dynamic = "force-dynamic";
 
@@ -25,14 +27,13 @@ export default async function ProfilePage() {
     avatarUrl = signed?.signedUrl ?? null;
   }
 
+  const t = translator(normalizeLang(profile.ui_language));
+
   return (
     <main className="page">
-      <p className="eyebrow">Dein Profil</p>
-      <h1 className="title">Profil bearbeiten</h1>
-      <p className="sub">
-        Dein Anzeigename und deine Farbe erscheinen an jedem Eintrag und Kommentar, den du
-        erstellst. So sieht man auf einen Blick, von wem etwas stammt.
-      </p>
+      <p className="eyebrow">{t("profile.eyebrow")}</p>
+      <h1 className="title">{t("profile.title")}</h1>
+      <p className="sub">{t("profile.sub")}</p>
       <ProfileForm
         initialName={profile.display_name}
         initialColor={profile.color}
@@ -51,11 +52,15 @@ export default async function ProfilePage() {
       </div>
 
       <div style={{ marginTop: 16 }}>
+        <LanguageSection initialLang={profile.ui_language} />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
         <PasswordSection />
       </div>
 
       <p style={{ marginTop: 24 }}>
-        <a href="/">← Zurück</a>
+        <a href="/">{t("common.back")}</a>
       </p>
     </main>
   );

@@ -297,6 +297,22 @@ export async function setAvatar(key: string | null): Promise<{ error?: string }>
   return {};
 }
 
+// Save the UI language preference (own profile row).
+export async function updateLanguage(lang: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const value = lang === "en" || lang === "es" || lang === "de" ? lang : "de";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ user_id: user.id, ui_language: value }, { onConflict: "user_id" });
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Save accessibility preferences (own profile row).
 export async function updateA11y(input: {
   textSize: string;

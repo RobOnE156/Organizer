@@ -12,6 +12,7 @@ import {
   getMemberProfiles,
   getReactionsForComments,
   getReactionsForEntries,
+  getShellPrefs,
   signMediaByEntry,
   type Comment,
   type CommentReaction,
@@ -21,6 +22,7 @@ import {
   type SignedMedia,
 } from "@/lib/data";
 import { ageLabel, fmtDate, monthKey, monthLabel } from "@/lib/timeline";
+import { translator, type T } from "@/lib/i18n";
 import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
@@ -34,24 +36,24 @@ import RefreshOnFocus from "@/app/RefreshOnFocus";
 
 export const dynamic = "force-dynamic";
 
-function TopBar({ childName }: { childName?: string }) {
+function TopBar({ childName, t }: { childName?: string; t: T }) {
   return (
     <header className="topbar">
       <div className="brand">
         {childName ?? "Benni-Tagebuch"}
-        <small>Tagebuch</small>
+        <small>{t("nav.tagline")}</small>
       </div>
       <nav className="topnav">
-        <a className="iconlink" href="/growth">Über {childName ?? "Kind"}</a>
-        <a className="iconlink" href="/highlights">★ Rückblick</a>
-        <a className="iconlink" href="/map">🗺️ Karte</a>
-        <a className="iconlink" href="/search">🔍 Suche</a>
-        <a className="iconlink" href="/settings/profile">Profil</a>
-        <a className="iconlink" href="/settings/household">Haushalt</a>
+        <a className="iconlink" href="/growth">{t("nav.about", { name: childName ?? t("nav.child_fallback") })}</a>
+        <a className="iconlink" href="/highlights">{t("nav.review")}</a>
+        <a className="iconlink" href="/map">{t("nav.map")}</a>
+        <a className="iconlink" href="/search">{t("nav.search")}</a>
+        <a className="iconlink" href="/settings/profile">{t("nav.profile")}</a>
+        <a className="iconlink" href="/settings/household">{t("nav.household")}</a>
         <a className="iconlink" href="/settings/security">2FA</a>
-        <a className="iconlink" href="/export">Export</a>
+        <a className="iconlink" href="/export">{t("nav.export")}</a>
         <form action={signOut}>
-          <button className="iconlink" style={{ background: "none", border: 0, cursor: "pointer" }}>Abmelden</button>
+          <button className="iconlink" style={{ background: "none", border: 0, cursor: "pointer" }}>{t("nav.signout")}</button>
         </form>
       </nav>
     </header>
@@ -145,19 +147,20 @@ export default async function Home() {
 
   const supabase = await createClient();
   await ensureProfile(supabase, user.id, user.email ?? undefined);
+  const t = translator((await getShellPrefs(supabase, user.id)).lang);
   const children = await getChildren(supabase, membership.household_id);
   const child = children[0];
 
   if (!child) {
     return (
       <>
-        <TopBar />
+        <TopBar t={t} />
         <main className="tl">
           <div className="empty">
-            <h2 style={{ marginBottom: 8 }}>Willkommen! 👶</h2>
-            <p>Lege zuerst ein Kind an, um Erinnerungen festzuhalten.</p>
+            <h2 style={{ marginBottom: 8 }}>{t("home.welcome_title")}</h2>
+            <p>{t("home.welcome_body")}</p>
             <p style={{ marginTop: 16 }}>
-              <a className="btn btn-primary" href="/children/new">Kind anlegen</a>
+              <a className="btn btn-primary" href="/children/new">{t("home.add_child")}</a>
             </p>
           </div>
         </main>
@@ -232,7 +235,7 @@ export default async function Home() {
   return (
     <>
       <RefreshOnFocus />
-      <TopBar childName={child.name} />
+      <TopBar childName={child.name} t={t} />
       <main className="tl">
         <ChildHero
           childId={child.id}
@@ -245,12 +248,12 @@ export default async function Home() {
         />
         {onThisDay.length > 0 ? (
           <section className="otd">
-            <h2 className="otdhead">✨ An diesem Tag</h2>
+            <h2 className="otdhead">{t("home.on_this_day")}</h2>
             <div className="otdrow">
               {onThisDay.map((e) => {
                 const years = Number(today.slice(0, 4)) - Number(e.event_date.slice(0, 4));
                 const thumb = (mediaByEntry[e.id] ?? []).find((m) => m.kind === "image")?.url;
-                const label = e.title || (e.body ? e.body.slice(0, 70) : "Erinnerung");
+                const label = e.title || (e.body ? e.body.slice(0, 70) : t("home.memory"));
                 return (
                   <a
                     key={e.id}
@@ -259,7 +262,9 @@ export default async function Home() {
                     style={thumb ? { backgroundImage: `url("${thumb}")` } : undefined}
                   >
                     <div className="otdgrad">
-                      <span className="otdyears">vor {years} {years === 1 ? "Jahr" : "Jahren"}</span>
+                      <span className="otdyears">
+                        {years === 1 ? t("home.year_one", { n: years }) : t("home.year_many", { n: years })}
+                      </span>
                       <b className="otdtitle">{label}</b>
                     </div>
                   </a>
@@ -270,8 +275,8 @@ export default async function Home() {
         ) : null}
         {entries.length === 0 ? (
           <div className="empty">
-            <p>Noch keine Erinnerungen für {child.name}.</p>
-            <p className="muted">Tippe unten auf „Hinzufügen", um die erste festzuhalten.</p>
+            <p>{t("home.no_entries", { name: child.name })}</p>
+            <p className="muted">{t("home.no_entries_hint")}</p>
           </div>
         ) : (
           groups.map((group) => (
@@ -301,7 +306,7 @@ export default async function Home() {
           ))
         )}
       </main>
-      <a className="fab" href="/new">＋ Hinzufügen</a>
+      <a className="fab" href="/new">{t("home.fab_add")}</a>
     </>
   );
 }

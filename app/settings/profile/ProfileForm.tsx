@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { updateProfile, setAvatar } from "@/app/content-actions";
 import { AUTHOR_COLORS } from "@/app/content-types";
 import Avatar from "@/app/Avatar";
+import { useT } from "@/app/LanguageProvider";
 
 function sanitizeExt(name: string): string {
   const ext = (name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -28,6 +29,7 @@ export default function ProfileForm({
   initialAvatarUrl: string | null;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initialName);
   const [color, setColor] = useState(initialColor);
@@ -108,11 +110,11 @@ export default function ProfileForm({
               onClick={() => avatarInputRef.current?.click()}
               disabled={avatarBusy}
             >
-              {avatarBusy ? "…" : avatarUrl ? "Foto ändern" : "Foto hinzufügen"}
+              {avatarBusy ? "…" : avatarUrl ? t("profile.photo_change") : t("profile.photo_add")}
             </button>
             {avatarUrl ? (
               <button type="button" className="linkbtn danger" onClick={removeAvatar} disabled={avatarBusy}>
-                Entfernen
+                {t("profile.photo_remove")}
               </button>
             ) : null}
           </div>
@@ -131,7 +133,7 @@ export default function ProfileForm({
       </div>
 
       <div className="field">
-        <label htmlFor="dname">Anzeigename</label>
+        <label htmlFor="dname">{t("profile.name_label")}</label>
         <input
           id="dname"
           type="text"
@@ -141,13 +143,13 @@ export default function ProfileForm({
             setSaved(false);
           }}
           maxLength={40}
-          placeholder="z. B. Mama, Papa, dein Vorname"
+          placeholder={t("profile.name_ph")}
           autoComplete="name"
         />
       </div>
 
       <div className="field">
-        <label>Deine Farbe</label>
+        <label>{t("profile.color_label")}</label>
         <div className="swatches">
           {AUTHOR_COLORS.map((c) => (
             <button
@@ -169,12 +171,12 @@ export default function ProfileForm({
       </div>
 
       {error ? <p className="err">{error}</p> : null}
-      {saved ? <p className="msg">Gespeichert ✓</p> : null}
+      {saved ? <p className="msg">{t("common.saved")}</p> : null}
       <div className="row">
         <button className="btn btn-primary" disabled={busy || !name.trim()}>
-          {busy ? "Speichere …" : "Speichern"}
+          {busy ? t("common.saving") : t("common.save")}
         </button>
-        <a className="btn" href="/">Abbrechen</a>
+        <a className="btn" href="/">{t("common.cancel")}</a>
       </div>
     </form>
   );

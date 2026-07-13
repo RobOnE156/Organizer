@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateA11y } from "@/app/content-actions";
+import { useT } from "@/app/LanguageProvider";
 
 export default function AccessibilitySection({
   initialTextSize,
@@ -14,6 +15,7 @@ export default function AccessibilitySection({
   initialReduceMotion: boolean;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const [large, setLarge] = useState(initialTextSize === "large");
   const [contrast, setContrast] = useState(initialHighContrast);
   const [motion, setMotion] = useState(initialReduceMotion);
@@ -41,33 +43,33 @@ export default function AccessibilitySection({
 
   return (
     <div className="card stack">
-      <h2 style={{ fontSize: "1.05rem", margin: 0 }}>Barrierefreiheit</h2>
+      <h2 style={{ fontSize: "1.05rem", margin: 0 }}>{t("a11y.title")}</h2>
       <label className="checkline">
         <input type="checkbox" checked={large} onChange={(e) => { setLarge(e.target.checked); setSaved(false); }} />
         <span className="pt">
-          <b>Größerer Text</b>
-          <small>Vergrößert die Schrift in der ganzen App.</small>
+          <b>{t("a11y.large")}</b>
+          <small>{t("a11y.large_hint")}</small>
         </span>
       </label>
       <label className="checkline">
         <input type="checkbox" checked={contrast} onChange={(e) => { setContrast(e.target.checked); setSaved(false); }} />
         <span className="pt">
-          <b>Höherer Kontrast</b>
-          <small>Kräftigere Texte und Ränder für bessere Lesbarkeit.</small>
+          <b>{t("a11y.contrast")}</b>
+          <small>{t("a11y.contrast_hint")}</small>
         </span>
       </label>
       <label className="checkline">
         <input type="checkbox" checked={motion} onChange={(e) => { setMotion(e.target.checked); setSaved(false); }} />
         <span className="pt">
-          <b>Weniger Animation</b>
-          <small>Reduziert Bewegungen und Übergänge.</small>
+          <b>{t("a11y.motion")}</b>
+          <small>{t("a11y.motion_hint")}</small>
         </span>
       </label>
       {error ? <p className="err">{error}</p> : null}
-      {saved ? <p className="msg">Gespeichert ✓</p> : null}
+      {saved ? <p className="msg">{t("common.saved")}</p> : null}
       <div className="row">
         <button className="btn btn-primary" onClick={save} disabled={busy}>
-          {busy ? "Speichere …" : "Speichern"}
+          {busy ? t("common.saving") : t("common.save")}
         </button>
       </div>
     </div>

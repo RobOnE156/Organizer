@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { changePassword } from "@/app/auth-actions";
+import { useT } from "@/app/LanguageProvider";
 
 export default function PasswordSection() {
+  const { t } = useT();
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
@@ -15,11 +17,11 @@ export default function PasswordSection() {
     setError(null);
     setSaved(false);
     if (pw.length < 8) {
-      setError("Das Passwort muss mindestens 8 Zeichen haben.");
+      setError(t("pw.min"));
       return;
     }
     if (pw !== pw2) {
-      setError("Die Passwörter stimmen nicht überein.");
+      setError(t("pw.mismatch"));
       return;
     }
     setBusy(true);
@@ -36,9 +38,9 @@ export default function PasswordSection() {
 
   return (
     <form className="card stack" onSubmit={onSubmit}>
-      <h2 style={{ fontSize: "1.05rem", margin: 0 }}>Passwort ändern</h2>
+      <h2 style={{ fontSize: "1.05rem", margin: 0 }}>{t("pw.title")}</h2>
       <div className="field">
-        <label htmlFor="newpw">Neues Passwort</label>
+        <label htmlFor="newpw">{t("pw.new")}</label>
         <input
           id="newpw"
           type="password"
@@ -48,11 +50,11 @@ export default function PasswordSection() {
             setSaved(false);
           }}
           autoComplete="new-password"
-          placeholder="mindestens 8 Zeichen"
+          placeholder={t("pw.new_ph")}
         />
       </div>
       <div className="field">
-        <label htmlFor="newpw2">Neues Passwort wiederholen</label>
+        <label htmlFor="newpw2">{t("pw.repeat")}</label>
         <input
           id="newpw2"
           type="password"
@@ -65,10 +67,10 @@ export default function PasswordSection() {
         />
       </div>
       {error ? <p className="err">{error}</p> : null}
-      {saved ? <p className="msg">Passwort geändert ✓</p> : null}
+      {saved ? <p className="msg">{t("pw.changed")}</p> : null}
       <div className="row">
         <button className="btn btn-primary" disabled={busy || !pw || !pw2}>
-          {busy ? "Speichere …" : "Passwort ändern"}
+          {busy ? t("common.saving") : t("pw.title")}
         </button>
       </div>
     </form>

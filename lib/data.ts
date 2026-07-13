@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeLang, type Lang } from "@/lib/i18n";
 
 // Data-access helpers for the authenticated app. Every query runs under the
 // user's session, so RLS (0002_rls.sql) already scopes results to their
@@ -416,4 +417,28 @@ export async function getA11yClasses(supabase: SupabaseClient, userId: string): 
   if (p.high_contrast) cls.push("a11y-contrast");
   if (p.reduce_motion) cls.push("a11y-motion");
   return cls.join(" ");
+}
+
+// Shell personalisation for the root layout: accessibility classes + UI
+// language, in one query. Never throws.
+export async function getShellPrefs(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ a11y: string; lang: Lang }> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("text_size, high_contrast, reduce_motion, ui_language")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const p = data as {
+    text_size: string;
+    high_contrast: boolean;
+    reduce_motion: boolean;
+    ui_language: string;
+  } | null;
+  const cls: string[] = [];
+  if (p?.text_size === "large") cls.push("a11y-large");
+  if (p?.high_contrast) cls.push("a11y-contrast");
+  if (p?.reduce_motion) cls.push("a11y-motion");
+  return { a11y: cls.join(" "), lang: normalizeLang(p?.ui_language) };
 }
