@@ -331,6 +331,101 @@ export function letterUnlockDate(l: Letter, birthDate: string | null): string | 
   return String(Number(birthDate.slice(0, 4)) + l.unlock_age_years) + birthDate.slice(4);
 }
 
+// ---- guest contributions (account-less, expiring links) -------------
+export type GuestInviteStatus = "active" | "expired" | "revoked";
+export type GuestInvite = {
+  id: string;
+  child_id: string | null;
+  label: string | null;
+  message: string | null;
+  language: string;
+  expires_at: string;
+  used_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  status: GuestInviteStatus;
+};
+
+type GuestInviteRow = Omit<GuestInvite, "status">;
+
+// All of a household's guest links, newest first, with a derived status. The
+// raw token only ever exists once (at creation) — we store just its hash — so
+// this list shows metadata + a revoke control, never the link itself.
+export async function getGuestInvites(supabase: SupabaseClient, householdId: string): Promise<GuestInvite[]> {
+  const { data } = await supabase
+    .from("guest_invites")
+    .select("id, child_id, label, message, language, expires_at, used_at, revoked_at, created_at")
+    .eq("household_id", householdId)
+    .order("created_at", { ascending: false });
+  const now = Date.now();
+  return ((data as GuestInviteRow[] | null) ?? []).map((r) => ({
+    ...r,
+    status: r.revoked_at ? "revoked" : new Date(r.expires_at).getTime() < now ? "expired" : "active",
+  }));
+}
+
+export type GuestContributionStatus = "pending" | "approved" | "rejected";
+export type GuestContribution = {
+  id: string;
+  invite_id: string;
+  guest_name: string;
+  title: string | null;
+  body: string | null;
+  status: GuestContributionStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+// All guest contributions in the household (pending / approved / rejected),
+// newest first — the moderation queue and the approved wall both read this.
+export async function getGuestContributions(
+  supabase: SupabaseClient,
+  householdId: string,
+): Promise<GuestContribution[]> {
+  const { data } = await supabase
+    .from("guest_contributions")
+    .select("id, invite_id, guest_name, title, body, status, reviewed_by, reviewed_at, created_at")
+    .eq("household_id", householdId)
+    .order("created_at", { ascending: false });
+  return (data as GuestContribution[] | null) ?? [];
+}
+
+export type GuestInviteInfo = {
+  valid: boolean;
+  reason: string;
+  label: string | null;
+  message: string | null;
+  language: string;
+  child_name: string | null;
+  expires_at: string | null;
+};
+
+// Validate a guest token from the public write page and get just enough to
+// personalise it (child's name, host's note, language). Goes through the
+// definer RPC, so an account-less visitor never touches the tables directly.
+export async function getGuestInviteInfo(
+  supabase: SupabaseClient,
+  token: string,
+): Promise<GuestInviteInfo | null> {
+  const { data, error } = await supabase.rpc("guest_invite_info", { p_token: token });
+  if (error) return null;
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | Partial<GuestInviteInfo>
+    | undefined
+    | null;
+  if (!row) return null;
+  return {
+    valid: row.valid === true,
+    reason: typeof row.reason === "string" ? row.reason : "invalid",
+    label: row.label ?? null,
+    message: row.message ?? null,
+    language: typeof row.language === "string" ? row.language : "en",
+    child_name: row.child_name ?? null,
+    expires_at: row.expires_at ?? null,
+  };
+}
+
 export type Snapshot = {
   id: string;
   child_id: string;

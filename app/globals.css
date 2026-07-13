@@ -287,6 +287,17 @@ a.brand { text-decoration: none; color: inherit; }
 .teaser { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px dashed color-mix(in oklab, var(--gold) 45%, var(--faint)); border-radius: 14px; background: color-mix(in oklab, var(--gold) 7%, var(--surface)); }
 .teaser .tseal { font-size: 1.5rem; flex: 0 0 auto; }
 .teaser b { font-size: 0.92rem; }
+/* guest contributions */
+.guestnote { margin: 0; padding: 12px 14px; border-radius: 12px; background: color-mix(in oklab, var(--gold) 10%, var(--surface)); border: 1px solid color-mix(in oklab, var(--gold) 35%, var(--faint)); font-style: italic; white-space: pre-wrap; }
+.guestdone { margin: 0; font-weight: 700; color: color-mix(in oklab, var(--gold) 55%, var(--ink)); font-size: 1.05rem; }
+.contribcard { background: var(--surface); border: 1px solid var(--faint); border-radius: 14px; padding: 14px 16px; }
+.contribcard.pending { background: color-mix(in oklab, var(--gold) 8%, var(--surface)); border-color: color-mix(in oklab, var(--gold) 40%, var(--faint)); }
+.gwho { font-weight: 700; font-size: 0.9rem; }
+.invrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--faint); border-radius: 12px; background: var(--surface); }
+.invrow > div:first-child { flex: 1 1 auto; }
+.statuspill { flex: 0 0 auto; font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: 0.02em; }
+.statuspill.active { color: #1c6b3f; background: color-mix(in oklab, #2ecc71 22%, var(--surface)); }
+@media (prefers-color-scheme: dark) { .statuspill.active { color: #8ef0b6; } }
 /* world map ("Weltkarte") */
 .mapwrap { margin-top: 18px; border: 1px solid var(--faint); border-radius: 16px; overflow: hidden; background: color-mix(in oklab, var(--gold) 6%, var(--surface)); }
 .worldmap { display: block; width: 100%; height: auto; }

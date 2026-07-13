@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(102);
+select plan(126);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -468,6 +468,78 @@ select lives_ok($$ delete from letters where id='f1111111-1111-1111-1111-1111111
   'author can delete her own letter');
 select is((select count(*) from letters where id='f1111111-1111-1111-1111-111111111111')::int, 0,
   'the letter is gone after the author deletes it');
+
+-- =====================================================================
+-- guest contributions (account-less, expiring links, moderated):
+--   * the tables are never touched directly by a guest — anon reaches them
+--     only through the definer RPCs submit_guest_contribution /
+--     guest_invite_info; minting (create_guest_invite) is member-only.
+--   * invites & contributions are household-shared; members moderate.
+-- =====================================================================
+-- Seed three known-token invites for household 1 (as superuser). We control
+-- the tokens so the anon submit/info calls are deterministic.
+reset role;
+insert into guest_invites (id, household_id, child_id, created_by, token_hash, label, message, language, expires_at) values
+  ('91111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','cccccccc-cccc-cccc-cccc-cccccccccccc','11111111-1111-1111-1111-111111111111', encode(extensions.digest('guesttoken-valid','sha256'),'hex'),   'Oma',  'Schreib was Schönes', 'de', now() + interval '7 days'),
+  ('92222222-2222-2222-2222-222222222222','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','cccccccc-cccc-cccc-cccc-cccccccccccc','11111111-1111-1111-1111-111111111111', encode(extensions.digest('guesttoken-expired','sha256'),'hex'), 'Opa',  null,                  'de', now() - interval '1 day'),
+  ('93333333-3333-3333-3333-333333333333','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','cccccccc-cccc-cccc-cccc-cccccccccccc','11111111-1111-1111-1111-111111111111', encode(extensions.digest('guesttoken-revoked','sha256'),'hex'), 'Tante', null,                 'de', now() + interval '7 days');
+update guest_invites set revoked_at = now() where id='93333333-3333-3333-3333-333333333333';
+
+-- anon: no direct table access; reaches guests only via the definer RPCs.
+reset role; select set_config('request.jwt.claims','',true); set local role anon;
+select throws_ok($$ select 1 from guest_invites $$,       '42501', null, 'anon cannot read guest_invites directly');
+select throws_ok($$ select 1 from guest_contributions $$, '42501', null, 'anon cannot read guest_contributions directly');
+select throws_ok($$ select public.create_guest_invite('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,'x',null,'de',7) $$,
+  '42501', null, 'anon cannot mint a guest link');
+select is((select valid from public.guest_invite_info('guesttoken-valid')), true,  'anon can validate a live token');
+select is((select valid from public.guest_invite_info('no-such-token')),    false, 'anon gets valid=false for an unknown token');
+select lives_ok($$ select public.submit_guest_contribution('guesttoken-valid','Oma Ingrid','Zoo','Ein schöner Tag') $$,
+  'anon can submit a contribution with a valid token');
+select throws_ok($$ select public.submit_guest_contribution('guesttoken-expired','Opa','x','y') $$, null, null,
+  'anon cannot submit with an expired token');
+select throws_ok($$ select public.submit_guest_contribution('guesttoken-revoked','Tante','x','y') $$, null, null,
+  'anon cannot submit with a revoked token');
+select throws_ok($$ select public.submit_guest_contribution('guesttoken-valid','','x','y') $$, null, null,
+  'anon cannot submit without a name');
+
+-- the submission landed as exactly one pending contribution (checked as superuser)
+reset role;
+select is((select count(*) from guest_contributions where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')::int, 1,
+  'the guest submission created exactly one contribution');
+select is((select status::text from guest_contributions where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' limit 1), 'pending',
+  'the guest contribution starts pending');
+
+-- alice (member): sees the household's links and can mint another
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from guest_invites)::int, 3, 'alice (member) sees all three household guest links');
+select lives_ok($$ select public.create_guest_invite('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,'Nachbarn','Hallo','en',30) $$,
+  'alice can mint a guest link for her household');
+select is((select count(*) from guest_invites)::int, 4, 'the minted link is visible to the member');
+select is((select count(*) from guest_contributions)::int, 1, 'alice can see the guest contribution');
+
+-- carol (other household): full isolation, cannot mint for household 1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from guest_invites)::int, 0, 'carol sees no guest links from household 1');
+select is((select count(*) from guest_contributions)::int, 0, 'carol sees no guest contributions from household 1');
+select throws_ok($$ select public.create_guest_invite('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,'x',null,'de',7) $$,
+  null, null, 'a non-member cannot mint a link for another household');
+
+-- bob (co-parent): sees household guests and can moderate
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from guest_invites)::int, 4, 'bob (co-parent) sees the household guest links');
+select is((select count(*) from guest_contributions where status='pending')::int, 1, 'bob sees the pending contribution to moderate');
+select lives_ok($$ update guest_contributions set status='approved', reviewed_by='22222222-2222-2222-2222-222222222222', reviewed_at=now() where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' $$,
+  'bob can approve the pending contribution');
+select is((select status::text from guest_contributions where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' limit 1), 'approved',
+  'the contribution is now approved');
+
+-- carol cannot moderate household 1's contribution (no-op, not an error)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update guest_contributions set status='rejected' where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' $$,
+  'a cross-household moderate raises no error but changes nothing');
+reset role;
+select is((select status::text from guest_contributions where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' limit 1), 'approved',
+  'the contribution stays approved after a non-member attempt');
 
 reset role;
 select * from finish();

@@ -732,6 +732,98 @@ export async function deleteLetter(id: string): Promise<{ error?: string }> {
   return {};
 }
 
+// ---- guest contributions (account-less, expiring links) ------------
+// A member mints a guest link. The definer RPC (0019) generates the token
+// server-side and returns it once; only its hash is stored. We hand the raw
+// token back so the client can build the shareable /guest?token=… URL.
+export async function createGuestInvite(input: {
+  childId: string | null;
+  label: string;
+  message: string;
+  language: string;
+  days: number;
+}): Promise<{ token?: string; error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_guest_invite", {
+    p_household: membership.household_id,
+    p_child: input.childId,
+    p_label: input.label.trim() || null,
+    p_message: input.message.trim() || null,
+    p_language: input.language,
+    p_days: input.days,
+  });
+  if (error) return { error: error.message };
+  return { token: String(data) };
+}
+
+// Revoke a guest link (soft, via the member UPDATE policy). An already-issued
+// link stops working immediately: the submit + info RPCs both check revoked_at.
+export async function revokeGuestInvite(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("guest_invites")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+// Approve or reject a pending guest contribution. Members moderate within
+// their household (guest_contrib_update RLS); we record who reviewed and when.
+export async function moderateContribution(
+  id: string,
+  decision: "approved" | "rejected",
+): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("guest_contributions")
+    .update({ status: decision, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+function guestErrCode(msg: string): string {
+  if (/revoked/i.test(msg)) return "revoked";
+  if (/expired/i.test(msg)) return "expired";
+  if (/invalid/i.test(msg)) return "invalid";
+  if (/name/i.test(msg)) return "name";
+  return "generic";
+}
+
+// Account-less guest submission from the public /guest page. Goes through the
+// anon-executable definer RPC (0002), which validates the token's hash and
+// inserts a pending contribution — the guest never touches a table directly.
+// Errors are returned as short codes the guest form maps to its own language.
+export async function submitGuestContribution(input: {
+  token: string;
+  guestName: string;
+  title: string;
+  body: string;
+}): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: "generic" };
+  if (!input.guestName.trim()) return { error: "name" };
+  if (!input.body.trim() && !input.title.trim()) return { error: "empty" };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("submit_guest_contribution", {
+    p_token: input.token,
+    p_guest_name: input.guestName.trim(),
+    p_title: input.title.trim() || null,
+    p_body: input.body.trim() || null,
+  });
+  if (error) return { error: guestErrCode(error.message) };
+  return {};
+}
+
 // ---- comments ------------------------------------------------------
 export async function addComment(
   entryId: string,

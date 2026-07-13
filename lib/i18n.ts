@@ -56,6 +56,7 @@ const M = {
   "nav.settings": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
   "nav.security": { de: "Sicherheit & 2FA", en: "Security & 2FA", es: "Seguridad y 2FA" },
   "nav.letters": { de: "Briefe", en: "Letters", es: "Cartas" },
+  "nav.guests": { de: "Gäste-Beiträge", en: "Guest posts", es: "Aportes de invitados" },
 
   // settings hub
   "settings.eyebrow": { de: "Konto & App", en: "Account & app", es: "Cuenta y app" },
@@ -84,6 +85,11 @@ const M = {
     de: "Das komplette Tagebuch als ZIP sichern",
     en: "Back up the whole diary as a ZIP",
     es: "Copia de seguridad de todo el diario en ZIP",
+  },
+  "settings.guests_desc": {
+    de: "Großeltern & Paten per Ablauf-Link beitragen lassen",
+    en: "Let grandparents & godparents contribute via an expiring link",
+    es: "Deja que abuelos y padrinos aporten con un enlace temporal",
   },
 
   // home / timeline
@@ -735,6 +741,151 @@ const M = {
   },
   "letters.del_title": { de: "Brief löschen?", en: "Delete letter?", es: "¿Eliminar carta?" },
   "letters.del_body": { de: "Dieser Brief wird entfernt.", en: "This letter will be removed.", es: "Se eliminará esta carta." },
+
+  // guest write page (public, account-less, rendered in the invite's language)
+  "guest.eyebrow": { de: "Eine Erinnerung beitragen", en: "Share a memory", es: "Comparte un recuerdo" },
+  "guest.title": { de: "Schreib eine Erinnerung", en: "Write a memory", es: "Escribe un recuerdo" },
+  "guest.title_named": {
+    de: "Eine Erinnerung für {name}",
+    en: "A memory for {name}",
+    es: "Un recuerdo para {name}",
+  },
+  "guest.the_child": { de: "das Kind", en: "the child", es: "el niño" },
+  "guest.sub": {
+    de: "Du wurdest eingeladen, eine Erinnerung oder eine liebe Botschaft für {name} beizusteuern. Kein Konto nötig — dein Beitrag wird von den Eltern gesichtet.",
+    en: "You've been invited to add a memory or a kind message for {name}. No account needed — your note is reviewed by the parents.",
+    es: "Te han invitado a añadir un recuerdo o un mensaje cariñoso para {name}. Sin cuenta — tu aporte lo revisan los padres.",
+  },
+  "guest.name_label": { de: "Dein Name", en: "Your name", es: "Tu nombre" },
+  "guest.name_ph": { de: "z. B. Oma Ingrid", en: "e.g. Grandma Ingrid", es: "p. ej. Abuela Inés" },
+  "guest.title_label": { de: "Titel (optional)", en: "Title (optional)", es: "Título (opcional)" },
+  "guest.title_ph": { de: "z. B. Unser Tag im Zoo", en: "e.g. Our day at the zoo", es: "p. ej. Nuestro día en el zoo" },
+  "guest.body_label": { de: "Deine Erinnerung", en: "Your memory", es: "Tu recuerdo" },
+  "guest.body_ph": {
+    de: "Schreibe {name} etwas Schönes …",
+    en: "Write {name} something lovely …",
+    es: "Escribe a {name} algo bonito …",
+  },
+  "guest.send": { de: "Absenden", en: "Send", es: "Enviar" },
+  "guest.moderated_note": {
+    de: "Dein Beitrag erscheint erst nach Freigabe durch die Eltern.",
+    en: "Your note appears once a parent approves it.",
+    es: "Tu aporte aparece cuando un padre lo aprueba.",
+  },
+  "guest.thanks": { de: "Vielen Dank!", en: "Thank you!", es: "¡Gracias!" },
+  "guest.thanks_sub": {
+    de: "Deine Erinnerung wurde übermittelt und wartet auf die Freigabe.",
+    en: "Your memory has been submitted and is waiting for approval.",
+    es: "Tu recuerdo se ha enviado y espera aprobación.",
+  },
+  "guest.another": { de: "Noch eine schreiben", en: "Write another", es: "Escribir otro" },
+  "guest.err_name": { de: "Bitte gib deinen Namen an.", en: "Please enter your name.", es: "Introduce tu nombre." },
+  "guest.err_empty": {
+    de: "Bitte schreibe eine Erinnerung oder einen Titel.",
+    en: "Please write a memory or a title.",
+    es: "Escribe un recuerdo o un título.",
+  },
+  "guest.err_revoked": {
+    de: "Dieser Link wurde deaktiviert.",
+    en: "This link has been deactivated.",
+    es: "Este enlace se ha desactivado.",
+  },
+  "guest.err_expired": { de: "Dieser Link ist abgelaufen.", en: "This link has expired.", es: "Este enlace ha caducado." },
+  "guest.err_invalid": { de: "Dieser Link ist ungültig.", en: "This link is invalid.", es: "Este enlace no es válido." },
+  "guest.err_generic": {
+    de: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    en: "Something went wrong. Please try again.",
+    es: "Algo salió mal. Inténtalo de nuevo.",
+  },
+  "guest.dead_title": { de: "Link nicht verfügbar", en: "Link unavailable", es: "Enlace no disponible" },
+  "guest.dead_expired": {
+    de: "Dieser Einladungslink ist abgelaufen. Bitte die Eltern um einen neuen.",
+    en: "This invite link has expired. Ask the parents for a new one.",
+    es: "Este enlace de invitación ha caducado. Pide a los padres uno nuevo.",
+  },
+  "guest.dead_revoked": {
+    de: "Dieser Einladungslink wurde deaktiviert.",
+    en: "This invite link has been deactivated.",
+    es: "Este enlace de invitación se ha desactivado.",
+  },
+  "guest.dead_invalid": {
+    de: "Dieser Einladungslink ist ungültig. Bitte prüfe den Link.",
+    en: "This invite link isn't valid. Please check the link.",
+    es: "Este enlace de invitación no es válido. Comprueba el enlace.",
+  },
+
+  // guests admin page (parent-facing: create links + moderate contributions)
+  "guests.eyebrow": { de: "Familie & Freunde", en: "Family & friends", es: "Familia y amigos" },
+  "guests.title": { de: "Gäste-Beiträge", en: "Guest contributions", es: "Aportes de invitados" },
+  "guests.sub": {
+    de: "Lade Großeltern, Paten oder Freunde per Ablauf-Link ein, eine Erinnerung beizusteuern — ohne Konto. Jeder Beitrag wird von euch freigegeben.",
+    en: "Invite grandparents, godparents or friends to add a memory via an expiring link — no account. Every contribution is approved by you.",
+    es: "Invita a abuelos, padrinos o amigos a añadir un recuerdo con un enlace temporal — sin cuenta. Cada aporte lo aprobáis vosotros.",
+  },
+  "guests.create": { de: "Neuen Link erstellen", en: "Create a new link", es: "Crear un enlace nuevo" },
+  "guests.create_hint": {
+    de: "Der Link funktioniert nur bis zum Ablauf und kann jederzeit deaktiviert werden.",
+    en: "The link only works until it expires and can be deactivated any time.",
+    es: "El enlace solo funciona hasta que caduca y puede desactivarse cuando quieras.",
+  },
+  "guests.label_label": { de: "Für wen ist der Link?", en: "Who is the link for?", es: "¿Para quién es el enlace?" },
+  "guests.label_ph": { de: "z. B. Oma Ingrid", en: "e.g. Grandma Ingrid", es: "p. ej. Abuela Inés" },
+  "guests.msg_label": { de: "Persönliche Nachricht (optional)", en: "Personal message (optional)", es: "Mensaje personal (opcional)" },
+  "guests.msg_ph": {
+    de: "Wird dem Gast auf der Seite angezeigt …",
+    en: "Shown to the guest on the page …",
+    es: "Se muestra al invitado en la página …",
+  },
+  "guests.child_label": { de: "Für welches Kind?", en: "For which child?", es: "¿Para qué niño?" },
+  "guests.lang_label": { de: "Sprache der Gäste-Seite", en: "Guest page language", es: "Idioma de la página" },
+  "guests.expiry_label": { de: "Gültig für", en: "Valid for", es: "Válido durante" },
+  "guests.expiry_days": { de: "{n} Tage", en: "{n} days", es: "{n} días" },
+  "guests.create_btn": { de: "Link erstellen", en: "Create link", es: "Crear enlace" },
+  "guests.link_ready": {
+    de: "Fertig! Teile diesen Link — er wird nur einmal angezeigt:",
+    en: "Ready! Share this link — it's shown only once:",
+    es: "¡Listo! Comparte este enlace — solo se muestra una vez:",
+  },
+  "guests.share": { de: "Teilen", en: "Share", es: "Compartir" },
+  "guests.share_text": {
+    de: "Trag eine Erinnerung ins Tagebuch bei:",
+    en: "Add a memory to the diary:",
+    es: "Añade un recuerdo al diario:",
+  },
+  "guests.copy": { de: "Kopieren", en: "Copy", es: "Copiar" },
+  "guests.copied": { de: "Kopiert ✓", en: "Copied ✓", es: "Copiado ✓" },
+  "guests.err_create": {
+    de: "Der Link konnte nicht erstellt werden.",
+    en: "Couldn't create the link.",
+    es: "No se pudo crear el enlace.",
+  },
+  "guests.pending": {
+    de: "Wartet auf Freigabe ({n})",
+    en: "Waiting for approval ({n})",
+    es: "Esperando aprobación ({n})",
+  },
+  "guests.approve": { de: "Freigeben", en: "Approve", es: "Aprobar" },
+  "guests.reject": { de: "Ablehnen", en: "Reject", es: "Rechazar" },
+  "guests.wall": { de: "Freigegebene Beiträge", en: "Approved contributions", es: "Aportes aprobados" },
+  "guests.approved_by": { de: "freigegeben von {name}", en: "approved by {name}", es: "aprobado por {name}" },
+  "guests.a_parent": { de: "einem Elternteil", en: "a parent", es: "un progenitor" },
+  "guests.active_links": { de: "Aktive Links", en: "Active links", es: "Enlaces activos" },
+  "guests.unnamed_link": { de: "Gäste-Link", en: "Guest link", es: "Enlace de invitado" },
+  "guests.expires_on": { de: "Läuft ab am {date}", en: "Expires on {date}", es: "Caduca el {date}" },
+  "guests.used": { de: "schon genutzt", en: "already used", es: "ya usado" },
+  "guests.status_active": { de: "Aktiv", en: "Active", es: "Activo" },
+  "guests.revoke": { de: "Deaktivieren", en: "Deactivate", es: "Desactivar" },
+  "guests.revoke_title": { de: "Link deaktivieren?", en: "Deactivate link?", es: "¿Desactivar enlace?" },
+  "guests.revoke_body": {
+    de: "Der Link funktioniert danach nicht mehr. Bereits eingegangene Beiträge bleiben erhalten.",
+    en: "The link will stop working. Contributions already received are kept.",
+    es: "El enlace dejará de funcionar. Los aportes ya recibidos se conservan.",
+  },
+  "guests.empty": {
+    de: "Noch keine Links oder Beiträge. Erstelle oben den ersten Link.",
+    en: "No links or contributions yet. Create the first link above.",
+    es: "Aún no hay enlaces ni aportes. Crea el primer enlace arriba.",
+  },
 
   // export bundle (README + offline viewer + sidecars)
   "exp.note": {
