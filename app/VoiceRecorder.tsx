@@ -89,8 +89,19 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
       setMode("recording");
       setSecs(0);
       timerRef.current = setInterval(() => setSecs((s) => s + 1), 1000);
-    } catch {
-      setError("Mikrofon nicht verfügbar oder Zugriff verweigert.");
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : "";
+      let msg = "Mikrofon-Zugriff nicht möglich.";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        msg = "Mikrofon-Zugriff ist blockiert. Erlaube ihn über das Schloss-Symbol neben der Adresse (Mikrofon → Zulassen) und lade neu.";
+      } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+        msg = "Kein Mikrofon gefunden. Schließe eins an — oder nimm am Handy auf.";
+      } else if (name === "NotReadableError") {
+        msg = "Das Mikrofon wird gerade von einem anderen Programm benutzt. Schließe es und versuche es erneut.";
+      } else if (typeof window !== "undefined" && !window.isSecureContext) {
+        msg = "Aufnahme braucht eine sichere (HTTPS-)Verbindung.";
+      }
+      setError(msg);
       setMode("idle");
     }
   }
