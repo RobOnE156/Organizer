@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createEntryGetId, recordMedia } from "@/app/content-actions";
+import VoiceRecorder from "@/app/VoiceRecorder";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
 function todayISO(): string {
@@ -115,7 +116,7 @@ export default function EntryForm({
       </div>
 
       <div className="field">
-        <label>Fotos / Videos (optional)</label>
+        <label>Fotos / Videos / Audio (optional)</label>
         <div className="filedrop" onClick={() => inputRef.current?.click()}>
           ＋ Dateien wählen (mehrere möglich)
         </div>
@@ -130,6 +131,7 @@ export default function EntryForm({
             e.target.value = "";
           }}
         />
+        <VoiceRecorder onRecorded={(f) => setFiles((prev) => [...prev, f])} />
         {previews.length > 0 ? (
           <div className="filestrip">
             {previews.map((p, i) => (

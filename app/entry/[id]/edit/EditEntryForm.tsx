@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updateEntry, recordMedia, deleteMedia } from "@/app/content-actions";
+import VoiceRecorder from "@/app/VoiceRecorder";
 import { useConfirm } from "@/app/ConfirmProvider";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
@@ -179,7 +180,7 @@ export default function EditEntryForm({
           </p>
         )}
         <div className="filedrop" style={{ marginTop: 10 }} onClick={() => inputRef.current?.click()}>
-          ＋ Fotos/Videos hinzufügen (mehrere möglich)
+          ＋ Fotos/Videos/Audio hinzufügen (mehrere möglich)
         </div>
         <input
           ref={inputRef}
@@ -192,6 +193,7 @@ export default function EditEntryForm({
             e.target.value = "";
           }}
         />
+        <VoiceRecorder onRecorded={(f) => setFiles((prev) => [...prev, f])} />
         {previews.length > 0 ? (
           <div className="filestrip">
             {previews.map((p, i) => (
