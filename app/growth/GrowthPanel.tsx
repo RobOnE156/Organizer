@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addMeasurement, deleteMeasurement } from "@/app/content-actions";
+import { useConfirm } from "@/app/ConfirmProvider";
 import type { Measurement, MetricKind } from "@/lib/data";
 
 const METRICS: { key: MetricKind; label: string; unit: string }[] = [
@@ -64,6 +65,7 @@ export default function GrowthPanel({
   userId: string;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [metric, setMetric] = useState<MetricKind>("weight");
   const [value, setValue] = useState("");
   const [date, setDate] = useState(todayISO());
@@ -96,11 +98,12 @@ export default function GrowthPanel({
     });
   }
 
-  function onDelete(id: string) {
-    if (!window.confirm("Diese Messung löschen?")) return;
+  async function onDelete(id: string) {
+    const ok = await confirm({ title: "Messung löschen?", body: "Dieser Messwert wird entfernt.", danger: true });
+    if (!ok) return;
     start(async () => {
       const res = await deleteMeasurement(id);
-      if (res.error) window.alert(res.error);
+      if (res.error) setError(res.error);
       else router.refresh();
     });
   }

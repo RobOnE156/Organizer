@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updateEntry, recordMedia, deleteMedia } from "@/app/content-actions";
+import { useConfirm } from "@/app/ConfirmProvider";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
 export type ExistingMedia = { id: string; kind: string; url: string };
@@ -42,6 +43,7 @@ export default function EditEntryForm({
   placeSuggestions: string[];
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const inputRef = useRef<HTMLInputElement>(null);
   const [existing, setExisting] = useState<ExistingMedia[]>(existingMedia);
   const [files, setFiles] = useState<File[]>([]);
@@ -64,7 +66,12 @@ export default function EditEntryForm({
   }
 
   async function onRemoveExisting(id: string) {
-    if (!window.confirm("Dieses Medium wirklich entfernen? Es wird dauerhaft gelöscht.")) return;
+    const ok = await confirm({
+      title: "Medium entfernen?",
+      body: "Dieses Foto/Video wird dauerhaft gelöscht.",
+      danger: true,
+    });
+    if (!ok) return;
     setError(null);
     setRemovingId(id);
     const res = await deleteMedia(id);

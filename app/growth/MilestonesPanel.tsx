@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addMilestone, deleteMilestone } from "@/app/content-actions";
+import { useConfirm } from "@/app/ConfirmProvider";
 import type { Milestone } from "@/lib/data";
 
 const PRESETS = [
@@ -35,6 +36,7 @@ export default function MilestonesPanel({
   userId: string;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(todayISO());
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +62,12 @@ export default function MilestonesPanel({
     });
   }
 
-  function onDelete(id: string) {
-    if (!window.confirm("Diesen Meilenstein löschen?")) return;
+  async function onDelete(id: string) {
+    const ok = await confirm({ title: "Meilenstein löschen?", body: "Dieser Meilenstein wird entfernt.", danger: true });
+    if (!ok) return;
     start(async () => {
       const res = await deleteMilestone(id);
-      if (res.error) window.alert(res.error);
+      if (res.error) setError(res.error);
       else router.refresh();
     });
   }

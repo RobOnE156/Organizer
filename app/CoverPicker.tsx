@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { useConfirm } from "@/app/ConfirmProvider";
 
 type Cover = { key: string; url: string };
 
@@ -26,6 +27,7 @@ export default function CoverPicker({
   onSelect: (key: string) => void;
   onClose: () => void;
 }) {
+  const confirm = useConfirm();
   const [covers, setCovers] = useState<Cover[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -62,7 +64,12 @@ export default function CoverPicker({
 
   async function onDelete(key: string, e: React.MouseEvent) {
     e.stopPropagation();
-    if (!window.confirm("Dieses Titelbild dauerhaft löschen?")) return;
+    const ok = await confirm({
+      title: "Titelbild löschen?",
+      body: "Dieses Titelbild wird dauerhaft aus dem Speicher entfernt.",
+      danger: true,
+    });
+    if (!ok) return;
     setError(null);
     setDeleting(key);
     const supabase = createClient();

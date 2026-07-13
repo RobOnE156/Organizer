@@ -75,6 +75,8 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .btn:hover { border-color: var(--gold); }
 .btn-primary { background: var(--gold); color: #20160a; border-color: transparent; }
 .btn-primary:disabled { opacity: 0.6; cursor: default; }
+.btn-danger { background: var(--danger); color: #fff; border-color: transparent; }
+.btn-danger:hover { filter: brightness(1.05); border-color: transparent; }
 .err { color: var(--danger); font-size: 0.86rem; margin: 0; }
 .msg { color: var(--ink); font-size: 0.9rem; background: var(--surface-2); border: 1px solid var(--faint); border-radius: 11px; padding: 12px; }
 .muted { color: var(--muted); }
@@ -254,3 +256,9 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .galdel:hover:not(:disabled) { background: var(--danger); }
 .galnew { display: grid; place-items: center; aspect-ratio: 2.5 / 1; border: 1px dashed var(--faint); border-radius: 10px; background: var(--surface-2); color: var(--muted); cursor: pointer; font-size: 0.76rem; line-height: 1.25; text-align: center; }
 .galnew:hover { border-color: var(--gold); color: var(--ink); }
+
+/* in-app confirm dialog */
+.cfmwrap { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(8, 6, 10, 0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.cfmcard { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--faint); border-radius: 16px; padding: 22px; box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.7); }
+.cfmtitle { font-size: 1.1rem; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.01em; }
+.cfmbody { color: var(--muted); font-size: 0.9rem; margin: 0 0 18px; }
