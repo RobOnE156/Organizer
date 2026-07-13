@@ -5,7 +5,7 @@ import JSZip from "jszip";
 import { createClient } from "@/lib/supabase/client";
 import { ageLabel } from "@/lib/timeline";
 import { snapshotPrompts } from "@/lib/snapshot-prompts";
-import type { Child, ExportEntry, MemberProfile, Snapshot } from "@/lib/data";
+import type { Child, Comment, ExportEntry, MemberProfile, Snapshot } from "@/lib/data";
 import {
   buildIndexHtml,
   buildSidecar,
@@ -13,11 +13,22 @@ import {
   EXPORT_README,
   fileNameOf,
   slugify,
+  type ViewerComment,
   type ViewerEntry,
   type ViewerSnapshot,
 } from "@/lib/export-format";
 
 type ExportMedia = { entry_id: string; storage_key: string; kind: string; position: number };
+
+function fmtCommentDate(iso: string): string {
+  return new Date(iso).toLocaleString("de-DE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function ExportPanel({
   householdName,
@@ -26,6 +37,7 @@ export default function ExportPanel({
   media,
   authors,
   snapshots,
+  comments,
 }: {
   householdName: string;
   childList: Child[];
@@ -33,6 +45,7 @@ export default function ExportPanel({
   media: ExportMedia[];
   authors: Record<string, MemberProfile>;
   snapshots: Snapshot[];
+  comments: Comment[];
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -73,6 +86,19 @@ export default function ExportPanel({
       const childName = new Map(childList.map((c) => [c.id, c.name]));
       const authorOf = (id: string) => authors[id] ?? { name: "Elternteil", color: "#8a8a8a" };
 
+      const commentsByEntry = new Map<string, Comment[]>();
+      for (const c of comments) {
+        const arr = commentsByEntry.get(c.entry_id);
+        if (arr) arr.push(c);
+        else commentsByEntry.set(c.entry_id, [c]);
+      }
+      const viewerCommentsFor = (entryId: string): ViewerComment[] =>
+        (commentsByEntry.get(entryId) ?? []).map((c) => ({
+          author: authorOf(c.author_id).name,
+          date: fmtCommentDate(c.created_at),
+          text: c.body,
+        }));
+
       setStatus("Erstelle Tagebuch-Seite …");
       const viewerEntries: ViewerEntry[] = entries.map((e) => {
         const a = authorOf(e.author_id);
@@ -89,6 +115,7 @@ export default function ExportPanel({
           body: e.body,
           children: kids,
           media: ms,
+          comments: viewerCommentsFor(e.id),
         };
       });
 
@@ -96,7 +123,10 @@ export default function ExportPanel({
         const a = authorOf(e.author_id);
         const kids = e.child_ids.map((id) => childName.get(id)).filter((n): n is string => Boolean(n));
         const paths = (byEntry.get(e.id) ?? []).map(pathOf);
-        zip.file("entries/" + e.event_date + "-" + e.id.slice(0, 8) + ".md", buildSidecar(e, a.name, kids, paths));
+        zip.file(
+          "entries/" + e.event_date + "-" + e.id.slice(0, 8) + ".md",
+          buildSidecar(e, a.name, kids, paths, viewerCommentsFor(e.id)),
+        );
       }
 
       // snapshots ("who is <child> right now")

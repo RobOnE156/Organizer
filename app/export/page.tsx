@@ -3,6 +3,7 @@ import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   getChildren,
+  getCommentsForEntries,
   getEntriesForExport,
   getMediaForEntries,
   getMemberProfiles,
@@ -25,7 +26,9 @@ export default async function ExportPage() {
     getEntriesForExport(supabase, membership.household_id),
     getSnapshotsForExport(supabase, membership.household_id),
   ]);
-  const mediaRows = await getMediaForEntries(supabase, entries.map((e) => e.id));
+  const entryIds = entries.map((e) => e.id);
+  const mediaRows = await getMediaForEntries(supabase, entryIds);
+  const commentRows = await getCommentsForEntries(supabase, entryIds);
   const authors = await getMemberProfiles(supabase, membership.household_id);
 
   const { data: hh } = await supabase
@@ -59,6 +62,7 @@ export default async function ExportPage() {
         media={media}
         authors={authors}
         snapshots={snapshots}
+        comments={commentRows}
       />
       <p style={{ marginTop: 24 }}>
         <a href="/">← Zurück</a>

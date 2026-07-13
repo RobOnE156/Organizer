@@ -4,6 +4,8 @@
 
 export type ViewerMedia = { path: string; kind: string };
 
+export type ViewerComment = { author: string; date: string; text: string };
+
 export type ViewerEntry = {
   date: string;
   created_at: string;
@@ -15,6 +17,7 @@ export type ViewerEntry = {
   body: string | null;
   children: string[];
   media: ViewerMedia[];
+  comments: ViewerComment[];
 };
 
 export type SidecarEntry = {
@@ -50,6 +53,8 @@ const VIEWER_CSS = [
   ".grid{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:8px}",
   ".grid img,.grid video{width:100%;border-radius:12px;display:block;background:#000;max-height:340px;object-fit:cover}",
   ".grid audio{width:100%}.empty{color:var(--muted);text-align:center;padding:40px 0}",
+  ".vcmts{margin-top:10px;border-top:1px solid var(--faint);padding-top:8px}",
+  ".vcmt{font-size:.86rem;margin:0 0 8px;white-space:pre-wrap}.vcmt b{font-weight:700}.vcmt .t{color:var(--muted);font-size:.72rem}",
 ].join("\n");
 
 const VIEWER_JS = [
@@ -77,7 +82,8 @@ const VIEWER_JS = [
   "if(e.title){var h3=document.createElement('h3');h3.textContent=e.title;art.appendChild(h3);}",
   "if(e.place){var pl=document.createElement('p');pl.className='place';pl.textContent='📍 '+e.place;art.appendChild(pl);}",
   "if(e.media&&e.media.length){var g=document.createElement('div');g.className='grid';for(var q=0;q<e.media.length;q++){g.appendChild(mediaEl(e.media[q]));}art.appendChild(g);}",
-  "if(e.body){var p=document.createElement('p');p.className='body';p.textContent=e.body;art.appendChild(p);}return art;}",
+  "if(e.body){var p=document.createElement('p');p.className='body';p.textContent=e.body;art.appendChild(p);}",
+  "if(e.comments&&e.comments.length){var cc=document.createElement('div');cc.className='vcmts';for(var ci=0;ci<e.comments.length;ci++){var cm=e.comments[ci];var cp=document.createElement('p');cp.className='vcmt';var cb=document.createElement('b');cb.textContent=cm.author;cp.appendChild(cb);var ct=document.createElement('span');ct.className='t';ct.textContent=' · '+cm.date;cp.appendChild(ct);cp.appendChild(document.createElement('br'));cp.appendChild(document.createTextNode(cm.text));cc.appendChild(cp);}art.appendChild(cc);}return art;}",
   "function mediaEl(m){if(m.kind==='video'){var v=document.createElement('video');v.src=m.path;v.controls=true;v.preload='metadata';return v;}",
   "if(m.kind==='audio'){var a=document.createElement('audio');a.src=m.path;a.controls=true;return a;}",
   "var img=document.createElement('img');img.src=m.path;img.loading='lazy';img.alt='';return img;}",
@@ -117,6 +123,7 @@ export function buildSidecar(
   author: string,
   children: string[],
   mediaPaths: string[],
+  comments: ViewerComment[] = [],
 ): string {
   const lines: (string | null)[] = [
     "---",
@@ -132,6 +139,9 @@ export function buildSidecar(
     "",
     e.body ?? "",
     mediaPaths.length ? "\nMedien:\n" + mediaPaths.map((p) => "- " + p).join("\n") : null,
+    comments.length
+      ? "\n## Kommentare\n" + comments.map((c) => "- **" + c.author + "** (" + c.date + "): " + c.text).join("\n")
+      : null,
     "",
   ];
   return lines.filter((l): l is string => l !== null).join("\n");
