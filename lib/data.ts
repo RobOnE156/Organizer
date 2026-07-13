@@ -206,6 +206,17 @@ export async function getSnapshots(supabase: SupabaseClient, childId: string): P
   return (data as Snapshot[] | null) ?? [];
 }
 
+// All snapshots in the household (across children) — for the export.
+export async function getSnapshotsForExport(supabase: SupabaseClient, householdId: string): Promise<Snapshot[]> {
+  const { data } = await supabase
+    .from("snapshots")
+    .select("id, child_id, taken_on, answers, author_id")
+    .eq("household_id", householdId)
+    .is("deleted_at", null)
+    .order("taken_on", { ascending: false });
+  return (data as Snapshot[] | null) ?? [];
+}
+
 // user_id -> { display name, colour } for everyone in the household.
 export async function getMemberProfiles(
   supabase: SupabaseClient,

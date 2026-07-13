@@ -5,19 +5,8 @@ import { useRouter } from "next/navigation";
 import { addSnapshot, updateSnapshot, deleteSnapshot } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
 import { ageLabel, fmtDate } from "@/lib/timeline";
+import { snapshotPrompts } from "@/lib/snapshot-prompts";
 import type { Snapshot } from "@/lib/data";
-
-function prompts(name: string) {
-  return [
-    { key: "food", label: "Lieblingsessen", ph: "z. B. Nudeln mit Tomatensoße" },
-    { key: "toy", label: "Lieblingsspielzeug", ph: "z. B. der rote Bagger" },
-    { key: "word", label: "Lieblingswort / Lieblingsspruch", ph: "z. B. „Nochmal!“" },
-    { key: "saying", label: "Lustigster Spruch (Kindermund)", ph: `Was hat ${name} Lustiges gesagt?` },
-    { key: "obsession", label: "Aktuelle Obsession", ph: `Wofür interessiert sich ${name} gerade total?` },
-    { key: "loves", label: "Liebt gerade", ph: "Menschen, Tiere, Orte, Aktivitäten …" },
-    { key: "laugh", label: `Was bringt ${name} zum Lachen?`, ph: "" },
-  ];
-}
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -38,7 +27,7 @@ export default function SnapshotPanel({
 }) {
   const router = useRouter();
   const confirm = useConfirm();
-  const PROMPTS = prompts(childName);
+  const PROMPTS = snapshotPrompts(childName);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [takenOn, setTakenOn] = useState(todayISO());
   const [values, setValues] = useState<Record<string, string>>({});
@@ -122,7 +111,7 @@ export default function SnapshotPanel({
             <textarea
               id={"snap_" + p.key}
               rows={2}
-              placeholder={p.ph}
+              placeholder={p.placeholder}
               value={values[p.key] ?? ""}
               onChange={(e) => setValues((v) => ({ ...v, [p.key]: e.target.value }))}
             />
@@ -138,7 +127,7 @@ export default function SnapshotPanel({
       </form>
 
       {snapshots.length > 0 ? (
-        <div style={{ marginTop: 16, maxWidth: 560 }}>
+        <div className="snaptl" style={{ marginTop: 18, maxWidth: 560 }}>
           {snapshots.map((s) => {
             const age = ageLabel(birthDate, s.taken_on);
             return (

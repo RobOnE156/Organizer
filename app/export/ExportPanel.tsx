@@ -3,14 +3,18 @@
 import { useState } from "react";
 import JSZip from "jszip";
 import { createClient } from "@/lib/supabase/client";
-import type { Child, ExportEntry, MemberProfile } from "@/lib/data";
+import { ageLabel } from "@/lib/timeline";
+import { snapshotPrompts } from "@/lib/snapshot-prompts";
+import type { Child, ExportEntry, MemberProfile, Snapshot } from "@/lib/data";
 import {
   buildIndexHtml,
   buildSidecar,
+  buildSnapshotSidecar,
   EXPORT_README,
   fileNameOf,
   slugify,
   type ViewerEntry,
+  type ViewerSnapshot,
 } from "@/lib/export-format";
 
 type ExportMedia = { entry_id: string; storage_key: string; kind: string; position: number };
@@ -21,12 +25,14 @@ export default function ExportPanel({
   entries,
   media,
   authors,
+  snapshots,
 }: {
   householdName: string;
   childList: Child[];
   entries: ExportEntry[];
   media: ExportMedia[];
   authors: Record<string, MemberProfile>;
+  snapshots: Snapshot[];
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -93,6 +99,24 @@ export default function ExportPanel({
         zip.file("entries/" + e.event_date + "-" + e.id.slice(0, 8) + ".md", buildSidecar(e, a.name, kids, paths));
       }
 
+      // snapshots ("who is <child> right now")
+      const childById = new Map(childList.map((c) => [c.id, c]));
+      const viewerSnapshots: ViewerSnapshot[] = [];
+      for (const s of snapshots) {
+        const child = childById.get(s.child_id);
+        const cname = child?.name ?? "Kind";
+        const items = snapshotPrompts(cname)
+          .filter((p) => (s.answers[p.key] ?? "").trim())
+          .map((p) => ({ label: p.label, value: s.answers[p.key] as string }));
+        if (items.length === 0) continue;
+        const age = ageLabel(child?.birth_date ?? null, s.taken_on);
+        viewerSnapshots.push({ date: s.taken_on, child: cname, age, items });
+        zip.file("snapshots/" + s.taken_on + "-" + s.id.slice(0, 8) + ".md", buildSnapshotSidecar(s.taken_on, cname, age, items));
+      }
+      if (viewerSnapshots.length > 0) {
+        zip.file("snapshots.json", JSON.stringify({ snapshots: viewerSnapshots }, null, 2));
+      }
+
       zip.file(
         "entries.json",
         JSON.stringify(
@@ -101,7 +125,7 @@ export default function ExportPanel({
           2,
         ),
       );
-      zip.file("index.html", buildIndexHtml(householdName, viewerEntries));
+      zip.file("index.html", buildIndexHtml(householdName, viewerEntries, viewerSnapshots));
       zip.file("README.txt", EXPORT_README);
 
       // 3) zip it up and hand the file to the browser

@@ -26,6 +26,13 @@ export type SidecarEntry = {
   body: string | null;
 };
 
+export type ViewerSnapshot = {
+  date: string;
+  child: string;
+  age: string;
+  items: { label: string; value: string }[];
+};
+
 // Written without template literals so they nest cleanly inside the HTML string.
 const VIEWER_CSS = [
   ":root{--bg:#faf8fb;--surface:#fff;--ink:#241f29;--muted:#7d7684;--gold:#c99a3f;--faint:rgba(0,0,0,.09)}",
@@ -58,6 +65,9 @@ const VIEWER_JS = [
   "var h2=document.createElement('h2');h2.className='month';h2.textContent=mfmt.format(new Date(kk+'-01T00:00:00'));sec.appendChild(h2);",
   "var list=months[kk];list.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.created_at<b.created_at?1:-1);});",
   "for(var m=0;m<list.length;m++){sec.appendChild(card(list[m]));}tl.appendChild(sec);}",
+  "if(typeof SNAPSHOTS!=='undefined'&&SNAPSHOTS.length){var sh=document.createElement('h2');sh.className='month';sh.textContent='Schnappschüsse';tl.appendChild(sh);for(var si=0;si<SNAPSHOTS.length;si++){tl.appendChild(snapCard(SNAPSHOTS[si]));}}",
+  "function snapCard(s){var art=document.createElement('article');art.className='entry';var meta=document.createElement('div');meta.className='meta';var nm=document.createElement('span');nm.className='nm';nm.textContent=s.date+(s.age?(' · '+s.child+' mit '+s.age):'');meta.appendChild(nm);art.appendChild(meta);",
+  "for(var i=0;i<s.items.length;i++){var it=s.items[i];var k=document.createElement('p');k.className='place';k.textContent=it.label;art.appendChild(k);var v=document.createElement('p');v.className='body';v.style.marginTop='2px';v.textContent=it.value;art.appendChild(v);}return art;}",
   "function card(e){var art=document.createElement('article');art.className='entry';",
   "var meta=document.createElement('div');meta.className='meta';",
   "var dot=document.createElement('span');dot.className='dot';dot.style.background=e.color||'#999';dot.textContent=(e.author||'?').slice(0,1).toUpperCase();",
@@ -73,8 +83,9 @@ const VIEWER_JS = [
   "var img=document.createElement('img');img.src=m.path;img.loading='lazy';img.alt='';return img;}",
 ].join("\n");
 
-export function buildIndexHtml(title: string, entries: ViewerEntry[]): string {
+export function buildIndexHtml(title: string, entries: ViewerEntry[], snapshots: ViewerSnapshot[] = []): string {
   const json = JSON.stringify(entries).replace(/</g, "\\u003c");
+  const snapJson = JSON.stringify(snapshots).replace(/</g, "\\u003c");
   return [
     "<!doctype html>",
     '<html lang="de">',
@@ -90,6 +101,7 @@ export function buildIndexHtml(title: string, entries: ViewerEntry[]): string {
     "<script>",
     "var TITLE=" + JSON.stringify(title) + ";",
     "var ENTRIES=" + json + ";",
+    "var SNAPSHOTS=" + snapJson + ";",
     VIEWER_JS,
     "</" + "script>",
     "</body></html>",
@@ -125,6 +137,26 @@ export function buildSidecar(
   return lines.filter((l): l is string => l !== null).join("\n");
 }
 
+export function buildSnapshotSidecar(
+  date: string,
+  child: string,
+  age: string,
+  items: { label: string; value: string }[],
+): string {
+  const lines: (string | null)[] = [
+    "---",
+    "date: " + date,
+    "child: " + yaml(child),
+    age ? "age: " + yaml(age) : null,
+    "---",
+    "",
+    "# Wer ist " + child + " gerade? (" + date + ")",
+    "",
+    ...items.map((it) => "**" + it.label + "**\n" + it.value + "\n"),
+  ];
+  return lines.filter((l): l is string => l !== null).join("\n");
+}
+
 export const EXPORT_README =
   "Benni-Tagebuch — Offline-Sicherung\n\n" +
   "So öffnest du dein Tagebuch:\n" +
@@ -135,6 +167,7 @@ export const EXPORT_README =
   "- index.html   : dein Tagebuch als Webseite, in jedem Browser lesbar.\n" +
   "- media/       : alle Original-Fotos, -Videos und -Audios.\n" +
   "- entries/     : jeder Eintrag als einzelne Textdatei (Markdown, offen lesbar).\n" +
+  "- snapshots/   : die „Wer ist … gerade?\"-Schnappschüsse als Textdateien.\n" +
   "- entries.json : alle Einträge als strukturierte Daten.\n\n" +
   "Tipp: Bewahre mindestens zwei Kopien an verschiedenen Orten auf\n" +
   "(z. B. Computer + externe Festplatte oder ein zweiter Cloud-Speicher).\n";

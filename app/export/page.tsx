@@ -1,7 +1,13 @@
 import { redirect } from "next/navigation";
 import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getChildren, getEntriesForExport, getMediaForEntries, getMemberProfiles } from "@/lib/data";
+import {
+  getChildren,
+  getEntriesForExport,
+  getMediaForEntries,
+  getMemberProfiles,
+  getSnapshotsForExport,
+} from "@/lib/data";
 import ExportPanel from "./ExportPanel";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +20,10 @@ export default async function ExportPage() {
   if (!membership) redirect("/onboarding");
 
   const supabase = await createClient();
-  const [children, entries] = await Promise.all([
+  const [children, entries, snapshots] = await Promise.all([
     getChildren(supabase, membership.household_id),
     getEntriesForExport(supabase, membership.household_id),
+    getSnapshotsForExport(supabase, membership.household_id),
   ]);
   const mediaRows = await getMediaForEntries(supabase, entries.map((e) => e.id));
   const authors = await getMemberProfiles(supabase, membership.household_id);
@@ -51,6 +58,7 @@ export default async function ExportPage() {
         entries={entries}
         media={media}
         authors={authors}
+        snapshots={snapshots}
       />
       <p style={{ marginTop: 24 }}>
         <a href="/">← Zurück</a>
