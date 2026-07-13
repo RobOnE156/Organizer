@@ -308,6 +308,96 @@ const M = {
     en: "For lots of or large videos, it’s best to run the export on a computer. The file is created locally on your device — no data is sent to third parties.",
     es: "Con muchos vídeos o vídeos grandes, es mejor exportar desde un ordenador. El archivo se crea localmente en tu dispositivo — no se envían datos a terceros.",
   },
+
+  // common form words
+  "common.date": { de: "Datum", en: "Date", es: "Fecha" },
+  "common.add": { de: "Hinzufügen", en: "Add", es: "Añadir" },
+  "common.delete": { de: "Löschen", en: "Delete", es: "Eliminar" },
+  "common.edit": { de: "Bearbeiten", en: "Edit", es: "Editar" },
+  "common.back_short": { de: "← Zurück", en: "← Back", es: "← Volver" },
+
+  // growth page
+  "growth.title": {
+    de: "Schnappschuss, Wachstum & Meilensteine",
+    en: "Snapshot, growth & milestones",
+    es: "Instantánea, crecimiento e hitos",
+  },
+  "growth.sub": {
+    de: "Wer ist {name} gerade — und wie wächst und entwickelt er sich.",
+    en: "Who {name} is right now — and how they grow and develop.",
+    es: "Quién es {name} ahora — y cómo crece y se desarrolla.",
+  },
+  "growth.head_growth": { de: "Wachstum", en: "Growth", es: "Crecimiento" },
+  "growth.head_milestones": { de: "Meilensteine", en: "Milestones", es: "Hitos" },
+
+  // metrics
+  "metric.weight": { de: "Gewicht", en: "Weight", es: "Peso" },
+  "metric.height": { de: "Größe", en: "Height", es: "Estatura" },
+  "metric.head": { de: "Kopfumfang", en: "Head circumference", es: "Perímetro cefálico" },
+  "growth.no_measure": {
+    de: "Noch keine Messungen — trage unten die erste ein.",
+    en: "No measurements yet — add the first one below.",
+    es: "Aún no hay mediciones — añade la primera abajo.",
+  },
+  "growth.chart_aria": { de: "Verlaufskurve", en: "Trend curve", es: "Curva de evolución" },
+  "growth.invalid_value": { de: "Bitte einen gültigen Wert eingeben.", en: "Please enter a valid value.", es: "Introduce un valor válido." },
+  "growth.del_measure_title": { de: "Messung löschen?", en: "Delete measurement?", es: "¿Eliminar medición?" },
+  "growth.del_measure_body": { de: "Dieser Messwert wird entfernt.", en: "This value will be removed.", es: "Se eliminará este valor." },
+  "growth.ph_weight": { de: "z. B. 7,4", en: "e.g. 7.4", es: "p. ej. 7,4" },
+  "growth.ph_other": { de: "z. B. 68", en: "e.g. 68", es: "p. ej. 68" },
+  "growth.who_hint": {
+    de: "Nur {name}s eigene Werte — WHO-Perzentilkurven kommen später.",
+    en: "Only {name}’s own values — WHO percentile curves coming later.",
+    es: "Solo los valores de {name} — las curvas de percentiles de la OMS llegarán más adelante.",
+  },
+
+  // milestones
+  "ms.smile": { de: "Erstes Lächeln", en: "First smile", es: "Primera sonrisa" },
+  "ms.slept": { de: "Zum ersten Mal durchgeschlafen", en: "First time sleeping through", es: "Primera vez durmiendo toda la noche" },
+  "ms.tooth": { de: "Erster Zahn", en: "First tooth", es: "Primer diente" },
+  "ms.roll": { de: "Erstes Umdrehen", en: "First roll-over", es: "Primera vez que se dio la vuelta" },
+  "ms.sit": { de: "Erstes Sitzen", en: "First sitting up", es: "Primera vez sentado" },
+  "ms.crawl": { de: "Erstes Krabbeln", en: "First crawling", es: "Primer gateo" },
+  "ms.word": { de: "Erstes Wort", en: "First word", es: "Primera palabra" },
+  "ms.steps": { de: "Erste Schritte", en: "First steps", es: "Primeros pasos" },
+  "ms.no_date": { de: "ohne Datum", en: "no date", es: "sin fecha" },
+  "ms.need_title": { de: "Bitte einen Titel eingeben.", en: "Please enter a title.", es: "Introduce un título." },
+  "ms.del_title": { de: "Meilenstein löschen?", en: "Delete milestone?", es: "¿Eliminar hito?" },
+  "ms.del_body": { de: "Dieser Meilenstein wird entfernt.", en: "This milestone will be removed.", es: "Se eliminará este hito." },
+  "ms.label": { de: "Meilenstein", en: "Milestone", es: "Hito" },
+  "ms.ph": { de: "z. B. Erstes Wort", en: "e.g. First word", es: "p. ej. Primera palabra" },
+  "ms.save": { de: "Merken", en: "Save", es: "Guardar" },
+  "ms.empty": { de: "Noch keine Meilensteine festgehalten.", en: "No milestones recorded yet.", es: "Aún no hay hitos registrados." },
+
+  // snapshot panel
+  "snap.who": { de: "Wer ist {name} gerade?", en: "Who is {name} right now?", es: "¿Quién es {name} ahora?" },
+  "snap.edit": { de: "Schnappschuss bearbeiten", en: "Edit snapshot", es: "Editar instantánea" },
+  "snap.new": { de: "Neu", en: "New", es: "Nuevo" },
+  "snap.sub": {
+    de: "Ein kleiner Steckbrief für diesen Moment — fülle aus, was gerade passt. Später wird daraus eine schöne Sammlung.",
+    en: "A little profile of this moment — fill in whatever fits right now. Over time it becomes a lovely collection.",
+    es: "Un pequeño perfil de este momento — rellena lo que encaje ahora. Con el tiempo se convierte en una bonita colección.",
+  },
+  "snap.need_one": { de: "Bitte mindestens ein Feld ausfüllen.", en: "Please fill in at least one field.", es: "Rellena al menos un campo." },
+  "snap.del_title": { de: "Schnappschuss löschen?", en: "Delete snapshot?", es: "¿Eliminar instantánea?" },
+  "snap.del_body": { de: "Diese Momentaufnahme wird entfernt.", en: "This snapshot will be removed.", es: "Se eliminará esta instantánea." },
+  "snap.with_age": { de: "{name} mit {age}", en: "{name} at {age}", es: "{name} con {age}" },
+  "snap.save": { de: "Schnappschuss sichern", en: "Save snapshot", es: "Guardar instantánea" },
+
+  // snapshot prompt labels + placeholders
+  "sp.food.l": { de: "Lieblingsessen", en: "Favourite food", es: "Comida favorita" },
+  "sp.food.p": { de: "z. B. Nudeln mit Tomatensoße", en: "e.g. pasta with tomato sauce", es: "p. ej. pasta con tomate" },
+  "sp.toy.l": { de: "Lieblingsspielzeug", en: "Favourite toy", es: "Juguete favorito" },
+  "sp.toy.p": { de: "z. B. der rote Bagger", en: "e.g. the red digger", es: "p. ej. la excavadora roja" },
+  "sp.word.l": { de: "Lieblingswort / Lieblingsspruch", en: "Favourite word or phrase", es: "Palabra o frase favorita" },
+  "sp.word.p": { de: "z. B. „Nochmal!“", en: "e.g. “Again!”", es: "p. ej. «¡Otra vez!»" },
+  "sp.saying.l": { de: "Lustigster Spruch (Kindermund)", en: "Funniest thing said", es: "Lo más gracioso que dijo" },
+  "sp.saying.p": { de: "Was hat {name} Lustiges gesagt?", en: "What funny thing did {name} say?", es: "¿Qué cosa graciosa dijo {name}?" },
+  "sp.obsession.l": { de: "Aktuelle Obsession", en: "Current obsession", es: "Obsesión actual" },
+  "sp.obsession.p": { de: "Wofür interessiert sich {name} gerade total?", en: "What is {name} totally into right now?", es: "¿Qué le apasiona a {name} ahora?" },
+  "sp.loves.l": { de: "Liebt gerade", en: "Loves right now", es: "Le encanta ahora" },
+  "sp.loves.p": { de: "Menschen, Tiere, Orte, Aktivitäten …", en: "People, animals, places, activities …", es: "Personas, animales, lugares, actividades …" },
+  "sp.laugh.l": { de: "Was bringt {name} zum Lachen?", en: "What makes {name} laugh?", es: "¿Qué hace reír a {name}?" },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

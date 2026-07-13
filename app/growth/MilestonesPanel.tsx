@@ -4,26 +4,22 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addMilestone, deleteMilestone } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
+import { useT } from "@/app/LanguageProvider";
 import type { Milestone } from "@/lib/data";
 
-const PRESETS = [
-  "Erstes Lächeln",
-  "Zum ersten Mal durchgeschlafen",
-  "Erster Zahn",
-  "Erstes Umdrehen",
-  "Erstes Sitzen",
-  "Erstes Krabbeln",
-  "Erstes Wort",
-  "Erste Schritte",
-];
+const PRESET_KEYS = [
+  "ms.smile",
+  "ms.slept",
+  "ms.tooth",
+  "ms.roll",
+  "ms.sit",
+  "ms.crawl",
+  "ms.word",
+  "ms.steps",
+] as const;
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function fmtDate(d: string | null): string {
-  if (!d) return "ohne Datum";
-  return new Date(d + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 export default function MilestonesPanel({
@@ -37,22 +33,27 @@ export default function MilestonesPanel({
 }) {
   const router = useRouter();
   const confirm = useConfirm();
+  const { t } = useT();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(todayISO());
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const used = new Set(milestones.map((m) => m.title));
-  const remainingPresets = PRESETS.filter((p) => !used.has(p));
+  const fmtDate = (d: string | null): string =>
+    d ? new Date(d + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }) : t("ms.no_date");
 
-  function add(t: string, key: string) {
+  const presets = PRESET_KEYS.map((k) => t(k));
+  const used = new Set(milestones.map((m) => m.title));
+  const remainingPresets = presets.filter((p) => !used.has(p));
+
+  function add(value: string, key: string) {
     setError(null);
-    if (!t.trim()) {
-      setError("Bitte einen Titel eingeben.");
+    if (!value.trim()) {
+      setError(t("ms.need_title"));
       return;
     }
     start(async () => {
-      const res = await addMilestone({ childId, title: t, achievedOn: date, key });
+      const res = await addMilestone({ childId, title: value, achievedOn: date, key });
       if (res.error) {
         setError(res.error);
         return;
@@ -63,7 +64,7 @@ export default function MilestonesPanel({
   }
 
   async function onDelete(id: string) {
-    const ok = await confirm({ title: "Meilenstein löschen?", body: "Dieser Meilenstein wird entfernt.", danger: true });
+    const ok = await confirm({ title: t("ms.del_title"), body: t("ms.del_body"), danger: true });
     if (!ok) return;
     start(async () => {
       const res = await deleteMilestone(id);
@@ -89,18 +90,18 @@ export default function MilestonesPanel({
         style={{ alignItems: "flex-end", gap: 10 }}
         onSubmit={(e) => {
           e.preventDefault();
-          add(title, PRESETS.includes(title) ? "preset" : "custom");
+          add(title, presets.includes(title) ? "preset" : "custom");
         }}
       >
         <div className="field" style={{ flex: "1 1 180px" }}>
-          <label htmlFor="mtitle">Meilenstein</label>
-          <input id="mtitle" type="text" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Erstes Wort" />
+          <label htmlFor="mtitle">{t("ms.label")}</label>
+          <input id="mtitle" type="text" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("ms.ph")} />
         </div>
         <div className="field" style={{ flex: "1 1 130px" }}>
-          <label htmlFor="mdate2">Datum</label>
+          <label htmlFor="mdate2">{t("common.date")}</label>
           <input id="mdate2" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
-        <button className="btn btn-primary" disabled={pending}>{pending ? "…" : "Merken"}</button>
+        <button className="btn btn-primary" disabled={pending}>{pending ? "…" : t("ms.save")}</button>
       </form>
       {error ? <p className="err">{error}</p> : null}
 
@@ -116,7 +117,7 @@ export default function MilestonesPanel({
                   <small className="muted"> · {fmtDate(m.achieved_on)}</small>
                 </span>
                 {m.author_id === userId ? (
-                  <button type="button" className="mx" aria-label="Löschen" onClick={() => onDelete(m.id)} disabled={pending}>
+                  <button type="button" className="mx" aria-label={t("common.delete")} onClick={() => onDelete(m.id)} disabled={pending}>
                     ✕
                   </button>
                 ) : null}
@@ -124,7 +125,7 @@ export default function MilestonesPanel({
             ))}
         </ul>
       ) : (
-        <p className="muted" style={{ fontSize: ".85rem", margin: 0 }}>Noch keine Meilensteine festgehalten.</p>
+        <p className="muted" style={{ fontSize: ".85rem", margin: 0 }}>{t("ms.empty")}</p>
       )}
     </section>
   );

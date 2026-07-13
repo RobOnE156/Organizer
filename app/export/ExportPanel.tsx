@@ -57,7 +57,7 @@ export default function ExportPanel({
   commentReactions: CommentReaction[];
   highlightedIds: string[];
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -204,7 +204,7 @@ export default function ExportPanel({
       for (const s of snapshots) {
         const child = childById.get(s.child_id);
         const cname = child?.name ?? "Kind";
-        const items = snapshotPrompts(cname)
+        const items = snapshotPrompts(cname, lang)
           .filter((p) => (s.answers[p.key] ?? "").trim())
           .map((p) => ({ label: p.label, value: s.answers[p.key] as string }));
         if (items.length === 0) continue;

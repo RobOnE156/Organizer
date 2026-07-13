@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getChildren, getMeasurements, getMilestones, getSnapshots } from "@/lib/data";
+import { getChildren, getMeasurements, getMilestones, getSnapshots, getShellPrefs } from "@/lib/data";
+import { translator } from "@/lib/i18n";
 import GrowthPanel from "./GrowthPanel";
 import MilestonesPanel from "./MilestonesPanel";
 import SnapshotPanel from "./SnapshotPanel";
@@ -16,6 +17,7 @@ export default async function GrowthPage() {
   if (!membership) redirect("/onboarding");
 
   const supabase = await createClient();
+  const t = translator((await getShellPrefs(supabase, user.id)).lang);
   const children = await getChildren(supabase, membership.household_id);
   const child = children[0];
   if (!child) redirect("/children/new");
@@ -28,11 +30,11 @@ export default async function GrowthPage() {
 
   return (
     <main className="page">
-      <p className="eyebrow">Über {child.name}</p>
-      <h1 className="title">Schnappschuss, Wachstum &amp; Meilensteine</h1>
-      <p className="sub">Wer ist {child.name} gerade — und wie wächst und entwickelt er sich.</p>
+      <p className="eyebrow">{t("nav.about", { name: child.name })}</p>
+      <h1 className="title">{t("growth.title")}</h1>
+      <p className="sub">{t("growth.sub", { name: child.name })}</p>
 
-      <h2 style={{ fontSize: "1.05rem", margin: "22px 0 8px" }}>„Wer ist {child.name} gerade?"</h2>
+      <h2 style={{ fontSize: "1.05rem", margin: "22px 0 8px" }}>{t("snap.who", { name: child.name })}</h2>
       <SnapshotPanel
         childId={child.id}
         childName={child.name}
@@ -41,14 +43,14 @@ export default async function GrowthPage() {
         userId={user.id}
       />
 
-      <h2 style={{ fontSize: "1.05rem", margin: "34px 0 8px" }}>Wachstum</h2>
+      <h2 style={{ fontSize: "1.05rem", margin: "34px 0 8px" }}>{t("growth.head_growth")}</h2>
       <GrowthPanel childId={child.id} childName={child.name} measurements={measurements} userId={user.id} />
 
-      <h2 style={{ fontSize: "1.05rem", margin: "34px 0 8px" }}>Meilensteine</h2>
+      <h2 style={{ fontSize: "1.05rem", margin: "34px 0 8px" }}>{t("growth.head_milestones")}</h2>
       <MilestonesPanel childId={child.id} milestones={milestones} userId={user.id} />
 
       <p style={{ marginTop: 28 }}>
-        <a href="/">← Zurück</a>
+        <a href="/">{t("common.back")}</a>
       </p>
     </main>
   );

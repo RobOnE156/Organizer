@@ -4,13 +4,15 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addMeasurement, deleteMeasurement } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
+import { useT } from "@/app/LanguageProvider";
 import type { Measurement, MetricKind } from "@/lib/data";
 
-const METRICS: { key: MetricKind; label: string; unit: string }[] = [
-  { key: "weight", label: "Gewicht", unit: "kg" },
-  { key: "height", label: "Größe", unit: "cm" },
-  { key: "head", label: "Kopfumfang", unit: "cm" },
+const METRICS: { key: MetricKind; unit: string }[] = [
+  { key: "weight", unit: "kg" },
+  { key: "height", unit: "cm" },
+  { key: "head", unit: "cm" },
 ];
+const METRIC_KEY = { weight: "metric.weight", height: "metric.height", head: "metric.head" } as const;
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -21,8 +23,9 @@ function fmtDate(d: string): string {
 }
 
 function Chart({ points }: { points: { y: number }[] }) {
+  const { t } = useT();
   if (points.length === 0) {
-    return <p className="muted" style={{ fontSize: ".85rem", margin: "6px 0 0" }}>Noch keine Messungen — trage unten die erste ein.</p>;
+    return <p className="muted" style={{ fontSize: ".85rem", margin: "6px 0 0" }}>{t("growth.no_measure")}</p>;
   }
   const W = 320;
   const H = 150;
@@ -42,7 +45,7 @@ function Chart({ points }: { points: { y: number }[] }) {
   const py = (y: number) => H - padB - ((y - minY) / spanY) * (H - padB - padT);
   const poly = points.map((p, i) => px(i).toFixed(1) + "," + py(p.y).toFixed(1)).join(" ");
   return (
-    <svg viewBox={"0 0 " + W + " " + H} className="chart" role="img" aria-label="Verlaufskurve">
+    <svg viewBox={"0 0 " + W + " " + H} className="chart" role="img" aria-label={t("growth.chart_aria")}>
       <text x="2" y={py(maxY) + 4} className="cax">{maxY.toFixed(1)}</text>
       <text x="2" y={py(minY) + 4} className="cax">{minY.toFixed(1)}</text>
       {points.length > 1 ? <polyline points={poly} className="cline" fill="none" /> : null}
@@ -66,6 +69,7 @@ export default function GrowthPanel({
 }) {
   const router = useRouter();
   const confirm = useConfirm();
+  const { t } = useT();
   const [metric, setMetric] = useState<MetricKind>("weight");
   const [value, setValue] = useState("");
   const [date, setDate] = useState(todayISO());
@@ -84,7 +88,7 @@ export default function GrowthPanel({
     setError(null);
     const v = parseFloat(value.replace(",", "."));
     if (!Number.isFinite(v) || v <= 0) {
-      setError("Bitte einen gültigen Wert eingeben.");
+      setError(t("growth.invalid_value"));
       return;
     }
     start(async () => {
@@ -99,7 +103,7 @@ export default function GrowthPanel({
   }
 
   async function onDelete(id: string) {
-    const ok = await confirm({ title: "Messung löschen?", body: "Dieser Messwert wird entfernt.", danger: true });
+    const ok = await confirm({ title: t("growth.del_measure_title"), body: t("growth.del_measure_body"), danger: true });
     if (!ok) return;
     start(async () => {
       const res = await deleteMeasurement(id);
@@ -118,7 +122,7 @@ export default function GrowthPanel({
             className={"tab" + (m.key === metric ? " active" : "")}
             onClick={() => setMetric(m.key)}
           >
-            {m.label}
+            {t(METRIC_KEY[m.key])}
           </button>
         ))}
       </div>
@@ -127,21 +131,21 @@ export default function GrowthPanel({
 
       <form className="row" onSubmit={onAdd} style={{ alignItems: "flex-end", gap: 10 }}>
         <div className="field" style={{ flex: "1 1 110px" }}>
-          <label htmlFor="mval">{active.label} ({active.unit})</label>
+          <label htmlFor="mval">{t(METRIC_KEY[active.key])} ({active.unit})</label>
           <input
             id="mval"
             type="text"
             inputMode="decimal"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder={active.key === "weight" ? "z. B. 7,4" : "z. B. 68"}
+            placeholder={active.key === "weight" ? t("growth.ph_weight") : t("growth.ph_other")}
           />
         </div>
         <div className="field" style={{ flex: "1 1 130px" }}>
-          <label htmlFor="mdate">Datum</label>
+          <label htmlFor="mdate">{t("common.date")}</label>
           <input id="mdate" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
-        <button className="btn btn-primary" disabled={pending}>{pending ? "…" : "Hinzufügen"}</button>
+        <button className="btn btn-primary" disabled={pending}>{pending ? "…" : t("common.add")}</button>
       </form>
       {error ? <p className="err">{error}</p> : null}
 
@@ -159,7 +163,7 @@ export default function GrowthPanel({
                   <small className="muted"> · {fmtDate(m.measured_on)}</small>
                 </span>
                 {m.author_id === userId ? (
-                  <button type="button" className="mx" aria-label="Löschen" onClick={() => onDelete(m.id)} disabled={pending}>
+                  <button type="button" className="mx" aria-label={t("common.delete")} onClick={() => onDelete(m.id)} disabled={pending}>
                     ✕
                   </button>
                 ) : null}
@@ -167,9 +171,7 @@ export default function GrowthPanel({
             ))}
         </ul>
       ) : null}
-      <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
-        Nur {childName}s eigene Werte — WHO-Perzentilkurven kommen später.
-      </p>
+      <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{t("growth.who_hint", { name: childName })}</p>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addSnapshot, updateSnapshot, deleteSnapshot } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
+import { useT } from "@/app/LanguageProvider";
 import { ageLabel, fmtDate } from "@/lib/timeline";
 import { snapshotPrompts } from "@/lib/snapshot-prompts";
 import type { Snapshot } from "@/lib/data";
@@ -27,7 +28,8 @@ export default function SnapshotPanel({
 }) {
   const router = useRouter();
   const confirm = useConfirm();
-  const PROMPTS = snapshotPrompts(childName);
+  const { t, lang } = useT();
+  const PROMPTS = snapshotPrompts(childName, lang);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [takenOn, setTakenOn] = useState(todayISO());
   const [values, setValues] = useState<Record<string, string>>({});
@@ -55,7 +57,7 @@ export default function SnapshotPanel({
     const answers = values;
     const filled = Object.values(answers).some((v) => (v ?? "").trim());
     if (!filled) {
-      setError("Bitte mindestens ein Feld ausfüllen.");
+      setError(t("snap.need_one"));
       return;
     }
     start(async () => {
@@ -73,7 +75,7 @@ export default function SnapshotPanel({
 
   function onDelete(id: string) {
     start(async () => {
-      const ok = await confirm({ title: "Schnappschuss löschen?", body: "Diese Momentaufnahme wird entfernt.", danger: true });
+      const ok = await confirm({ title: t("snap.del_title"), body: t("snap.del_body"), danger: true });
       if (!ok) return;
       const res = await deleteSnapshot(id);
       if (res.error) setError(res.error);
@@ -89,19 +91,16 @@ export default function SnapshotPanel({
       <form className="card stack" onSubmit={onSubmit} style={{ maxWidth: 560 }}>
         <div className="spread">
           <p className="eyebrow" style={{ margin: 0 }}>
-            {editingId ? "Schnappschuss bearbeiten" : `Wer ist ${childName} gerade?`}
+            {editingId ? t("snap.edit") : t("snap.who", { name: childName })}
           </p>
           {editingId ? (
-            <button type="button" className="btn" onClick={reset} disabled={pending}>Neu</button>
+            <button type="button" className="btn" onClick={reset} disabled={pending}>{t("snap.new")}</button>
           ) : null}
         </div>
-        <p className="sub" style={{ margin: 0 }}>
-          Ein kleiner Steckbrief für diesen Moment — fülle aus, was gerade passt. Später wird daraus eine
-          schöne Sammlung.
-        </p>
+        <p className="sub" style={{ margin: 0 }}>{t("snap.sub")}</p>
 
         <div className="field">
-          <label htmlFor="snap_date">Datum</label>
+          <label htmlFor="snap_date">{t("common.date")}</label>
           <input id="snap_date" type="date" value={takenOn} onChange={(e) => setTakenOn(e.target.value)} />
         </div>
 
@@ -121,7 +120,7 @@ export default function SnapshotPanel({
         {error ? <p className="err">{error}</p> : null}
         <div className="row">
           <button className="btn btn-primary" disabled={pending}>
-            {pending ? "…" : editingId ? "Speichern" : "Schnappschuss sichern"}
+            {pending ? "…" : editingId ? t("common.save") : t("snap.save")}
           </button>
         </div>
       </form>
@@ -134,7 +133,7 @@ export default function SnapshotPanel({
               <article className="snapcard" key={s.id}>
                 <div className="snaphead">
                   <b>{fmtDate(s.taken_on)}</b>
-                  {age ? <span>· {childName} mit {age}</span> : null}
+                  {age ? <span>· {t("snap.with_age", { name: childName, age })}</span> : null}
                 </div>
                 <dl className="snapdl">
                   {PROMPTS.filter((p) => (s.answers[p.key] ?? "").trim()).map((p) => (
@@ -146,8 +145,8 @@ export default function SnapshotPanel({
                 </dl>
                 {s.author_id === userId ? (
                   <div className="snapactions">
-                    <button type="button" className="btn" onClick={() => startEdit(s)} disabled={pending}>Bearbeiten</button>
-                    <button type="button" className="btn" onClick={() => onDelete(s.id)} disabled={pending}>Löschen</button>
+                    <button type="button" className="btn" onClick={() => startEdit(s)} disabled={pending}>{t("common.edit")}</button>
+                    <button type="button" className="btn" onClick={() => onDelete(s.id)} disabled={pending}>{t("common.delete")}</button>
                   </div>
                 ) : null}
               </article>
