@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { addComment, deleteComment } from "@/app/content-actions";
+import { addComment, updateComment, deleteComment } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
 import { initial } from "@/lib/timeline";
 import type { Comment, MemberProfile } from "@/lib/data";
@@ -28,7 +28,30 @@ export default function EntryComments({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
   const fallback: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
+
+  function startEdit(c: Comment) {
+    setEditingId(c.id);
+    setEditText(c.body);
+    setError(null);
+  }
+
+  async function saveEdit(id: string) {
+    const body = editText.trim();
+    if (!body) return;
+    setBusy(true);
+    const res = await updateComment(id, body);
+    setBusy(false);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setComments((prev) => prev.map((c) => (c.id === id ? { ...c, body } : c)));
+    setEditingId(null);
+    setEditText("");
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,13 +93,41 @@ export default function EntryComments({
                   <div className="cmeta">
                     <b>{a.name}</b>
                     <span>{fmtTime(c.created_at)}</span>
-                    {c.author_id === userId ? (
-                      <button type="button" className="cdel" aria-label="Kommentar löschen" onClick={() => onDelete(c.id)}>
-                        ✕
-                      </button>
+                    {c.author_id === userId && editingId !== c.id ? (
+                      <span className="cactions">
+                        <button type="button" className="cedit" aria-label="Kommentar bearbeiten" onClick={() => startEdit(c)}>
+                          ✎
+                        </button>
+                        <button type="button" className="cdel" aria-label="Kommentar löschen" onClick={() => onDelete(c.id)}>
+                          ✕
+                        </button>
+                      </span>
                     ) : null}
                   </div>
-                  <p>{c.body}</p>
+                  {editingId === c.id ? (
+                    <form
+                      className="ceditform"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        saveEdit(c.id);
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        maxLength={4000}
+                        autoFocus
+                        aria-label="Kommentar bearbeiten"
+                      />
+                      <button className="btn btn-primary" disabled={busy || !editText.trim()}>Speichern</button>
+                      <button type="button" className="btn" onClick={() => setEditingId(null)} disabled={busy}>
+                        Abbrechen
+                      </button>
+                    </form>
+                  ) : (
+                    <p>{c.body}</p>
+                  )}
                 </div>
               </li>
             );

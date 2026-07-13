@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(59);
+select plan(63);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -261,6 +261,15 @@ reset role; select set_config('request.jwt.claims', json_build_object('sub','111
 select is((select count(*) from comments where entry_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'author sees the co-parent comment');
 select lives_ok($$ delete from comments where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'non-author delete of a comment is a no-op');
 select is((select count(*) from comments where entry_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'the comment survived the non-author delete');
+
+-- alice (non-author) cannot edit the co-parent's comment
+select lives_ok($$ update comments set body='hacked' where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'non-author edit of a comment is a no-op');
+select is((select body from comments where entry_id='e1111111-1111-1111-1111-111111111111'), 'Schön!', 'the comment text is unchanged after the non-author edit');
+
+-- bob (author) can edit his own comment
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update comments set body='Sehr schön!' where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'author can edit his own comment');
+select is((select body from comments where entry_id='e1111111-1111-1111-1111-111111111111'), 'Sehr schön!', 'the author edit took effect');
 
 -- carol (other household) cannot comment on e1
 reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;

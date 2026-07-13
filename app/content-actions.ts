@@ -354,6 +354,21 @@ export async function addComment(
   return { comment: data as { id: string; author_id: string; body: string; created_at: string } };
 }
 
+export async function updateComment(id: string, body: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const text = body.trim();
+  if (!text) return { error: "Bitte einen Kommentar eingeben." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  // RLS (comments_update) already limits this to the comment's author.
+  const { error } = await supabase.from("comments").update({ body: text.slice(0, 4000) }).eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function deleteComment(id: string): Promise<{ error?: string }> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
   const supabase = await createClient();

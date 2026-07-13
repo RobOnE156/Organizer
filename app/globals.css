@@ -137,12 +137,15 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .cmeta { display: flex; align-items: baseline; gap: 7px; }
 .cmeta b { font-size: 0.82rem; }
 .cmeta span { color: var(--muted); font-size: 0.72rem; }
-.cdel { margin-left: auto; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.72rem; padding: 2px 5px; border-radius: 6px; }
+.cactions { margin-left: auto; display: flex; gap: 2px; flex: 0 0 auto; }
+.cedit, .cdel { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.72rem; padding: 2px 5px; border-radius: 6px; }
+.cedit:hover { color: var(--gold); background: var(--surface-2); }
 .cdel:hover { color: var(--danger); background: var(--surface-2); }
 .cbody p { margin: 2px 0 0; font-size: 0.92rem; white-space: pre-wrap; word-wrap: break-word; }
-.cform { display: flex; gap: 8px; }
-.cform input { flex: 1 1 auto; min-width: 0; }
-.cform .btn { padding: 9px 16px; font-size: 0.88rem; flex: 0 0 auto; }
+.cform, .ceditform { display: flex; gap: 8px; flex-wrap: wrap; }
+.ceditform { margin-top: 4px; }
+.cform input, .ceditform input { flex: 1 1 120px; min-width: 0; }
+.cform .btn, .ceditform .btn { padding: 9px 16px; font-size: 0.88rem; flex: 0 0 auto; }
 
 .mediagrid { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 8px; border-radius: 12px; transition: box-shadow 0.6s ease; }
 /* ambient light: a soft glow in the photo's dominant colour */
