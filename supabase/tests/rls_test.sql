@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(52);
+select plan(59);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -245,6 +245,33 @@ select is((select count(*) from snapshots where child_id='cccccccc-cccc-cccc-ccc
 -- alice (author) can delete her own
 reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
 select lives_ok($$ delete from snapshots where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc' $$, 'author can delete her own snapshot');
+
+-- =====================================================================
+-- comments: any member may comment on a visible entry; author-only delete
+-- (0012); a cross-household user is denied
+-- =====================================================================
+-- bob (co-parent) comments on alice's public entry e1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into comments (household_id, entry_id, author_id, body)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e1111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','Schön!') $$,
+  'co-parent can comment on a visible entry');
+
+-- alice sees it but cannot delete the co-parent's comment
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from comments where entry_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'author sees the co-parent comment');
+select lives_ok($$ delete from comments where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'non-author delete of a comment is a no-op');
+select is((select count(*) from comments where entry_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'the comment survived the non-author delete');
+
+-- carol (other household) cannot comment on e1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select throws_ok($$ insert into comments (household_id, entry_id, author_id, body)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e1111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','sneaky') $$,
+  '42501', null, 'a cross-household user cannot comment');
+
+-- bob deletes his own comment
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ delete from comments where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'author can delete his own comment');
+select is((select count(*) from comments where entry_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'the comment is gone after the author deletes it');
 
 reset role;
 select * from finish();

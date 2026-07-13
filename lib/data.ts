@@ -20,6 +20,25 @@ export type Entry = {
 
 export type MemberProfile = { name: string; color: string };
 
+export type Comment = {
+  id: string;
+  entry_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+};
+
+export async function getCommentsForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Comment[]> {
+  if (entryIds.length === 0) return [];
+  const { data } = await supabase
+    .from("comments")
+    .select("id, entry_id, author_id, body, created_at")
+    .in("entry_id", entryIds)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  return (data as Comment[] | null) ?? [];
+}
+
 export type Media = {
   id: string;
   entry_id: string;

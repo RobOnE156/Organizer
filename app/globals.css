@@ -128,6 +128,22 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .entry h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: -0.01em; margin: 2px 0 6px; }
 .entry p.place { margin: 0 0 6px; font-size: 0.82rem; color: var(--muted); }
 .entry p.body { margin: 8px 0 0; white-space: pre-wrap; }
+/* comments */
+.cmts { margin-top: 12px; border-top: 1px solid var(--faint); padding-top: 12px; }
+.cmtlist { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.cmt { display: flex; gap: 9px; }
+.cava { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 0.66rem; font-weight: 800; flex: 0 0 auto; margin-top: 1px; }
+.cbody { flex: 1 1 auto; min-width: 0; }
+.cmeta { display: flex; align-items: baseline; gap: 7px; }
+.cmeta b { font-size: 0.82rem; }
+.cmeta span { color: var(--muted); font-size: 0.72rem; }
+.cdel { margin-left: auto; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.72rem; padding: 2px 5px; border-radius: 6px; }
+.cdel:hover { color: var(--danger); background: var(--surface-2); }
+.cbody p { margin: 2px 0 0; font-size: 0.92rem; white-space: pre-wrap; word-wrap: break-word; }
+.cform { display: flex; gap: 8px; }
+.cform input { flex: 1 1 auto; min-width: 0; }
+.cform .btn { padding: 9px 16px; font-size: 0.88rem; flex: 0 0 auto; }
+
 .mediagrid { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 8px; border-radius: 12px; transition: box-shadow 0.6s ease; }
 /* ambient light: a soft glow in the photo's dominant colour */
 .mediagrid.glow { box-shadow: 0 12px 46px -12px rgba(var(--glow), 0.5), 0 0 24px -4px rgba(var(--glow), 0.3); }

@@ -329,6 +329,43 @@ export async function deleteMilestone(id: string): Promise<{ error?: string }> {
   return {};
 }
 
+// ---- comments ------------------------------------------------------
+export async function addComment(
+  entryId: string,
+  householdId: string,
+  body: string,
+): Promise<{ error?: string; comment?: { id: string; author_id: string; body: string; created_at: string } }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const text = body.trim();
+  if (!text) return { error: "Bitte einen Kommentar eingeben." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { data, error } = await supabase
+    .from("comments")
+    .insert({ household_id: householdId, entry_id: entryId, author_id: user.id, body: text.slice(0, 4000) })
+    .select("id, author_id, body, created_at")
+    .single();
+  if (error || !data) return { error: error?.message ?? "Speichern fehlgeschlagen." };
+  return { comment: data as { id: string; author_id: string; body: string; created_at: string } };
+}
+
+export async function deleteComment(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("comments").delete().eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // ---- "who is <child> right now" snapshots --------------------------
 function cleanAnswers(answers: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};

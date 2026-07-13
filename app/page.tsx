@@ -5,10 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import {
   ensureProfile,
   getChildren,
+  getCommentsForEntries,
   getEntriesForChild,
   getMediaForEntries,
   getMemberProfiles,
   signMediaByEntry,
+  type Comment,
   type Entry,
   type MemberProfile,
   type SignedMedia,
@@ -17,6 +19,7 @@ import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline
 import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
+import EntryComments from "@/app/EntryComments";
 import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
@@ -47,11 +50,19 @@ function EntryCard({
   author,
   media,
   isOwn,
+  comments,
+  authors,
+  userId,
+  householdId,
 }: {
   entry: Entry;
   author: MemberProfile;
   media: SignedMedia[];
   isOwn: boolean;
+  comments: Comment[];
+  authors: Record<string, MemberProfile>;
+  userId: string;
+  householdId: string;
 }) {
   return (
     <article className="entry">
@@ -66,6 +77,13 @@ function EntryCard({
       {entry.place_name ? <p className="place">📍 {entry.place_name}</p> : null}
       {media.length > 0 ? <EntryMedia media={media} /> : null}
       {entry.body ? <p className="body">{entry.body}</p> : null}
+      <EntryComments
+        entryId={entry.id}
+        householdId={householdId}
+        initialComments={comments}
+        authors={authors}
+        userId={userId}
+      />
     </article>
   );
 }
@@ -116,6 +134,9 @@ export default async function Home() {
   const authors = await getMemberProfiles(supabase, membership.household_id);
   const media = await getMediaForEntries(supabase, entries.map((e) => e.id));
   const mediaByEntry = await signMediaByEntry(supabase, media);
+  const comments = await getCommentsForEntries(supabase, entries.map((e) => e.id));
+  const commentsByEntry: Record<string, Comment[]> = {};
+  for (const c of comments) (commentsByEntry[c.entry_id] ??= []).push(c);
   const fallbackAuthor: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -172,6 +193,10 @@ export default async function Home() {
                   author={authors[e.author_id] ?? fallbackAuthor}
                   media={mediaByEntry[e.id] ?? []}
                   isOwn={e.author_id === user.id}
+                  comments={commentsByEntry[e.id] ?? []}
+                  authors={authors}
+                  userId={user.id}
+                  householdId={membership.household_id}
                 />
               ))}
             </section>
