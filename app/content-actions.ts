@@ -281,6 +281,31 @@ export async function updateProfile(input: {
   return {};
 }
 
+// Save accessibility preferences (own profile row).
+export async function updateA11y(input: {
+  textSize: string;
+  highContrast: boolean;
+  reduceMotion: boolean;
+}): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("profiles").upsert(
+    {
+      user_id: user.id,
+      text_size: input.textSize === "large" ? "large" : "normal",
+      high_contrast: Boolean(input.highContrast),
+      reduce_motion: Boolean(input.reduceMotion),
+    },
+    { onConflict: "user_id" },
+  );
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Backfill: stamp coordinates onto one of the user's own entries that has
 // none yet. Author-only via RLS; the `is('lat', null)` guard makes it
 // idempotent (never overwrites an existing location).

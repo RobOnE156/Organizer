@@ -3,6 +3,8 @@ import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfile, getMyProfile } from "@/lib/data";
 import ProfileForm from "./ProfileForm";
+import AccessibilitySection from "./AccessibilitySection";
+import PasswordSection from "./PasswordSection";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,19 @@ export default async function ProfilePage() {
         initialColor={profile.color}
         email={user.email ?? ""}
       />
+
+      <div style={{ marginTop: 16 }}>
+        <AccessibilitySection
+          initialTextSize={profile.text_size}
+          initialHighContrast={profile.high_contrast}
+          initialReduceMotion={profile.reduce_motion}
+        />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <PasswordSection />
+      </div>
+
       <p style={{ marginTop: 24 }}>
         <a href="/">← Zurück</a>
       </p>

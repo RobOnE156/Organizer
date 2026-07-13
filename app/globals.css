@@ -23,6 +23,18 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+
+/* accessibility preferences (per-profile, set as classes on <html>) */
+html.a11y-large { font-size: 118.75%; }
+html.a11y-contrast {
+  --muted: color-mix(in oklab, var(--ink) 76%, var(--bg));
+  --faint: color-mix(in oklab, var(--ink) 32%, transparent);
+}
+html.a11y-motion, html.a11y-motion * , html.a11y-motion *::before, html.a11y-motion *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
 html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);

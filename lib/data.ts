@@ -347,12 +347,57 @@ export async function getMemberProfiles(
   return map;
 }
 
-// The signed-in user's own editable profile.
-export async function getMyProfile(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<{ display_name: string; color: string }> {
-  const { data } = await supabase.from("profiles").select("display_name, color").eq("user_id", userId).maybeSingle();
-  const p = data as { display_name: string; color: string } | null;
-  return { display_name: p?.display_name ?? "", color: p?.color ?? "#c98fb0" };
+// The signed-in user's own editable profile (name, colour, avatar, language,
+// accessibility). Falls back to sane defaults if a column/migration is missing.
+export type MyProfile = {
+  display_name: string;
+  color: string;
+  avatar_key: string | null;
+  ui_language: string;
+  text_size: string;
+  high_contrast: boolean;
+  reduce_motion: boolean;
+};
+
+export async function getMyProfile(supabase: SupabaseClient, userId: string): Promise<MyProfile> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("display_name, color, avatar_url, ui_language, text_size, high_contrast, reduce_motion")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const p = data as Partial<{
+    display_name: string;
+    color: string;
+    avatar_url: string | null;
+    ui_language: string;
+    text_size: string;
+    high_contrast: boolean;
+    reduce_motion: boolean;
+  }> | null;
+  return {
+    display_name: p?.display_name ?? "",
+    color: p?.color ?? "#c98fb0",
+    avatar_key: p?.avatar_url ?? null,
+    ui_language: p?.ui_language ?? "de",
+    text_size: p?.text_size ?? "normal",
+    high_contrast: p?.high_contrast ?? false,
+    reduce_motion: p?.reduce_motion ?? false,
+  };
+}
+
+// Accessibility classes for <html>, read from the signed-in user's profile.
+// Never throws — returns "" when not configured, not logged in, or unset.
+export async function getA11yClasses(supabase: SupabaseClient, userId: string): Promise<string> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("text_size, high_contrast, reduce_motion")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const p = data as { text_size: string; high_contrast: boolean; reduce_motion: boolean } | null;
+  if (!p) return "";
+  const cls: string[] = [];
+  if (p.text_size === "large") cls.push("a11y-large");
+  if (p.high_contrast) cls.push("a11y-contrast");
+  if (p.reduce_motion) cls.push("a11y-motion");
+  return cls.join(" ");
 }

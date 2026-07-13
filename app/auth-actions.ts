@@ -11,6 +11,20 @@ function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
+// ---- change password (logged-in, settings page enforces AAL2) -------
+export async function changePassword(newPassword: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (newPassword.length < 8) return { error: "Das Passwort muss mindestens 8 Zeichen haben." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: error.message };
+  return {};
+}
+
 // ---- sign up / in / out --------------------------------------------
 export async function signUp(_prev: FormState, formData: FormData): Promise<FormState> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
