@@ -5,6 +5,7 @@ import {
   getChildren,
   getCommentsForEntries,
   getEntriesForExport,
+  getHighlightedEntryIds,
   getMediaForEntries,
   getMemberProfiles,
   getReactionsForComments,
@@ -33,6 +34,7 @@ export default async function ExportPage() {
   const commentRows = await getCommentsForEntries(supabase, entryIds);
   const reactionRows = await getReactionsForEntries(supabase, entryIds);
   const commentReactionRows = await getReactionsForComments(supabase, commentRows.map((c) => c.id));
+  const highlightedIds = await getHighlightedEntryIds(supabase, entryIds);
   const authors = await getMemberProfiles(supabase, membership.household_id);
 
   const { data: hh } = await supabase
@@ -69,6 +71,7 @@ export default async function ExportPage() {
         comments={commentRows}
         reactions={reactionRows}
         commentReactions={commentReactionRows}
+        highlightedIds={highlightedIds}
       />
       <p style={{ marginTop: 24 }}>
         <a href="/">← Zurück</a>

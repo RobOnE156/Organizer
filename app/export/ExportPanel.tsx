@@ -43,6 +43,7 @@ export default function ExportPanel({
   comments,
   reactions,
   commentReactions,
+  highlightedIds,
 }: {
   householdName: string;
   childList: Child[];
@@ -53,6 +54,7 @@ export default function ExportPanel({
   comments: Comment[];
   reactions: Reaction[];
   commentReactions: CommentReaction[];
+  highlightedIds: string[];
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -66,6 +68,7 @@ export default function ExportPanel({
     try {
       const supabase = createClient();
       const zip = new JSZip();
+      const highlightSet = new Set(highlightedIds);
 
       // media grouped per entry, in display order
       const byEntry = new Map<string, ExportMedia[]>();
@@ -166,6 +169,7 @@ export default function ExportPanel({
           title: e.title,
           body: e.body,
           children: kids,
+          highlight: highlightSet.has(e.id),
           media: ms,
           link: linkByEntry.get(e.id) ?? null,
           reactions: viewerReactionsFor(e.id),
@@ -179,7 +183,16 @@ export default function ExportPanel({
         const paths = (byEntry.get(e.id) ?? []).map(pathOf);
         zip.file(
           "entries/" + e.event_date + "-" + e.id.slice(0, 8) + ".md",
-          buildSidecar(e, a.name, kids, paths, viewerCommentsFor(e.id), linkByEntry.get(e.id) ?? null, viewerReactionsFor(e.id)),
+          buildSidecar(
+            e,
+            a.name,
+            kids,
+            paths,
+            viewerCommentsFor(e.id),
+            linkByEntry.get(e.id) ?? null,
+            viewerReactionsFor(e.id),
+            highlightSet.has(e.id),
+          ),
         );
       }
 

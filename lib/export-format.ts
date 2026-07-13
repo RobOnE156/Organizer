@@ -26,6 +26,7 @@ export type ViewerEntry = {
   title: string | null;
   body: string | null;
   children: string[];
+  highlight: boolean;
   media: ViewerMedia[];
   link: ViewerLink | null;
   reactions: ViewerReaction[];
@@ -61,6 +62,7 @@ const VIEWER_CSS = [
   ".dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.72rem;font-weight:800;flex:0 0 auto}",
   ".nm{font-weight:700;font-size:.9rem}.when{color:var(--muted);font-size:.78rem;margin-left:auto}",
   ".priv{font-size:.7rem;font-weight:700;color:var(--gold);border:1px solid var(--faint);border-radius:999px;padding:2px 8px}",
+  ".hlmark{color:var(--gold);font-size:1rem;margin-left:6px}",
   ".entry h3{font-size:1.12rem;margin:2px 0 6px}.place{color:var(--muted);font-size:.82rem;margin:0 0 6px}.body{white-space:pre-wrap;margin:8px 0 0}",
   ".grid{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:8px}",
   ".grid img,.grid video{width:100%;border-radius:12px;display:block;background:#000;max-height:340px;object-fit:cover}",
@@ -97,7 +99,8 @@ const VIEWER_JS = [
   "var dot=document.createElement('span');dot.className='dot';dot.style.background=e.color||'#999';dot.textContent=(e.author||'?').slice(0,1).toUpperCase();",
   "var nm=document.createElement('span');nm.className='nm';nm.textContent=e.author||'Elternteil';meta.appendChild(dot);meta.appendChild(nm);",
   "if(e.private){var pb=document.createElement('span');pb.className='priv';pb.textContent='🔒 Privat';meta.appendChild(pb);}",
-  "var wh=document.createElement('span');wh.className='when';wh.textContent=fmt.format(new Date(e.date+'T00:00:00'));meta.appendChild(wh);art.appendChild(meta);",
+  "var wh=document.createElement('span');wh.className='when';wh.textContent=fmt.format(new Date(e.date+'T00:00:00'));meta.appendChild(wh);",
+  "if(e.highlight){var hl=document.createElement('span');hl.className='hlmark';hl.textContent='★';hl.title='Höhepunkt';meta.appendChild(hl);}art.appendChild(meta);",
   "if(e.title){var h3=document.createElement('h3');h3.textContent=e.title;art.appendChild(h3);}",
   "if(e.place){var pl=document.createElement('p');pl.className='place';pl.textContent='📍 '+e.place;art.appendChild(pl);}",
   "if(e.media&&e.media.length){var g=document.createElement('div');g.className='grid';for(var q=0;q<e.media.length;q++){g.appendChild(mediaEl(e.media[q]));}art.appendChild(g);}",
@@ -147,6 +150,7 @@ export function buildSidecar(
   comments: ViewerComment[] = [],
   link: ViewerLink | null = null,
   reactions: ViewerReaction[] = [],
+  highlight = false,
 ): string {
   const lines: (string | null)[] = [
     "---",
@@ -154,11 +158,12 @@ export function buildSidecar(
     "author: " + yaml(author),
     e.place_name ? "place: " + yaml(e.place_name) : null,
     "private: " + String(e.is_private),
+    highlight ? "highlight: true" : null,
     children.length ? "children: [" + children.map(yaml).join(", ") + "]" : null,
     "created_at: " + e.created_at,
     "---",
     "",
-    e.title ? "# " + e.title : null,
+    e.title ? "# " + (highlight ? "★ " : "") + e.title : null,
     "",
     e.body ?? "",
     link ? "\n## Link\n" + (link.title ?? link.url) + (link.provider ? " (" + link.provider + ")" : "") + "\n" + link.url : null,
