@@ -275,6 +275,18 @@ a.brand { text-decoration: none; color: inherit; }
 .emap .pin { fill: var(--gold); stroke: #fff; stroke-width: 0.6; }
 .emap .pinhalo { fill: color-mix(in oklab, var(--gold) 35%, transparent); }
 .emaploc { display: block; margin-top: 4px; font-size: 0.78rem; color: var(--muted); }
+/* letters / time capsule */
+.lettercard { background: var(--surface); border: 1px solid var(--faint); border-radius: 14px; padding: 14px 16px; }
+.lettercard.sealed { background: color-mix(in oklab, var(--gold) 8%, var(--surface)); border-style: dashed; border-color: color-mix(in oklab, var(--gold) 45%, var(--faint)); }
+.lmeta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.lmeta b { font-size: 0.9rem; }
+.lwhen { color: var(--muted); font-size: 0.76rem; margin-left: auto; }
+.ltitle { font-size: 1.1rem; margin: 2px 0 6px; }
+.lbody { white-space: pre-wrap; margin: 0; line-height: 1.6; }
+.lactions { display: flex; gap: 8px; margin-top: 12px; }
+.teaser { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px dashed color-mix(in oklab, var(--gold) 45%, var(--faint)); border-radius: 14px; background: color-mix(in oklab, var(--gold) 7%, var(--surface)); }
+.teaser .tseal { font-size: 1.5rem; flex: 0 0 auto; }
+.teaser b { font-size: 0.92rem; }
 /* world map ("Weltkarte") */
 .mapwrap { margin-top: 18px; border: 1px solid var(--faint); border-radius: 16px; overflow: hidden; background: color-mix(in oklab, var(--gold) 6%, var(--surface)); }
 .worldmap { display: block; width: 100%; height: auto; }

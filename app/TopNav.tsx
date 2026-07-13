@@ -60,6 +60,9 @@ export default function TopNav({ childName }: { childName?: string }) {
             <a className="drawerlink" href="/search">
               <span className="di">🔍</span> {t("nav.search")}
             </a>
+            <a className="drawerlink" href="/letters">
+              <span className="di">✉️</span> {t("nav.letters")}
+            </a>
 
             <span className="drawerlabel">{t("nav.settings")}</span>
             <a className="drawerlink" href="/settings">

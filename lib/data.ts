@@ -293,6 +293,44 @@ export async function getMilestones(supabase: SupabaseClient, childId: string): 
   return (data as Milestone[] | null) ?? [];
 }
 
+export type UnlockMode = "date" | "age";
+
+export type Letter = {
+  id: string;
+  child_id: string | null;
+  author_id: string;
+  title: string | null;
+  body: string;
+  unlock_mode: UnlockMode;
+  unlock_date: string | null;
+  unlock_age_years: number | null;
+  created_at: string;
+};
+
+// All of the child's letters (household-shared per the letters RLS). The
+// "seal" — hiding a not-yet-unlocked letter's contents from the co-parent —
+// is applied in the page (server strips locked bodies before they reach the
+// other parent's browser).
+export async function getLetters(supabase: SupabaseClient, childId: string): Promise<Letter[]> {
+  const { data } = await supabase
+    .from("letters")
+    .select("id, child_id, author_id, title, body, unlock_mode, unlock_date, unlock_age_years, created_at")
+    .eq("child_id", childId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  return (data as Letter[] | null) ?? [];
+}
+
+// The concrete date a letter unlocks: the chosen date, or the child's Nth
+// birthday for age-based letters. Null when it can't be resolved yet (age
+// mode with no birth date on file).
+export function letterUnlockDate(l: Letter, birthDate: string | null): string | null {
+  if (l.unlock_mode === "date") return l.unlock_date;
+  if (l.unlock_age_years == null) return null;
+  if (!birthDate) return null;
+  return String(Number(birthDate.slice(0, 4)) + l.unlock_age_years) + birthDate.slice(4);
+}
+
 export type Snapshot = {
   id: string;
   child_id: string;

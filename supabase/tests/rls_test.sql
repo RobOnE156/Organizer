@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(93);
+select plan(102);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -428,6 +428,46 @@ select lives_ok($$ update profiles set display_name='hacked', color='#000000' wh
 reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
 select is((select display_name from profiles where user_id='11111111-1111-1111-1111-111111111111'), 'Mama',
   'the profile is unchanged after another user''s attempt');
+
+-- =====================================================================
+-- letters (time capsule): household-shared (both parents see the row); only
+-- the author may edit/delete. The "sealed until unlock" behaviour is applied
+-- app-side, so RLS just proves household isolation + author-only writes.
+-- =====================================================================
+-- alice writes a letter to the child
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into letters (id, household_id, child_id, author_id, body, unlock_mode, unlock_date)
+  values ('f1111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','cccccccc-cccc-cccc-cccc-cccccccccccc','11111111-1111-1111-1111-111111111111','Lieber Schatz','date','2999-01-01') $$,
+  'author can write a letter to the child');
+
+-- bob (co-parent) can see the letter row (household-shared)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from letters where id='f1111111-1111-1111-1111-111111111111')::int, 1,
+  'a co-parent can see the letter row (household-shared)');
+
+-- carol (other household) cannot write a letter into household 1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select throws_ok($$ insert into letters (household_id, child_id, author_id, body, unlock_mode, unlock_date)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','cccccccc-cccc-cccc-cccc-cccccccccccc','33333333-3333-3333-3333-333333333333','x','date','2999-01-01') $$,
+  '42501', null, 'a cross-household user cannot write a letter');
+select is((select count(*) from letters where id='f1111111-1111-1111-1111-111111111111')::int, 0,
+  'a cross-household user cannot see the letter either');
+
+-- bob (co-parent) cannot edit or delete alice's letter (author-only)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update letters set body='hacked' where id='f1111111-1111-1111-1111-111111111111' $$,
+  'a co-parent edit of a letter raises no error but changes nothing');
+select lives_ok($$ delete from letters where id='f1111111-1111-1111-1111-111111111111' $$,
+  'a co-parent delete of a letter is a no-op');
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select body from letters where id='f1111111-1111-1111-1111-111111111111'), 'Lieber Schatz',
+  'the letter is unchanged and still present after the co-parent attempts');
+
+-- alice deletes her own letter (real DELETE, 0018)
+select lives_ok($$ delete from letters where id='f1111111-1111-1111-1111-111111111111' $$,
+  'author can delete her own letter');
+select is((select count(*) from letters where id='f1111111-1111-1111-1111-111111111111')::int, 0,
+  'the letter is gone after the author deletes it');
 
 reset role;
 select * from finish();

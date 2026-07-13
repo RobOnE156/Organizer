@@ -649,6 +649,89 @@ export async function searchDiary(rawQuery: string): Promise<SearchResult> {
   return { entries, comments };
 }
 
+// ---- letters (time capsule) ----------------------------------------
+export type LetterInput = {
+  title: string;
+  body: string;
+  unlockMode: "date" | "age";
+  unlockDate: string; // YYYY-MM-DD when mode === 'date'
+  unlockAgeYears: number; // when mode === 'age'
+};
+
+function validDate(s: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(s + "T00:00:00").getTime());
+}
+
+// Resolve an input into the { unlock_mode, unlock_date, unlock_age_years }
+// columns, validating along the way.
+function unlockFields(input: LetterInput): { ok: true; cols: Record<string, unknown> } | { ok: false; error: string } {
+  if (input.unlockMode === "age") {
+    const age = Math.round(input.unlockAgeYears);
+    if (!Number.isFinite(age) || age < 0 || age > 120) return { ok: false, error: "Bitte ein gültiges Alter wählen." };
+    return { ok: true, cols: { unlock_mode: "age", unlock_age_years: age, unlock_date: null } };
+  }
+  if (!validDate(input.unlockDate)) return { ok: false, error: "Bitte ein gültiges Datum wählen." };
+  return { ok: true, cols: { unlock_mode: "date", unlock_date: input.unlockDate, unlock_age_years: null } };
+}
+
+export async function addLetter(input: LetterInput & { childId: string }): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!input.childId) return { error: "Kein Kind ausgewählt." };
+  if (!input.body.trim()) return { error: "Bitte einen Brief schreiben." };
+  const unlock = unlockFields(input);
+  if (!unlock.ok) return { error: unlock.error };
+
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { error } = await supabase.from("letters").insert({
+    household_id: membership.household_id,
+    child_id: input.childId,
+    author_id: user.id,
+    title: input.title.trim() || null,
+    body: input.body.trim(),
+    ...unlock.cols,
+  });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function updateLetter(id: string, input: LetterInput): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!input.body.trim()) return { error: "Bitte einen Brief schreiben." };
+  const unlock = unlockFields(input);
+  if (!unlock.ok) return { error: unlock.error };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("letters")
+    .update({ title: input.title.trim() || null, body: input.body.trim(), ...unlock.cols })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function deleteLetter(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  // Real DELETE (author-only via RLS, 0018) — avoids the soft-delete trap.
+  const { error } = await supabase.from("letters").delete().eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // ---- comments ------------------------------------------------------
 export async function addComment(
   entryId: string,

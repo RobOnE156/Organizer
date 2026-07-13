@@ -55,6 +55,7 @@ const M = {
   "nav.explore": { de: "Entdecken", en: "Explore", es: "Explorar" },
   "nav.settings": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
   "nav.security": { de: "Sicherheit & 2FA", en: "Security & 2FA", es: "Seguridad y 2FA" },
+  "nav.letters": { de: "Briefe", en: "Letters", es: "Cartas" },
 
   // settings hub
   "settings.eyebrow": { de: "Konto & App", en: "Account & app", es: "Cuenta y app" },
@@ -692,6 +693,48 @@ const M = {
     es: "Este enlace de invitación no es válido, ya se usó o caducó. Pide al otro progenitor un enlace nuevo.",
   },
   "join.home": { de: "Zur Startseite", en: "Go to home", es: "Ir al inicio" },
+
+  // letters / time capsule
+  "letters.eyebrow": { de: "Zeitkapsel", en: "Time capsule", es: "Cápsula del tiempo" },
+  "letters.title": { de: "Briefe an die Zukunft", en: "Letters to the future", es: "Cartas al futuro" },
+  "letters.sub": {
+    de: "Schreibe {name} einen Brief, der sich zu einem gewählten Datum öffnet — z. B. zum 18. Geburtstag. Bis dahin bleibt er versiegelt (auch für den anderen Elternteil).",
+    en: "Write {name} a letter that opens on a chosen date — e.g. their 18th birthday. Until then it stays sealed (even from the other parent).",
+    es: "Escribe a {name} una carta que se abre en una fecha elegida — p. ej. su 18.º cumpleaños. Hasta entonces queda sellada (también para el otro progenitor).",
+  },
+  "letters.write": { de: "Neuen Brief schreiben", en: "Write a new letter", es: "Escribir una carta nueva" },
+  "letters.title_ph": { de: "z. B. Zu deinem 18.", en: "e.g. For your 18th", es: "p. ej. Para tus 18" },
+  "letters.body_label": { de: "Dein Brief", en: "Your letter", es: "Tu carta" },
+  "letters.body_ph": { de: "Liebe/r {name} …", en: "Dear {name} …", es: "Querido/a {name} …" },
+  "letters.unlock_label": { de: "Öffnet am", en: "Opens on", es: "Se abre el" },
+  "letters.preset_18": { de: "18. Geburtstag", en: "18th birthday", es: "18.º cumpleaños" },
+  "letters.preset_1y": { de: "In 1 Jahr", en: "In 1 year", es: "En 1 año" },
+  "letters.preset_5y": { de: "In 5 Jahren", en: "In 5 years", es: "En 5 años" },
+  "letters.seal": { de: "Versiegeln", en: "Seal", es: "Sellar" },
+  "letters.opened": { de: "Geöffnet", en: "Opened", es: "Abiertas" },
+  "letters.your_sealed": { de: "Deine versiegelten Briefe", en: "Your sealed letters", es: "Tus cartas selladas" },
+  "letters.sealed_until": { de: "🔒 Versiegelt bis {date}", en: "🔒 Sealed until {date}", es: "🔒 Sellada hasta {date}" },
+  "letters.opened_on": { de: "Geöffnet am {date}", en: "Opened on {date}", es: "Abierta el {date}" },
+  "letters.by": { de: "von {name}", en: "by {name}", es: "de {name}" },
+  "letters.from_one": {
+    de: "{name} hat einen versiegelten Brief hinterlegt.",
+    en: "{name} has left a sealed letter.",
+    es: "{name} ha dejado una carta sellada.",
+  },
+  "letters.from_many": {
+    de: "{name} hat {n} versiegelte Briefe hinterlegt.",
+    en: "{name} has left {n} sealed letters.",
+    es: "{name} ha dejado {n} cartas selladas.",
+  },
+  "letters.next_opens": { de: "Nächster öffnet {date}.", en: "Next opens {date}.", es: "La próxima se abre el {date}." },
+  "letters.waiting": { de: "Wartet auf euch", en: "Waiting for you", es: "Esperándoos" },
+  "letters.empty": {
+    de: "Noch keine Briefe. Schreibe den ersten.",
+    en: "No letters yet. Write the first one.",
+    es: "Aún no hay cartas. Escribe la primera.",
+  },
+  "letters.del_title": { de: "Brief löschen?", en: "Delete letter?", es: "¿Eliminar carta?" },
+  "letters.del_body": { de: "Dieser Brief wird entfernt.", en: "This letter will be removed.", es: "Se eliminará esta carta." },
 
   // export bundle (README + offline viewer + sidecars)
   "exp.note": {
