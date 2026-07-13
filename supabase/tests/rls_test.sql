@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(42);
+select plan(47);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -201,6 +201,29 @@ select is((select count(*) from growth_measurements where child_id='cccccccc-ccc
 reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
 select lives_ok($$ delete from growth_measurements where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc' $$, 'author can delete her own measurement');
 select is((select count(*) from growth_measurements where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc')::int, 0, 'the measurement is gone after the author deletes it');
+
+-- =====================================================================
+-- child cover: EITHER parent may set/replace it, regardless of who set it
+-- last (children_update is member-based, not author-based) — 0010
+-- =====================================================================
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update children set cover_key='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/cover/x1.jpg' where id='cccccccc-cccc-cccc-cccc-cccccccccccc' $$,
+  'a parent can set the child cover');
+
+-- bob (the OTHER parent, did not set it) can change it
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update children set cover_key='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/cover/x2.jpg' where id='cccccccc-cccc-cccc-cccc-cccccccccccc' $$,
+  'the co-parent can change a cover the other parent set');
+select is((select cover_key from children where id='cccccccc-cccc-cccc-cccc-cccccccccccc'),
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/cover/x2.jpg', 'the co-parent''s cover change took effect');
+
+-- carol (other household) cannot touch it
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update children set cover_key='hacked' where id='cccccccc-cccc-cccc-cccc-cccccccccccc' $$,
+  'a cross-household cover update raises no error but changes nothing');
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select cover_key from children where id='cccccccc-cccc-cccc-cccc-cccccccccccc'),
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/cover/x2.jpg', 'a cross-household user could not change the cover');
 
 reset role;
 select * from finish();
