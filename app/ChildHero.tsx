@@ -4,12 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setChildCover } from "@/app/content-actions";
-
-function sanitizeExt(name: string, mime: string): string {
-  const fromName = name.includes(".") ? name.split(".").pop() : "";
-  const ext = (fromName || mime.split("/")[1] || "jpg").replace(/[^a-z0-9]/gi, "").slice(0, 5);
-  return ext || "jpg";
-}
+import CoverCropper from "@/app/CoverCropper";
 
 export default function ChildHero({
   childId,
@@ -28,19 +23,20 @@ export default function ChildHero({
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onPick(file: File | undefined) {
-    if (!file) return;
+  async function uploadCover(blob: Blob) {
+    setCropFile(null);
     setError(null);
     setBusy(true);
     try {
       const supabase = createClient();
-      const path = `${householdId}/cover/${childId}-${Date.now()}.${sanitizeExt(file.name, file.type)}`;
+      const path = `${householdId}/cover/${childId}-${Date.now()}.jpg`;
       const { error: upErr } = await supabase.storage
         .from("media")
-        .upload(path, file, { contentType: file.type || undefined, upsert: false });
+        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
       if (upErr) {
         setError("Upload fehlgeschlagen: " + upErr.message);
         setBusy(false);
@@ -91,11 +87,15 @@ export default function ChildHero({
         accept="image/*"
         hidden
         onChange={(e) => {
-          onPick(e.target.files?.[0]);
+          const f = e.target.files?.[0];
           e.target.value = "";
+          if (f) setCropFile(f);
         }}
       />
       {error ? <p className="hero-err">{error}</p> : null}
+      {cropFile ? (
+        <CoverCropper file={cropFile} onCancel={() => setCropFile(null)} onDone={uploadCover} />
+      ) : null}
     </div>
   );
 }

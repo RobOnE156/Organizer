@@ -228,3 +228,16 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 /* timeline polish */
 .msep h2 { position: relative; padding-left: 12px; }
 .msep h2::before { content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 0.95em; border-radius: 3px; background: var(--gold); }
+
+/* cover cropper */
+.cropwrap {
+  position: fixed; inset: 0; z-index: 120;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(8, 6, 10, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.cropcard { width: min(560px, 100%); background: var(--surface); border: 1px solid var(--faint); border-radius: 18px; padding: 20px; box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.7); }
+.cropframe { position: relative; width: 100%; overflow: hidden; border-radius: 12px; background: #000; touch-action: none; cursor: grab; user-select: none; }
+.cropframe:active { cursor: grabbing; }
+.cropframe img { pointer-events: none; -webkit-user-drag: none; }
+.cropload { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
+.cropgrid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.25) 1px, transparent 1px); background-size: 33.33% 33.33%; opacity: 0.5; }
