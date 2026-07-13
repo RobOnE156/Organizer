@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMembership } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
+import { fetchLinkPreview, fetchImageBytes } from "@/lib/link-preview";
 import type { FormState } from "@/app/auth-types";
 import type { CreateEntryResult, MediaInput } from "@/app/content-types";
 
@@ -325,6 +326,51 @@ export async function deleteMilestone(id: string): Promise<{ error?: string }> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet." };
   const { error } = await supabase.from("milestones").delete().eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+// ---- link preview cards --------------------------------------------
+// Resolve a pasted URL into a preview (author-only via entries RLS), self-host
+// its thumbnail, and store it on the entry. An empty URL clears the link.
+export async function attachLink(entryId: string, householdId: string, rawUrl: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    const { error } = await supabase.from("entries").update({ link: null }).eq("id", entryId);
+    return error ? { error: error.message } : {};
+  }
+
+  const preview = await fetchLinkPreview(trimmed);
+  if (!preview) return { error: "Das ist keine gültige Web-Adresse." };
+
+  let thumbnail_key: string | null = null;
+  if (preview.thumbnailUrl) {
+    const img = await fetchImageBytes(preview.thumbnailUrl);
+    if (img) {
+      const ext = img.contentType.includes("png") ? "png" : img.contentType.includes("webp") ? "webp" : "jpg";
+      const key = `${householdId}/link/${entryId}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("media")
+        .upload(key, img.bytes, { contentType: img.contentType, upsert: false });
+      if (!upErr) thumbnail_key = key;
+    }
+  }
+
+  const link = {
+    url: preview.url,
+    title: preview.title,
+    description: preview.description,
+    provider: preview.provider,
+    thumbnail_key,
+  };
+  const { error } = await supabase.from("entries").update({ link }).eq("id", entryId);
   if (error) return { error: error.message };
   return {};
 }

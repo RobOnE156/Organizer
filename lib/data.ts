@@ -6,6 +6,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Child = { id: string; name: string; birth_date: string | null; cover_key: string | null };
 
+export type LinkMeta = {
+  url: string;
+  title: string | null;
+  description: string | null;
+  provider: string | null;
+  thumbnail_key: string | null;
+};
+
 export type Entry = {
   id: string;
   author_id: string;
@@ -15,6 +23,7 @@ export type Entry = {
   event_date: string;
   is_private: boolean;
   place_name: string | null;
+  link: LinkMeta | null;
   created_at: string;
 };
 
@@ -80,7 +89,7 @@ export async function getEntriesForChild(
 ): Promise<Entry[]> {
   const { data } = await supabase
     .from("entries")
-    .select("id, author_id, kind, title, body, event_date, is_private, place_name, created_at, entry_children!inner(child_id)")
+    .select("id, author_id, kind, title, body, event_date, is_private, place_name, link, created_at, entry_children!inner(child_id)")
     .eq("household_id", householdId)
     .eq("entry_children.child_id", childId)
     .is("deleted_at", null)

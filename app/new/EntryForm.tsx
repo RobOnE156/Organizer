@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { createEntryGetId, recordMedia } from "@/app/content-actions";
+import { createEntryGetId, recordMedia, attachLink } from "@/app/content-actions";
 import VoiceRecorder from "@/app/VoiceRecorder";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
@@ -94,6 +94,16 @@ export default function EntryForm({
         }
       }
 
+      const link = String(fd.get("link") ?? "").trim();
+      if (link) {
+        const lr = await attachLink(res.entryId, res.householdId, link);
+        if (lr.error) {
+          setError(lr.error);
+          setBusy(false);
+          return;
+        }
+      }
+
       router.push("/");
       router.refresh();
     } catch (err) {
@@ -169,6 +179,12 @@ export default function EntryForm({
             font: "inherit",
           }}
         />
+      </div>
+
+      <div className="field">
+        <label htmlFor="link">Link (optional)</label>
+        <input id="link" name="link" type="url" inputMode="url" placeholder="z. B. ein Spotify- oder YouTube-Link" />
+        <small className="muted" style={{ fontSize: ".76rem" }}>Wird als Vorschaukarte angezeigt (Titel + Bild).</small>
       </div>
 
       <div className="field">

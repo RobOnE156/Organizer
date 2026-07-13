@@ -54,6 +54,7 @@ function EntryCard({
   authors,
   userId,
   householdId,
+  linkThumb,
 }: {
   entry: Entry;
   author: MemberProfile;
@@ -63,6 +64,7 @@ function EntryCard({
   authors: Record<string, MemberProfile>;
   userId: string;
   householdId: string;
+  linkThumb?: string;
 }) {
   return (
     <article id={`entry-${entry.id}`} className="entry">
@@ -77,6 +79,16 @@ function EntryCard({
       {entry.place_name ? <p className="place">📍 {entry.place_name}</p> : null}
       {media.length > 0 ? <EntryMedia media={media} /> : null}
       {entry.body ? <p className="body">{entry.body}</p> : null}
+      {entry.link ? (
+        <a className="linkcard" href={entry.link.url} target="_blank" rel="noreferrer noopener nofollow">
+          {linkThumb ? <img className="linkthumb" src={linkThumb} alt="" /> : null}
+          <div className="linkbody">
+            {entry.link.provider ? <span className="linkprovider">{entry.link.provider}</span> : null}
+            <b className="linktitle">{entry.link.title ?? entry.link.url}</b>
+            {entry.link.description ? <p className="linkdesc">{entry.link.description}</p> : null}
+          </div>
+        </a>
+      ) : null}
       <EntryComments
         entryId={entry.id}
         householdId={householdId}
@@ -146,6 +158,22 @@ export default async function Home() {
   if (child.cover_key) {
     const { data: signed } = await supabase.storage.from("media").createSignedUrl(child.cover_key, 3600);
     coverUrl = signed?.signedUrl ?? null;
+  }
+
+  // Sign the self-hosted link-preview thumbnails.
+  const linkKeys = entries.map((e) => e.link?.thumbnail_key).filter((k): k is string => Boolean(k));
+  const linkThumbByEntry: Record<string, string> = {};
+  if (linkKeys.length > 0) {
+    const { data: linkSigned } = await supabase.storage.from("media").createSignedUrls(linkKeys, 3600);
+    const byKey = new Map<string, string>();
+    for (const s of linkSigned ?? []) if (s.signedUrl && s.path) byKey.set(s.path, s.signedUrl);
+    for (const e of entries) {
+      const k = e.link?.thumbnail_key;
+      if (k) {
+        const u = byKey.get(k);
+        if (u) linkThumbByEntry[e.id] = u;
+      }
+    }
   }
 
   // Group entries by calendar month (already sorted newest-first).
@@ -227,6 +255,7 @@ export default async function Home() {
                   authors={authors}
                   userId={user.id}
                   householdId={membership.household_id}
+                  linkThumb={linkThumbByEntry[e.id]}
                 />
               ))}
             </section>

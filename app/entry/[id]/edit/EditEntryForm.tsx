@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { updateEntry, recordMedia, deleteMedia } from "@/app/content-actions";
+import { updateEntry, recordMedia, deleteMedia, attachLink } from "@/app/content-actions";
 import VoiceRecorder from "@/app/VoiceRecorder";
 import { useConfirm } from "@/app/ConfirmProvider";
 import type { MediaInput, MediaKind } from "@/app/content-types";
@@ -31,6 +31,7 @@ export default function EditEntryForm({
   existingMedia,
   nextPosition,
   placeSuggestions,
+  initialLink,
 }: {
   entryId: string;
   householdId: string;
@@ -42,6 +43,7 @@ export default function EditEntryForm({
   existingMedia: ExistingMedia[];
   nextPosition: number;
   placeSuggestions: string[];
+  initialLink: string;
 }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -123,6 +125,17 @@ export default function EditEntryForm({
         const rec = await recordMedia(entryId, householdId, items);
         if (rec.error) {
           setError(rec.error);
+          setBusy(false);
+          return;
+        }
+      }
+
+      // Only re-resolve the link if it actually changed (avoids re-fetching).
+      const link = String(fd.get("link") ?? "").trim();
+      if (link !== initialLink.trim()) {
+        const lr = await attachLink(entryId, householdId, link);
+        if (lr.error) {
+          setError(lr.error);
           setBusy(false);
           return;
         }
@@ -243,6 +256,12 @@ export default function EditEntryForm({
             ))}
           </datalist>
         ) : null}
+      </div>
+
+      <div className="field">
+        <label htmlFor="link">Link (optional)</label>
+        <input id="link" name="link" type="url" inputMode="url" defaultValue={initialLink} placeholder="z. B. ein Spotify- oder YouTube-Link" />
+        <small className="muted" style={{ fontSize: ".76rem" }}>Wird als Vorschaukarte angezeigt. Leer lassen entfernt den Link.</small>
       </div>
 
       <label className="checkline">
