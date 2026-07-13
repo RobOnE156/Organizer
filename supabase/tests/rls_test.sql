@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(47);
+select plan(52);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -224,6 +224,27 @@ select lives_ok($$ update children set cover_key='hacked' where id='cccccccc-ccc
 reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
 select is((select cover_key from children where id='cccccccc-cccc-cccc-cccc-cccccccccccc'),
   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/cover/x2.jpg', 'a cross-household user could not change the cover');
+
+-- =====================================================================
+-- snapshots: household-visible, author-only edit/delete (0011)
+-- =====================================================================
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+insert into snapshots (household_id, child_id, author_id, answers)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','cccccccc-cccc-cccc-cccc-cccccccccccc','11111111-1111-1111-1111-111111111111','{"food":"Nudeln"}'::jsonb);
+
+-- bob (co-parent) sees it but cannot delete it
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from snapshots where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc')::int, 1, 'co-parent sees a snapshot');
+select lives_ok($$ delete from snapshots where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc' $$, 'co-parent delete of a snapshot is a no-op');
+select is((select count(*) from snapshots where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc')::int, 1, 'co-parent could not delete the snapshot');
+
+-- carol (other household) cannot see it
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from snapshots where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc')::int, 0, 'a cross-household user cannot see the snapshot');
+
+-- alice (author) can delete her own
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ delete from snapshots where child_id='cccccccc-cccc-cccc-cccc-cccccccccccc' $$, 'author can delete her own snapshot');
 
 reset role;
 select * from finish();

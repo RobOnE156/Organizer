@@ -188,6 +188,24 @@ export async function getMilestones(supabase: SupabaseClient, childId: string): 
   return (data as Milestone[] | null) ?? [];
 }
 
+export type Snapshot = {
+  id: string;
+  child_id: string;
+  taken_on: string;
+  answers: Record<string, string>;
+  author_id: string;
+};
+
+export async function getSnapshots(supabase: SupabaseClient, childId: string): Promise<Snapshot[]> {
+  const { data } = await supabase
+    .from("snapshots")
+    .select("id, child_id, taken_on, answers, author_id")
+    .eq("child_id", childId)
+    .is("deleted_at", null)
+    .order("taken_on", { ascending: false });
+  return (data as Snapshot[] | null) ?? [];
+}
+
 // user_id -> { display name, colour } for everyone in the household.
 export async function getMemberProfiles(
   supabase: SupabaseClient,

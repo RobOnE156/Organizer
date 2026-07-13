@@ -329,6 +329,78 @@ export async function deleteMilestone(id: string): Promise<{ error?: string }> {
   return {};
 }
 
+// ---- "who is <child> right now" snapshots --------------------------
+function cleanAnswers(answers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(answers)) {
+    const t = (v ?? "").trim();
+    if (t) out[k] = t.slice(0, 2000);
+  }
+  return out;
+}
+
+export async function addSnapshot(input: {
+  childId: string;
+  takenOn: string;
+  answers: Record<string, string>;
+}): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!input.childId) return { error: "Kein Kind ausgewählt." };
+  const answers = cleanAnswers(input.answers);
+  if (Object.keys(answers).length === 0) return { error: "Bitte mindestens ein Feld ausfüllen." };
+
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { error } = await supabase.from("snapshots").insert({
+    household_id: membership.household_id,
+    child_id: input.childId,
+    author_id: user.id,
+    taken_on: input.takenOn || todayISO(),
+    answers,
+  });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function updateSnapshot(
+  id: string,
+  input: { takenOn: string; answers: Record<string, string> },
+): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const answers = cleanAnswers(input.answers);
+  if (Object.keys(answers).length === 0) return { error: "Bitte mindestens ein Feld ausfüllen." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const patch: Record<string, unknown> = { answers };
+  if (input.takenOn) patch.taken_on = input.takenOn;
+  const { error } = await supabase.from("snapshots").update(patch).eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function deleteSnapshot(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("snapshots").delete().eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Soft-delete an entry (RLS allows this only for its author). It disappears
 // from the timeline but is not permanently destroyed.
 export async function deleteEntry(entryId: string): Promise<{ error?: string }> {

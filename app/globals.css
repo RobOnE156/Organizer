@@ -197,6 +197,17 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .mx { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 4px 6px; border-radius: 8px; flex: 0 0 auto; }
 .mx:hover { color: var(--danger); background: var(--surface-2); }
 
+/* snapshots ("who is <child> right now") */
+.snapcard { background: var(--surface); border: 1px solid var(--faint); border-radius: 16px; padding: 16px 18px; margin: 0 0 12px; box-shadow: 0 18px 40px -34px rgba(0, 0, 0, 0.55); }
+.snaphead { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.snaphead b { font-size: 0.98rem; }
+.snaphead span { color: var(--muted); font-size: 0.8rem; }
+.snapdl { display: grid; gap: 10px; margin: 0; }
+.snapdl .k { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold); font-weight: 700; margin: 0; }
+.snapdl .v { margin: 2px 0 0; white-space: pre-wrap; }
+.snapactions { display: flex; gap: 6px; margin-top: 12px; }
+.snapactions .btn { padding: 7px 14px; font-size: 0.82rem; }
+
 /* child hero */
 .hero {
   position: relative; border-radius: 20px; overflow: hidden;
