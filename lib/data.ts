@@ -128,7 +128,7 @@ export async function getEntriesForExport(
 ): Promise<ExportEntry[]> {
   const { data } = await supabase
     .from("entries")
-    .select("id, author_id, kind, title, body, event_date, is_private, place_name, created_at, entry_children(child_id)")
+    .select("id, author_id, kind, title, body, event_date, is_private, place_name, link, created_at, entry_children(child_id)")
     .eq("household_id", householdId)
     .is("deleted_at", null)
     .order("event_date", { ascending: true })

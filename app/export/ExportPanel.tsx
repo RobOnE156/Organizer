@@ -15,6 +15,7 @@ import {
   slugify,
   type ViewerComment,
   type ViewerEntry,
+  type ViewerLink,
   type ViewerSnapshot,
 } from "@/lib/export-format";
 
@@ -99,6 +100,28 @@ export default function ExportPanel({
           text: c.body,
         }));
 
+      // link preview cards — self-host the thumbnail into the ZIP
+      const linkByEntry = new Map<string, ViewerLink>();
+      for (const e of entries) {
+        const lk = e.link;
+        if (!lk) continue;
+        let thumbPath: string | null = null;
+        if (lk.thumbnail_key) {
+          const { data: blob } = await supabase.storage.from("media").download(lk.thumbnail_key);
+          if (blob) {
+            thumbPath = "links/" + (lk.thumbnail_key.split("/").pop() || e.id + ".jpg");
+            zip.file(thumbPath, blob);
+          }
+        }
+        linkByEntry.set(e.id, {
+          url: lk.url,
+          title: lk.title,
+          description: lk.description,
+          provider: lk.provider,
+          thumbPath,
+        });
+      }
+
       setStatus("Erstelle Tagebuch-Seite …");
       const viewerEntries: ViewerEntry[] = entries.map((e) => {
         const a = authorOf(e.author_id);
@@ -115,6 +138,7 @@ export default function ExportPanel({
           body: e.body,
           children: kids,
           media: ms,
+          link: linkByEntry.get(e.id) ?? null,
           comments: viewerCommentsFor(e.id),
         };
       });
@@ -125,7 +149,7 @@ export default function ExportPanel({
         const paths = (byEntry.get(e.id) ?? []).map(pathOf);
         zip.file(
           "entries/" + e.event_date + "-" + e.id.slice(0, 8) + ".md",
-          buildSidecar(e, a.name, kids, paths, viewerCommentsFor(e.id)),
+          buildSidecar(e, a.name, kids, paths, viewerCommentsFor(e.id), linkByEntry.get(e.id) ?? null),
         );
       }
 

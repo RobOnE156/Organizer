@@ -6,6 +6,14 @@ export type ViewerMedia = { path: string; kind: string };
 
 export type ViewerComment = { author: string; date: string; text: string };
 
+export type ViewerLink = {
+  url: string;
+  title: string | null;
+  description: string | null;
+  provider: string | null;
+  thumbPath: string | null;
+};
+
 export type ViewerEntry = {
   date: string;
   created_at: string;
@@ -17,6 +25,7 @@ export type ViewerEntry = {
   body: string | null;
   children: string[];
   media: ViewerMedia[];
+  link: ViewerLink | null;
   comments: ViewerComment[];
 };
 
@@ -55,6 +64,9 @@ const VIEWER_CSS = [
   ".grid audio{width:100%}.empty{color:var(--muted);text-align:center;padding:40px 0}",
   ".vcmts{margin-top:10px;border-top:1px solid var(--faint);padding-top:8px}",
   ".vcmt{font-size:.86rem;margin:0 0 8px;white-space:pre-wrap}.vcmt b{font-weight:700}.vcmt .t{color:var(--muted);font-size:.72rem}",
+  ".vlink{display:flex;align-items:stretch;margin-top:10px;border:1px solid var(--faint);border-radius:12px;overflow:hidden;background:var(--surface);text-decoration:none;color:var(--ink)}",
+  ".vlink img{width:96px;object-fit:cover;flex:0 0 auto;background:#000}.vlink .b{padding:10px 12px;min-width:0;display:flex;flex-direction:column;gap:2px;justify-content:center}",
+  ".vlink .p{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--gold)}.vlink .t2{font-weight:700;font-size:.9rem}.vlink .d{font-size:.8rem;color:var(--muted);margin:0}",
 ].join("\n");
 
 const VIEWER_JS = [
@@ -83,6 +95,7 @@ const VIEWER_JS = [
   "if(e.place){var pl=document.createElement('p');pl.className='place';pl.textContent='📍 '+e.place;art.appendChild(pl);}",
   "if(e.media&&e.media.length){var g=document.createElement('div');g.className='grid';for(var q=0;q<e.media.length;q++){g.appendChild(mediaEl(e.media[q]));}art.appendChild(g);}",
   "if(e.body){var p=document.createElement('p');p.className='body';p.textContent=e.body;art.appendChild(p);}",
+  "if(e.link){var la=document.createElement('a');la.className='vlink';la.href=e.link.url;la.target='_blank';la.rel='noreferrer noopener';if(e.link.thumbPath){var li=document.createElement('img');li.src=e.link.thumbPath;li.alt='';la.appendChild(li);}var lb=document.createElement('div');lb.className='b';if(e.link.provider){var lp=document.createElement('span');lp.className='p';lp.textContent=e.link.provider;lb.appendChild(lp);}var lt=document.createElement('b');lt.className='t2';lt.textContent=e.link.title||e.link.url;lb.appendChild(lt);if(e.link.description){var ld=document.createElement('p');ld.className='d';ld.textContent=e.link.description;lb.appendChild(ld);}la.appendChild(lb);art.appendChild(la);}",
   "if(e.comments&&e.comments.length){var cc=document.createElement('div');cc.className='vcmts';for(var ci=0;ci<e.comments.length;ci++){var cm=e.comments[ci];var cp=document.createElement('p');cp.className='vcmt';var cb=document.createElement('b');cb.textContent=cm.author;cp.appendChild(cb);var ct=document.createElement('span');ct.className='t';ct.textContent=' · '+cm.date;cp.appendChild(ct);cp.appendChild(document.createElement('br'));cp.appendChild(document.createTextNode(cm.text));cc.appendChild(cp);}art.appendChild(cc);}return art;}",
   "function mediaEl(m){if(m.kind==='video'){var v=document.createElement('video');v.src=m.path;v.controls=true;v.preload='metadata';return v;}",
   "if(m.kind==='audio'){var a=document.createElement('audio');a.src=m.path;a.controls=true;return a;}",
@@ -124,6 +137,7 @@ export function buildSidecar(
   children: string[],
   mediaPaths: string[],
   comments: ViewerComment[] = [],
+  link: ViewerLink | null = null,
 ): string {
   const lines: (string | null)[] = [
     "---",
@@ -138,6 +152,7 @@ export function buildSidecar(
     e.title ? "# " + e.title : null,
     "",
     e.body ?? "",
+    link ? "\n## Link\n" + (link.title ?? link.url) + (link.provider ? " (" + link.provider + ")" : "") + "\n" + link.url : null,
     mediaPaths.length ? "\nMedien:\n" + mediaPaths.map((p) => "- " + p).join("\n") : null,
     comments.length
       ? "\n## Kommentare\n" + comments.map((c) => "- **" + c.author + "** (" + c.date + "): " + c.text).join("\n")
@@ -178,6 +193,7 @@ export const EXPORT_README =
   "- media/       : alle Original-Fotos, -Videos und -Audios.\n" +
   "- entries/     : jeder Eintrag als einzelne Textdatei (Markdown, offen lesbar).\n" +
   "- snapshots/   : die „Wer ist … gerade?\"-Schnappschüsse als Textdateien.\n" +
+  "- links/       : Vorschaubilder der verlinkten Inhalte (Spotify/YouTube/…).\n" +
   "- entries.json : alle Einträge als strukturierte Daten.\n\n" +
   "Tipp: Bewahre mindestens zwei Kopien an verschiedenen Orten auf\n" +
   "(z. B. Computer + externe Festplatte oder ein zweiter Cloud-Speicher).\n";
