@@ -192,3 +192,39 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .mrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 1px solid var(--faint); border-radius: 11px; padding: 9px 13px; }
 .mx { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 4px 6px; border-radius: 8px; flex: 0 0 auto; }
 .mx:hover { color: var(--danger); background: var(--surface-2); }
+
+/* child hero */
+.hero {
+  position: relative; border-radius: 20px; overflow: hidden;
+  margin: 6px 0 22px; min-height: 168px; display: flex; align-items: flex-end;
+  border: 1px solid var(--faint);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--gold) 55%, var(--surface)) 0%, var(--surface-2) 100%);
+  box-shadow: 0 22px 50px -34px rgba(0, 0, 0, 0.55);
+}
+.hero-photo { min-height: 232px; }
+.hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.hero-photo::after {
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.14) 58%, rgba(0, 0, 0, 0) 100%);
+}
+.hero-inner { position: relative; z-index: 2; padding: 20px 22px; }
+.hero-eyebrow { letter-spacing: 0.16em; text-transform: uppercase; font-size: 11px; font-weight: 700; margin: 0 0 3px; color: var(--gold); }
+.hero-photo .hero-eyebrow { color: rgba(255, 255, 255, 0.88); }
+.hero-name { font-size: clamp(1.9rem, 7vw, 2.7rem); font-weight: 800; letter-spacing: -0.03em; margin: 0; line-height: 1.04; }
+.hero-photo .hero-name { color: #fff; text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5); }
+.hero-sub { margin: 5px 0 0; font-size: 0.9rem; color: var(--muted); }
+.hero-photo .hero-sub { color: rgba(255, 255, 255, 0.92); }
+.hero-edit {
+  position: absolute; top: 12px; right: 12px; z-index: 3;
+  border: 0; border-radius: 999px; cursor: pointer; font-size: 0.78rem; font-weight: 600;
+  background: rgba(20, 16, 24, 0.5); color: #fff; padding: 7px 12px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.hero:not(.hero-photo) .hero-edit { background: rgba(20, 16, 24, 0.32); }
+.hero-edit:hover:not(:disabled) { background: rgba(20, 16, 24, 0.72); }
+.hero-edit:disabled { opacity: 0.7; cursor: default; }
+.hero-err { position: relative; z-index: 3; margin: 0; padding: 8px 22px; font-size: 0.82rem; color: #fff; background: rgba(192, 57, 43, 0.9); }
+
+/* timeline polish */
+.msep h2 { position: relative; padding-left: 12px; }
+.msep h2::before { content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 0.95em; border-radius: 3px; background: var(--gold); }

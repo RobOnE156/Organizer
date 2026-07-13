@@ -227,6 +227,20 @@ export async function updateEntry(
   return {};
 }
 
+// Set (or clear) a child's cover photo. The image is already uploaded to
+// storage by the browser; here we just record its key on the child row.
+export async function setChildCover(childId: string, coverKey: string | null): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("children").update({ cover_key: coverKey }).eq("id", childId);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // ---- growth measurements -------------------------------------------
 export async function addMeasurement(input: {
   childId: string;

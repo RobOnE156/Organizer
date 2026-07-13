@@ -17,6 +17,7 @@ import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline
 import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
+import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
 export const dynamic = "force-dynamic";
@@ -117,6 +118,15 @@ export default async function Home() {
   const mediaByEntry = await signMediaByEntry(supabase, media);
   const fallbackAuthor: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
 
+  const today = new Date().toISOString().slice(0, 10);
+  const age = ageLabel(child.birth_date, today);
+  const birthLabel = child.birth_date ? fmtDate(child.birth_date) : null;
+  let coverUrl: string | null = null;
+  if (child.cover_key) {
+    const { data: signed } = await supabase.storage.from("media").createSignedUrl(child.cover_key, 3600);
+    coverUrl = signed?.signedUrl ?? null;
+  }
+
   // Group entries by calendar month (already sorted newest-first).
   const groups: { key: string; label: string; sub: string; entries: Entry[] }[] = [];
   for (const e of entries) {
@@ -134,6 +144,14 @@ export default async function Home() {
       <RefreshOnFocus />
       <TopBar childName={child.name} />
       <main className="tl">
+        <ChildHero
+          childId={child.id}
+          householdId={membership.household_id}
+          name={child.name}
+          age={age}
+          birthLabel={birthLabel}
+          coverUrl={coverUrl}
+        />
         {entries.length === 0 ? (
           <div className="empty">
             <p>Noch keine Erinnerungen für {child.name}.</p>

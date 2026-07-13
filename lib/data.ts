@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // user's session, so RLS (0002_rls.sql) already scopes results to their
 // household — these functions never need to filter for security, only for UX.
 
-export type Child = { id: string; name: string; birth_date: string | null };
+export type Child = { id: string; name: string; birth_date: string | null; cover_key: string | null };
 
 export type Entry = {
   id: string;
@@ -47,7 +47,7 @@ export async function ensureProfile(
 export async function getChildren(supabase: SupabaseClient, householdId: string): Promise<Child[]> {
   const { data } = await supabase
     .from("children")
-    .select("id, name, birth_date")
+    .select("id, name, birth_date, cover_key")
     .eq("household_id", householdId)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
