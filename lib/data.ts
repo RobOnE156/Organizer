@@ -29,7 +29,7 @@ export type Media = {
   position: number;
 };
 
-export type SignedMedia = { kind: string; url: string };
+export type SignedMedia = { kind: string; url: string; key: string };
 
 // Make sure the signed-in user has a profile row (for author display names),
 // without ever clobbering a name they set themselves.
@@ -141,7 +141,7 @@ export async function signMediaByEntry(
   for (const m of media) {
     const url = urlByKey.get(m.storage_key);
     if (!url) continue;
-    (byEntry[m.entry_id] ??= []).push({ kind: m.kind, url });
+    (byEntry[m.entry_id] ??= []).push({ kind: m.kind, url, key: m.storage_key });
   }
   return byEntry;
 }
