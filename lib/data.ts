@@ -52,6 +52,46 @@ export async function getReactionsForEntries(supabase: SupabaseClient, entryIds:
   return rows.map((r) => ({ entry_id: r.target_id, author_id: r.author_id, emoji: r.emoji }));
 }
 
+// Own entries that still lack coordinates but have photos — the work list for
+// backfilling GPS from already-uploaded images. Scoped to the caller's own
+// entries because entries_update is author-only, so only those can be filled.
+// Returns up to 3 image keys per entry (tried in order until GPS is found).
+export type GeoBackfillEntry = { entry_id: string; keys: string[] };
+
+export async function getEntriesNeedingGeo(
+  supabase: SupabaseClient,
+  householdId: string,
+  authorId: string,
+): Promise<GeoBackfillEntry[]> {
+  const { data: ents } = await supabase
+    .from("entries")
+    .select("id")
+    .eq("household_id", householdId)
+    .eq("author_id", authorId)
+    .is("deleted_at", null)
+    .is("lat", null);
+  const ids = ((ents as { id: string }[] | null) ?? []).map((e) => e.id);
+  if (ids.length === 0) return [];
+
+  const { data: media } = await supabase
+    .from("media")
+    .select("entry_id, storage_key, position")
+    .in("entry_id", ids)
+    .eq("kind", "image")
+    .is("deleted_at", null)
+    .order("position", { ascending: true });
+
+  const byEntry = new Map<string, string[]>();
+  for (const m of (media as { entry_id: string; storage_key: string }[] | null) ?? []) {
+    const arr = byEntry.get(m.entry_id) ?? [];
+    if (arr.length < 3) {
+      arr.push(m.storage_key);
+      byEntry.set(m.entry_id, arr);
+    }
+  }
+  return Array.from(byEntry.entries()).map(([entry_id, keys]) => ({ entry_id, keys }));
+}
+
 // Entry ids the household has starred as highlights (shared "best-of" reel).
 export async function getHighlightedEntryIds(supabase: SupabaseClient, entryIds: string[]): Promise<string[]> {
   if (entryIds.length === 0) return [];

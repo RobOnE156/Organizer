@@ -256,6 +256,31 @@ export async function updateEntry(
   return {};
 }
 
+// Backfill: stamp coordinates onto one of the user's own entries that has
+// none yet. Author-only via RLS; the `is('lat', null)` guard makes it
+// idempotent (never overwrites an existing location).
+export async function setEntryGeo(
+  entryId: string,
+  lat: number,
+  lng: number,
+): Promise<{ error?: string; updated?: boolean }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return { error: "Ungültige Koordinaten." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { data, error } = await supabase
+    .from("entries")
+    .update({ lat, lng, updated_by: user.id })
+    .eq("id", entryId)
+    .is("lat", null)
+    .select("id");
+  if (error) return { error: error.message };
+  return { updated: (data?.length ?? 0) > 0 };
+}
+
 // Set (or clear) a child's cover photo. The image is already uploaded to
 // storage by the browser; here we just record its key on the child row.
 export async function setChildCover(childId: string, coverKey: string | null): Promise<{ error?: string }> {

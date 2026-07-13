@@ -3,6 +3,7 @@ import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getChildren } from "@/lib/data";
 import { countryOfPoint, countryPaths, MAP_W, MAP_H } from "@/lib/geo/worldmap";
+import GeoBackfill from "./GeoBackfill";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +101,15 @@ export default async function MapPage() {
           )}
         </>
       )}
+
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--faint)" }}>
+        <h2 className="shead" style={{ marginTop: 0 }}>Orte nachtragen</h2>
+        <p className="muted" style={{ fontSize: ".88rem", marginTop: 0 }}>
+          Deine früher hochgeladenen Fotos wurden noch nicht ausgewertet. Trage ihre Orte
+          nachträglich ein, um Karte und Detailkarten zu füllen.
+        </p>
+        <GeoBackfill householdId={membership.household_id} userId={user.id} />
+      </div>
 
       <p style={{ marginTop: 24 }}>
         <a href="/">← Zurück zum Tagebuch</a>
