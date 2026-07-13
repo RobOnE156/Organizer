@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/env";
+import { getShellPrefs } from "@/lib/data";
+import { translator } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -21,18 +23,16 @@ export default async function JoinPage({ searchParams }: { searchParams: Promise
   if (!error) redirect("/");
 
   // Invalid or expired code — show a friendly dead end rather than a crash.
+  const t = translator((await getShellPrefs(supabase, user.id)).lang);
   return (
     <main className="authwrap">
       <div className="card stack">
         <div>
-          <p className="eyebrow">Einladung</p>
-          <h1 className="title">Beitritt nicht möglich</h1>
-          <p className="sub">
-            Dieser Einladungs-Link ist ungültig, bereits benutzt oder abgelaufen. Bitte den anderen
-            Elternteil um einen neuen Link.
-          </p>
+          <p className="eyebrow">{t("join.eyebrow")}</p>
+          <h1 className="title">{t("join.title")}</h1>
+          <p className="sub">{t("join.sub")}</p>
         </div>
-        <a className="btn btn-primary" href="/">Zur Startseite</a>
+        <a className="btn btn-primary" href="/">{t("join.home")}</a>
       </div>
     </main>
   );

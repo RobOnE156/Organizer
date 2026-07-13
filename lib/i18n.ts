@@ -15,6 +15,19 @@ export function normalizeLang(v: string | null | undefined): Lang {
   return v === "en" || v === "es" || v === "de" ? v : "de";
 }
 
+// Pick a UI language from an Accept-Language header (for pre-login pages,
+// where there is no profile yet). Falls back to German.
+export function pickLangFromAcceptLanguage(header: string | null | undefined): Lang {
+  if (!header) return "de";
+  for (const part of header.split(",")) {
+    const code = (part.split(";")[0] ?? "").trim().toLowerCase();
+    if (code.startsWith("de")) return "de";
+    if (code.startsWith("es")) return "es";
+    if (code.startsWith("en")) return "en";
+  }
+  return "de";
+}
+
 type Msg = { de: string; en: string; es: string };
 
 const M = {
@@ -95,6 +108,7 @@ const M = {
   "home.year_one": { de: "vor {n} Jahr", en: "{n} year ago", es: "hace {n} año" },
   "home.year_many": { de: "vor {n} Jahren", en: "{n} years ago", es: "hace {n} años" },
   "home.memory": { de: "Erinnerung", en: "Memory", es: "Recuerdo" },
+  "entry.private": { de: "🔒 Privat", en: "🔒 Private", es: "🔒 Privado" },
 
   // profile page
   "profile.eyebrow": { de: "Dein Profil", en: "Your profile", es: "Tu perfil" },
@@ -603,6 +617,81 @@ const M = {
   "sec.manual": { de: "Manuell:", en: "Manual:", es: "Manual:" },
   "sec.code": { de: "Code", en: "Code", es: "Código" },
   "sec.confirm": { de: "Bestätigen & aktivieren", en: "Confirm & activate", es: "Confirmar y activar" },
+
+  // auth: common
+  "auth.email": { de: "E-Mail", en: "Email", es: "Correo electrónico" },
+  "auth.password": { de: "Passwort", en: "Password", es: "Contraseña" },
+
+  // login
+  "login.title": { de: "Anmelden", en: "Sign in", es: "Iniciar sesión" },
+  "login.sub": { de: "Willkommen zurück.", en: "Welcome back.", es: "Bienvenido de nuevo." },
+  "login.sub_join": {
+    de: "Melde dich an, um dem Tagebuch beizutreten.",
+    en: "Sign in to join the diary.",
+    es: "Inicia sesión para unirte al diario.",
+  },
+  "login.no_account": { de: "Noch kein Konto?", en: "No account yet?", es: "¿Aún no tienes cuenta?" },
+  "login.register": { de: "Registrieren", en: "Sign up", es: "Registrarse" },
+
+  // signup
+  "signup.title": { de: "Konto erstellen", en: "Create account", es: "Crear cuenta" },
+  "signup.sub": {
+    de: "Ein eigenes Konto pro Elternteil — nie ein geteiltes Login.",
+    en: "A separate account per parent — never a shared login.",
+    es: "Una cuenta por progenitor — nunca un inicio de sesión compartido.",
+  },
+  "signup.sub_join": {
+    de: "Erstelle dein eigenes Konto — danach trittst du automatisch dem Tagebuch bei.",
+    en: "Create your own account — then you join the diary automatically.",
+    es: "Crea tu propia cuenta — después te unes al diario automáticamente.",
+  },
+  "signup.password": {
+    de: "Passwort (min. 8 Zeichen)",
+    en: "Password (min. 8 characters)",
+    es: "Contraseña (mín. 8 caracteres)",
+  },
+  "signup.have_account": { de: "Schon ein Konto?", en: "Already have an account?", es: "¿Ya tienes cuenta?" },
+
+  // mfa
+  "mfa.eyebrow": { de: "Zwei-Faktor", en: "Two-factor", es: "Dos factores" },
+  "mfa.title": { de: "Bestätigen", en: "Confirm", es: "Confirmar" },
+  "mfa.sub": {
+    de: "Gib den 6-stelligen Code aus deiner Authenticator-App ein.",
+    en: "Enter the 6-digit code from your authenticator app.",
+    es: "Introduce el código de 6 dígitos de tu app de autenticación.",
+  },
+
+  // onboarding
+  "ob.eyebrow": { de: "Einrichten", en: "Setup", es: "Configuración" },
+  "ob.title": { de: "Haushalt anlegen", en: "Create household", es: "Crear hogar" },
+  "ob.sub": {
+    de: "Ein Haushalt bündelt eure Erinnerungen. Lege einen neuen an — oder tritt mit einem Einladungs-Code des anderen Elternteils bei.",
+    en: "A household holds your memories together. Create a new one — or join with an invite code from the other parent.",
+    es: "Un hogar reúne vuestros recuerdos. Crea uno nuevo — o únete con un código de invitación del otro progenitor.",
+  },
+  "ob.name_label": { de: "Name des Haushalts", en: "Household name", es: "Nombre del hogar" },
+  "ob.name_ph": { de: "z. B. Familie Wolter", en: "e.g. The Wolter Family", es: "p. ej. Familia Wolter" },
+  "ob.or": { de: "oder", en: "or", es: "o" },
+  "ob.code_label": { de: "Einladungs-Code", en: "Invite code", es: "Código de invitación" },
+  "ob.code_ph": { de: "Code vom anderen Elternteil", en: "Code from the other parent", es: "Código del otro progenitor" },
+  "ob.join": { de: "Mit Code beitreten", en: "Join with code", es: "Unirse con código" },
+
+  // child form
+  "child.title": { de: "Kind anlegen", en: "Add child", es: "Añadir niño" },
+  "child.sub": { de: "Für wen ist dieses Tagebuch?", en: "Who is this diary for?", es: "¿Para quién es este diario?" },
+  "child.name_label": { de: "Name", en: "Name", es: "Nombre" },
+  "child.name_ph": { de: "z. B. Benni", en: "e.g. Benni", es: "p. ej. Benni" },
+  "child.birth_label": { de: "Geburtsdatum (optional)", en: "Date of birth (optional)", es: "Fecha de nacimiento (opcional)" },
+
+  // join dead-end
+  "join.eyebrow": { de: "Einladung", en: "Invitation", es: "Invitación" },
+  "join.title": { de: "Beitritt nicht möglich", en: "Can’t join", es: "No se puede unir" },
+  "join.sub": {
+    de: "Dieser Einladungs-Link ist ungültig, bereits benutzt oder abgelaufen. Bitte den anderen Elternteil um einen neuen Link.",
+    en: "This invite link is invalid, already used or expired. Please ask the other parent for a new link.",
+    es: "Este enlace de invitación no es válido, ya se usó o caducó. Pide al otro progenitor un enlace nuevo.",
+  },
+  "join.home": { de: "Zur Startseite", en: "Go to home", es: "Ir al inicio" },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

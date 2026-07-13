@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
 import ConfirmProvider from "@/app/ConfirmProvider";
 import { LanguageProvider } from "@/app/LanguageProvider";
@@ -6,7 +7,7 @@ import { hasSupabaseEnv } from "@/lib/env";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getShellPrefs } from "@/lib/data";
-import type { Lang } from "@/lib/i18n";
+import { pickLangFromAcceptLanguage, type Lang } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Benni-Tagebuch",
@@ -24,6 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Apply the signed-in user's accessibility + language preferences globally.
   let a11y = "";
   let lang: Lang = "de";
+  let haveUserLang = false;
   if (hasSupabaseEnv()) {
     try {
       const user = await getUser();
@@ -32,9 +34,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         const prefs = await getShellPrefs(supabase, user.id);
         a11y = prefs.a11y;
         lang = prefs.lang;
+        haveUserLang = true;
       }
     } catch {
       // never let personalisation break the shell
+    }
+  }
+  // Pre-login (no profile yet): fall back to the visitor's browser language.
+  if (!haveUserLang) {
+    try {
+      const h = await headers();
+      lang = pickLangFromAcceptLanguage(h.get("accept-language"));
+    } catch {
+      /* keep default */
     }
   }
   return (

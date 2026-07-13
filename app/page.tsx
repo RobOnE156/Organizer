@@ -22,7 +22,7 @@ import {
   type SignedMedia,
 } from "@/lib/data";
 import { ageLabel, fmtDate, monthKey, monthLabel } from "@/lib/timeline";
-import { translator } from "@/lib/i18n";
+import { translator, type T } from "@/lib/i18n";
 import TopNav from "@/app/TopNav";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
@@ -49,6 +49,7 @@ function EntryCard({
   reactions,
   commentReactions,
   isHighlight,
+  t,
 }: {
   entry: Entry;
   author: MemberProfile;
@@ -62,13 +63,14 @@ function EntryCard({
   reactions: Reaction[];
   commentReactions: CommentReaction[];
   isHighlight: boolean;
+  t: T;
 }) {
   return (
     <article id={`entry-${entry.id}`} className="entry">
       <div className="meta">
         <Avatar name={author.name} color={author.color} url={author.avatarUrl} />
         <span className="nm">{author.name}</span>
-        {entry.is_private ? <span className="privbadge">🔒 Privat</span> : null}
+        {entry.is_private ? <span className="privbadge">{t("entry.private")}</span> : null}
         <span className="when">{fmtDate(entry.event_date)}</span>
         <HighlightStar entryId={entry.id} householdId={householdId} initial={isHighlight} />
         {isOwn ? <EntryMenu entryId={entry.id} /> : null}
@@ -276,6 +278,7 @@ export default async function Home() {
                   reactions={reactionsByEntry[e.id] ?? []}
                   commentReactions={commentReactionsByEntry[e.id] ?? []}
                   isHighlight={highlightedIds.has(e.id)}
+                  t={t}
                 />
               ))}
             </section>
