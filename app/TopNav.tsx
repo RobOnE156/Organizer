@@ -3,8 +3,18 @@
 import { useEffect, useState } from "react";
 import { signOut } from "@/app/auth-actions";
 import { useT } from "@/app/LanguageProvider";
+import NotificationBell from "@/app/NotificationBell";
+import type { AppNotification, MemberProfile } from "@/lib/data";
 
-export default function TopNav({ childName }: { childName?: string }) {
+export default function TopNav({
+  childName,
+  notifications = [],
+  authors = {},
+}: {
+  childName?: string;
+  notifications?: AppNotification[];
+  authors?: Record<string, MemberProfile>;
+}) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const brand = childName ?? "Benni-Tagebuch";
@@ -29,9 +39,12 @@ export default function TopNav({ childName }: { childName?: string }) {
           {brand}
           <small>{t("nav.timeline")}</small>
         </a>
-        <button className="menubtn" onClick={() => setOpen(true)} aria-label={t("nav.menu")} aria-expanded={open}>
-          ☰
-        </button>
+        <div className="topactions">
+          <NotificationBell notifications={notifications} authors={authors} />
+          <button className="menubtn" onClick={() => setOpen(true)} aria-label={t("nav.menu")} aria-expanded={open}>
+            ☰
+          </button>
+        </div>
       </header>
 
       {open ? (

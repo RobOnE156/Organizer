@@ -10,6 +10,7 @@ import {
   getHighlightedEntryIds,
   getMediaForEntries,
   getMemberProfiles,
+  getNotifications,
   getReactionsForComments,
   getReactionsForEntries,
   getShellPrefs,
@@ -148,6 +149,7 @@ export default async function Home() {
 
   const entries = await getEntriesForChild(supabase, membership.household_id, child.id);
   const authors = await getMemberProfiles(supabase, membership.household_id);
+  const notifications = await getNotifications(supabase, user.id);
   const media = await getMediaForEntries(supabase, entries.map((e) => e.id));
   const mediaByEntry = await signMediaByEntry(supabase, media);
   const comments = await getCommentsForEntries(supabase, entries.map((e) => e.id));
@@ -213,7 +215,7 @@ export default async function Home() {
   return (
     <>
       <RefreshOnFocus />
-      <TopNav childName={child.name} />
+      <TopNav childName={child.name} notifications={notifications} authors={authors} />
       <main className="tl">
         <ChildHero
           childId={child.id}

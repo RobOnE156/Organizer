@@ -121,6 +121,34 @@ a.brand { text-decoration: none; color: inherit; }
   cursor: pointer; display: grid; place-items: center; flex: 0 0 auto;
 }
 .menubtn:hover { border-color: var(--gold); }
+/* notification bell + dropdown */
+.topactions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.bellwrap { position: relative; }
+.bellbtn { position: relative; font-size: 1.15rem; }
+.bellbadge {
+  position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 999px; background: var(--danger); color: #fff; font-size: 0.66rem; font-weight: 800;
+  display: grid; place-items: center; line-height: 1;
+}
+.bellpop {
+  position: absolute; right: 0; top: calc(100% + 8px); width: min(340px, 92vw);
+  background: var(--surface); border: 1px solid var(--faint); border-radius: 14px;
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.5); z-index: 50; overflow: hidden;
+  animation: fadein 0.12s ease;
+}
+.bellhead { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--faint); }
+.bellhead b { font-size: 0.95rem; }
+.bellmark { background: none; border: 0; color: var(--gold); font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 2px 4px; }
+.bellempty { padding: 26px 14px; text-align: center; color: var(--muted); margin: 0; font-size: 0.9rem; }
+.belllist { list-style: none; margin: 0; padding: 0; max-height: min(60vh, 440px); overflow-y: auto; }
+.bellitem { display: flex; align-items: flex-start; gap: 10px; padding: 11px 26px 11px 14px; border-bottom: 1px solid var(--faint); color: var(--ink); position: relative; }
+.bellitem:hover { background: var(--surface-2); text-decoration: none; }
+.bellitem.unread { background: color-mix(in oklab, var(--gold) 8%, var(--surface)); }
+.belltext { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.86rem; line-height: 1.4; }
+.belltitle { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.belltext small { font-size: 0.72rem; }
+.belldot { position: absolute; right: 12px; top: 15px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: 0 0 auto; }
+.bellfoot { display: block; text-align: center; padding: 11px; font-size: 0.82rem; border-top: 1px solid var(--faint); color: var(--gold); }
 .drawer-wrap {
   position: fixed; inset: 0; z-index: 40;
   background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(3px);

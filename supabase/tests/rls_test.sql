@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(126);
+select plan(146);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -468,6 +468,93 @@ select lives_ok($$ delete from letters where id='f1111111-1111-1111-1111-1111111
   'author can delete her own letter');
 select is((select count(*) from letters where id='f1111111-1111-1111-1111-111111111111')::int, 0,
   'the letter is gone after the author deletes it');
+
+-- =====================================================================
+-- notifications (in-app "Glocke"): AFTER INSERT triggers create rows for the
+-- right recipient (co-parent for a new shared entry; the entry author for a
+-- comment/reaction), skip the actor + private entries, and respect each
+-- recipient's opt-in matrix. Rows are readable/updatable only by their
+-- recipient. We assert on the SPECIFIC ids we create, since other tests'
+-- inserts fire the same triggers.
+-- =====================================================================
+reset role;
+-- alice adds a SHARED entry -> the co-parent (bob) is notified, alice is not
+insert into entries (id, household_id, author_id, kind, title, is_private, created_by) values
+  ('a0000001-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','text','Shared A', false,'11111111-1111-1111-1111-111111111111');
+select is((select count(*) from notifications where entry_id='a0000001-0000-0000-0000-000000000001' and recipient_id='22222222-2222-2222-2222-222222222222' and kind='entry')::int, 1,
+  'a new shared entry notifies the co-parent');
+select is((select count(*) from notifications where entry_id='a0000001-0000-0000-0000-000000000001' and recipient_id='11111111-1111-1111-1111-111111111111')::int, 0,
+  'the author is never notified of their own entry');
+
+-- alice adds a PRIVATE entry -> nobody is notified
+insert into entries (id, household_id, author_id, kind, title, is_private, created_by) values
+  ('a0000002-0000-0000-0000-000000000002','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','text','Private A', true,'11111111-1111-1111-1111-111111111111');
+select is((select count(*) from notifications where entry_id='a0000002-0000-0000-0000-000000000002')::int, 0,
+  'a private entry notifies nobody');
+
+-- bob comments on alice's shared entry -> alice is notified
+insert into comments (id, household_id, entry_id, author_id, body) values
+  ('c0000001-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','a0000001-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222','Nice!');
+select is((select count(*) from notifications where comment_id='c0000001-0000-0000-0000-000000000001' and recipient_id='11111111-1111-1111-1111-111111111111' and kind='comment')::int, 1,
+  'a comment notifies the entry author');
+
+-- alice comments on her OWN entry -> no notification
+insert into comments (id, household_id, entry_id, author_id, body) values
+  ('c0000002-0000-0000-0000-000000000002','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','a0000001-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111','my own');
+select is((select count(*) from notifications where comment_id='c0000002-0000-0000-0000-000000000002')::int, 0,
+  'commenting on your own entry notifies nobody');
+
+-- bob reacts to alice's shared entry -> alice is notified
+insert into reactions (household_id, target_type, target_id, author_id, emoji) values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','entry','a0000001-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222','❤️');
+select is((select count(*) from notifications where entry_id='a0000001-0000-0000-0000-000000000001' and recipient_id='11111111-1111-1111-1111-111111111111' and kind='reaction')::int, 1,
+  'a reaction notifies the entry author');
+
+-- bob opts out of new-entry notifications; a later shared entry skips him
+insert into notification_prefs (user_id, entry_inapp) values ('22222222-2222-2222-2222-222222222222', false);
+insert into entries (id, household_id, author_id, kind, title, is_private, created_by) values
+  ('a0000003-0000-0000-0000-000000000003','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','text','Shared B', false,'11111111-1111-1111-1111-111111111111');
+select is((select count(*) from notifications where entry_id='a0000003-0000-0000-0000-000000000003' and recipient_id='22222222-2222-2222-2222-222222222222')::int, 0,
+  'a recipient who opted out of entry notifications is not notified');
+
+-- anon: no access to either table
+reset role; select set_config('request.jwt.claims','',true); set local role anon;
+select throws_ok($$ select 1 from notifications $$,      '42501', null, 'anon cannot read notifications');
+select throws_ok($$ select 1 from notification_prefs $$, '42501', null, 'anon cannot read notification prefs');
+
+-- alice: sees only her own notifications, and cannot touch bob's
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from notifications where recipient_id='22222222-2222-2222-2222-222222222222')::int, 0,
+  'alice cannot see notifications addressed to bob');
+select is((select count(*) from notifications where entry_id='a0000001-0000-0000-0000-000000000001' and kind='entry')::int, 0,
+  'alice cannot see the entry notification addressed to bob');
+select is((select count(*) from notifications where comment_id='c0000001-0000-0000-0000-000000000001')::int, 1,
+  'alice sees the comment notification addressed to her');
+select lives_ok($$ update notifications set read_at=now() where entry_id='a0000001-0000-0000-0000-000000000001' and kind='entry' $$,
+  'a cross-user read-mark raises no error but changes nothing');
+
+-- the co-parent's notification is still unread after alice's attempt
+reset role;
+select is((select count(*) from notifications where entry_id='a0000001-0000-0000-0000-000000000001' and kind='entry' and recipient_id='22222222-2222-2222-2222-222222222222' and read_at is null)::int, 1,
+  'bob''s notification stays unread after a cross-user attempt');
+
+-- bob: sees his notification, can mark it read
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from notifications where entry_id='a0000001-0000-0000-0000-000000000001' and kind='entry')::int, 1,
+  'bob sees the entry notification addressed to him');
+select lives_ok($$ update notifications set read_at=now() where entry_id='a0000001-0000-0000-0000-000000000001' and kind='entry' $$,
+  'a recipient can mark their own notification read');
+select is((select count(*) from notifications where entry_id='a0000001-0000-0000-0000-000000000001' and kind='entry' and read_at is not null)::int, 1,
+  'the notification is read after the recipient marks it');
+select is((select count(*) from notification_prefs where user_id='22222222-2222-2222-2222-222222222222')::int, 1,
+  'bob can see his own notification preferences');
+
+-- notification_prefs isolation: alice cannot see bob's, manages her own
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from notification_prefs where user_id='22222222-2222-2222-2222-222222222222')::int, 0,
+  'alice cannot see bob''s notification preferences');
+select lives_ok($$ insert into notification_prefs (user_id, muted) values ('11111111-1111-1111-1111-111111111111', true) $$,
+  'a user can set their own notification preferences');
 
 -- =====================================================================
 -- guest contributions (account-less, expiring links, moderated):

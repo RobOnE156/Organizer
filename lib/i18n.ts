@@ -55,6 +55,7 @@ const M = {
   "nav.explore": { de: "Entdecken", en: "Explore", es: "Explorar" },
   "nav.settings": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
   "nav.security": { de: "Sicherheit & 2FA", en: "Security & 2FA", es: "Seguridad y 2FA" },
+  "nav.notifications": { de: "Benachrichtigungen", en: "Notifications", es: "Notificaciones" },
   "nav.letters": { de: "Briefe", en: "Letters", es: "Cartas" },
   "nav.guests": { de: "Gäste-Beiträge", en: "Guest posts", es: "Aportes de invitados" },
 
@@ -80,6 +81,11 @@ const M = {
     de: "Zwei-Faktor-Authentifizierung",
     en: "Two-factor authentication",
     es: "Autenticación de dos factores",
+  },
+  "settings.notifications_desc": {
+    de: "Wobei und wie du benachrichtigt wirst",
+    en: "What and how you get notified",
+    es: "Sobre qué y cómo recibes avisos",
   },
   "settings.export_desc": {
     de: "Das komplette Tagebuch als ZIP sichern",
@@ -741,6 +747,71 @@ const M = {
   },
   "letters.del_title": { de: "Brief löschen?", en: "Delete letter?", es: "¿Eliminar carta?" },
   "letters.del_body": { de: "Dieser Brief wird entfernt.", en: "This letter will be removed.", es: "Se eliminará esta carta." },
+
+  // notifications (in-app bell + preferences)
+  "notif.title": { de: "Benachrichtigungen", en: "Notifications", es: "Notificaciones" },
+  "notif.aria": {
+    de: "Benachrichtigungen ({n} ungelesen)",
+    en: "Notifications ({n} unread)",
+    es: "Notificaciones ({n} sin leer)",
+  },
+  "notif.none": { de: "Noch nichts Neues.", en: "Nothing new yet.", es: "Nada nuevo todavía." },
+  "notif.mark_all": { de: "Alle gelesen", en: "Mark all read", es: "Marcar todo leído" },
+  "notif.someone": { de: "Jemand", en: "Someone", es: "Alguien" },
+  "notif.settings_link": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
+  "notif.new_entry": {
+    de: "{name} hat einen neuen Eintrag hinzugefügt.",
+    en: "{name} added a new entry.",
+    es: "{name} añadió una entrada nueva.",
+  },
+  "notif.comment": {
+    de: "{name} hat deinen Eintrag kommentiert.",
+    en: "{name} commented on your entry.",
+    es: "{name} comentó tu entrada.",
+  },
+  "notif.reaction": {
+    de: "{name} hat mit {emoji} auf deinen Eintrag reagiert.",
+    en: "{name} reacted {emoji} to your entry.",
+    es: "{name} reaccionó {emoji} a tu entrada.",
+  },
+  // notification settings page
+  "notif.settings_eyebrow": { de: "Konto & App", en: "Account & app", es: "Cuenta y app" },
+  "notif.settings_title": { de: "Benachrichtigungen", en: "Notifications", es: "Notificaciones" },
+  "notif.settings_sub": {
+    de: "Lege fest, worüber du in der App benachrichtigt werden möchtest.",
+    en: "Choose what you want to be notified about in the app.",
+    es: "Elige sobre qué quieres recibir avisos en la app.",
+  },
+  "notif.opt_head": { de: "Benachrichtige mich, wenn …", en: "Notify me when …", es: "Avísame cuando …" },
+  "notif.opt_channel_note": {
+    de: "Aktuell in der App (Glocke). E-Mail- und Push-Benachrichtigungen folgen.",
+    en: "Currently in-app (the bell). E-mail and push notifications will follow.",
+    es: "Por ahora en la app (la campana). El correo y las push llegarán después.",
+  },
+  "notif.opt_entry": { de: "… ein neuer Eintrag erstellt wird", en: "… a new entry is added", es: "… se añade una entrada nueva" },
+  "notif.opt_entry_hint": {
+    de: "Wenn die andere Person eine Erinnerung hinzufügt.",
+    en: "When the other person adds a memory.",
+    es: "Cuando la otra persona añade un recuerdo.",
+  },
+  "notif.opt_comment": { de: "… jemand meinen Eintrag kommentiert", en: "… someone comments on my entry", es: "… alguien comenta mi entrada" },
+  "notif.opt_comment_hint": {
+    de: "Kommentare zu Einträgen, die du erstellt hast.",
+    en: "Comments on entries you created.",
+    es: "Comentarios en entradas que creaste.",
+  },
+  "notif.opt_reaction": { de: "… jemand auf meinen Eintrag reagiert", en: "… someone reacts to my entry", es: "… alguien reacciona a mi entrada" },
+  "notif.opt_reaction_hint": {
+    de: "Emoji-Reaktionen auf deine Einträge.",
+    en: "Emoji reactions on your entries.",
+    es: "Reacciones emoji en tus entradas.",
+  },
+  "notif.mute": { de: "Alle Benachrichtigungen stummschalten", en: "Mute all notifications", es: "Silenciar todas las notificaciones" },
+  "notif.mute_hint": {
+    de: "Du bekommst vorübergehend gar keine Benachrichtigungen.",
+    en: "You temporarily receive no notifications at all.",
+    es: "No recibirás ninguna notificación temporalmente.",
+  },
 
   // guest write page (public, account-less, rendered in the invite's language)
   "guest.eyebrow": { de: "Eine Erinnerung beitragen", en: "Share a memory", es: "Comparte un recuerdo" },

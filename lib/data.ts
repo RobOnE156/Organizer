@@ -426,6 +426,96 @@ export async function getGuestInviteInfo(
   };
 }
 
+// ---- notifications (in-app "Glocke") --------------------------------
+export type NotificationKind = "entry" | "comment" | "reaction";
+export type AppNotification = {
+  id: string;
+  kind: NotificationKind;
+  actor_id: string;
+  entry_id: string | null;
+  comment_id: string | null;
+  emoji: string | null;
+  read_at: string | null;
+  created_at: string;
+  entryTitle: string | null;
+};
+
+type NotificationRow = {
+  id: string;
+  kind: NotificationKind;
+  actor_id: string;
+  entry_id: string | null;
+  comment_id: string | null;
+  emoji: string | null;
+  read_at: string | null;
+  created_at: string;
+  entry: { title: string | null } | null;
+};
+
+// The recipient's recent notifications, newest first. RLS already scopes rows
+// to recipient_id = the current user; the entry title is embedded via the FK
+// (and comes back null if that entry has since been removed).
+export async function getNotifications(
+  supabase: SupabaseClient,
+  _userId: string,
+  limit = 20,
+): Promise<AppNotification[]> {
+  const { data } = await supabase
+    .from("notifications")
+    .select("id, kind, actor_id, entry_id, comment_id, emoji, read_at, created_at, entry:entries(title)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return ((data as NotificationRow[] | null) ?? []).map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    actor_id: r.actor_id,
+    entry_id: r.entry_id,
+    comment_id: r.comment_id,
+    emoji: r.emoji,
+    read_at: r.read_at,
+    created_at: r.created_at,
+    entryTitle: r.entry?.title ?? null,
+  }));
+}
+
+export async function getUnreadNotificationCount(
+  supabase: SupabaseClient,
+  _userId: string,
+): Promise<number> {
+  const { count } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .is("read_at", null);
+  return count ?? 0;
+}
+
+export type NotificationPrefs = {
+  entry_inapp: boolean;
+  comment_inapp: boolean;
+  reaction_inapp: boolean;
+  muted: boolean;
+};
+
+// The user's opt-in matrix, falling back to the schema defaults (everything
+// on, not muted) when no row exists yet.
+export async function getNotificationPrefs(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<NotificationPrefs> {
+  const { data } = await supabase
+    .from("notification_prefs")
+    .select("entry_inapp, comment_inapp, reaction_inapp, muted")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const r = data as Partial<NotificationPrefs> | null;
+  return {
+    entry_inapp: r?.entry_inapp ?? true,
+    comment_inapp: r?.comment_inapp ?? true,
+    reaction_inapp: r?.reaction_inapp ?? true,
+    muted: r?.muted ?? false,
+  };
+}
+
 export type Snapshot = {
   id: string;
   child_id: string;

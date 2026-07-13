@@ -792,6 +792,48 @@ export async function moderateContribution(
   return {};
 }
 
+// ---- notifications (in-app "Glocke") -------------------------------
+export async function markNotificationRead(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function markAllNotificationsRead(): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .is("read_at", null);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function updateNotificationPrefs(prefs: {
+  entry_inapp: boolean;
+  comment_inapp: boolean;
+  reaction_inapp: boolean;
+  muted: boolean;
+}): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("notification_prefs")
+    .upsert({ user_id: user.id, ...prefs, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  if (error) return { error: error.message };
+  return {};
+}
+
 function guestErrCode(msg: string): string {
   if (/revoked/i.test(msg)) return "revoked";
   if (/expired/i.test(msg)) return "expired";
