@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(63);
+select plan(71);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -281,6 +281,40 @@ select throws_ok($$ insert into comments (household_id, entry_id, author_id, bod
 reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
 select lives_ok($$ delete from comments where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'author can delete his own comment');
 select is((select count(*) from comments where entry_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'the comment is gone after the author deletes it');
+
+-- =====================================================================
+-- reactions: any member may react on a visible entry; author-only delete;
+-- (target_type,target_id,author_id,emoji) is unique; cross-household denied
+-- =====================================================================
+-- bob (co-parent) reacts to alice's public entry e1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into reactions (household_id, target_type, target_id, author_id, emoji)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','entry','e1111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','❤️') $$,
+  'co-parent can react to a visible entry');
+
+-- the same author cannot add the same emoji twice (unique constraint)
+select throws_ok($$ insert into reactions (household_id, target_type, target_id, author_id, emoji)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','entry','e1111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','❤️') $$,
+  '23505', null, 'the same author cannot add the same emoji twice (unique)');
+
+-- alice (co-parent) sees bob's reaction
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from reactions where target_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'co-parent sees the reaction');
+
+-- alice (non-author) cannot delete bob's reaction
+select lives_ok($$ delete from reactions where target_id='e1111111-1111-1111-1111-111111111111' $$, 'non-author delete of a reaction is a no-op');
+select is((select count(*) from reactions where target_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'the reaction survived the non-author delete');
+
+-- carol (other household) cannot react on e1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select throws_ok($$ insert into reactions (household_id, target_type, target_id, author_id, emoji)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','entry','e1111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','❤️') $$,
+  '42501', null, 'a cross-household user cannot react');
+
+-- bob deletes his own reaction
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ delete from reactions where target_id='e1111111-1111-1111-1111-111111111111' $$, 'author can delete his own reaction');
+select is((select count(*) from reactions where target_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'the reaction is gone after the author deletes it');
 
 reset role;
 select * from finish();

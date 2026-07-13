@@ -37,6 +37,19 @@ export type Comment = {
   created_at: string;
 };
 
+export type Reaction = { entry_id: string; author_id: string; emoji: string };
+
+export async function getReactionsForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Reaction[]> {
+  if (entryIds.length === 0) return [];
+  const { data } = await supabase
+    .from("reactions")
+    .select("target_id, author_id, emoji")
+    .eq("target_type", "entry")
+    .in("target_id", entryIds);
+  const rows = (data as { target_id: string; author_id: string; emoji: string }[] | null) ?? [];
+  return rows.map((r) => ({ entry_id: r.target_id, author_id: r.author_id, emoji: r.emoji }));
+}
+
 export async function getCommentsForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Comment[]> {
   if (entryIds.length === 0) return [];
   const { data } = await supabase

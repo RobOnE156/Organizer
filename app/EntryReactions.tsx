@@ -1,0 +1,94 @@
+"use client";
+
+import { useState } from "react";
+import { addReaction, removeReaction } from "@/app/content-actions";
+import { REACTION_EMOJIS } from "@/app/content-types";
+import type { Reaction } from "@/lib/data";
+
+export default function EntryReactions({
+  entryId,
+  householdId,
+  initial,
+  userId,
+}: {
+  entryId: string;
+  householdId: string;
+  initial: Reaction[];
+  userId: string;
+}) {
+  const [reactions, setReactions] = useState<Reaction[]>(initial);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const countOf = (emoji: string) => reactions.filter((r) => r.emoji === emoji).length;
+  const mine = (emoji: string) => reactions.some((r) => r.emoji === emoji && r.author_id === userId);
+  const present = REACTION_EMOJIS.filter((e) => countOf(e) > 0);
+
+  async function toggle(emoji: string) {
+    if (busy) return;
+    setBusy(emoji);
+    const hadMine = mine(emoji);
+    setReactions((prev) =>
+      hadMine
+        ? prev.filter((r) => !(r.emoji === emoji && r.author_id === userId))
+        : [...prev, { entry_id: entryId, author_id: userId, emoji }],
+    );
+    const res = hadMine ? await removeReaction(entryId, emoji) : await addReaction(entryId, householdId, emoji);
+    setBusy(null);
+    if (res.error) {
+      // revert the optimistic change
+      setReactions((prev) =>
+        hadMine
+          ? [...prev, { entry_id: entryId, author_id: userId, emoji }]
+          : prev.filter((r) => !(r.emoji === emoji && r.author_id === userId)),
+      );
+    }
+  }
+
+  return (
+    <div className="reacts">
+      {present.map((emoji) => (
+        <button
+          key={emoji}
+          type="button"
+          className={"react" + (mine(emoji) ? " on" : "")}
+          onClick={() => toggle(emoji)}
+          disabled={busy === emoji}
+          aria-pressed={mine(emoji)}
+          aria-label={"Reaktion " + emoji}
+        >
+          <span className="re">{emoji}</span>
+          <span className="rc">{countOf(emoji)}</span>
+        </button>
+      ))}
+      <div className="reactadd">
+        <button
+          type="button"
+          className="react addbtn"
+          onClick={() => setPaletteOpen((o) => !o)}
+          aria-expanded={paletteOpen}
+          aria-label="Reagieren"
+        >
+          🙂<span className="plus">＋</span>
+        </button>
+        {paletteOpen ? (
+          <div className="palette" onMouseLeave={() => setPaletteOpen(false)}>
+            {REACTION_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className={"pbtn" + (mine(emoji) ? " on" : "")}
+                onClick={() => {
+                  toggle(emoji);
+                  setPaletteOpen(false);
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}

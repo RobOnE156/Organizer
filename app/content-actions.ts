@@ -6,7 +6,7 @@ import { getMembership } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
 import { fetchLinkPreview, fetchImageBytes } from "@/lib/link-preview";
 import type { FormState } from "@/app/auth-types";
-import type { CreateEntryResult, MediaInput } from "@/app/content-types";
+import { REACTION_EMOJIS, type CreateEntryResult, type MediaInput } from "@/app/content-types";
 
 const NOT_CONFIGURED = "Supabase ist noch nicht konfiguriert.";
 
@@ -371,6 +371,41 @@ export async function attachLink(entryId: string, householdId: string, rawUrl: s
     thumbnail_key,
   };
   const { error } = await supabase.from("entries").update({ link }).eq("id", entryId);
+  if (error) return { error: error.message };
+  return {};
+}
+
+// ---- reactions -----------------------------------------------------
+export async function addReaction(entryId: string, householdId: string, emoji: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!(REACTION_EMOJIS as readonly string[]).includes(emoji)) return { error: "Ungültige Reaktion." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("reactions").upsert(
+    { household_id: householdId, target_type: "entry", target_id: entryId, author_id: user.id, emoji },
+    { onConflict: "target_type,target_id,author_id,emoji", ignoreDuplicates: true },
+  );
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function removeReaction(entryId: string, emoji: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("reactions")
+    .delete()
+    .eq("target_type", "entry")
+    .eq("target_id", entryId)
+    .eq("author_id", user.id)
+    .eq("emoji", emoji);
   if (error) return { error: error.message };
   return {};
 }

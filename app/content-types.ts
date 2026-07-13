@@ -11,3 +11,6 @@ export type MediaInput = {
 };
 
 export type CreateEntryResult = { error?: string; entryId?: string; householdId?: string };
+
+// The fixed set of entry reactions (whitelisted server-side).
+export const REACTION_EMOJIS = ["❤️", "😍", "😂", "🥰", "👏", "🎉"] as const;

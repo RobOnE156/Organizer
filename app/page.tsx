@@ -9,10 +9,12 @@ import {
   getEntriesForChild,
   getMediaForEntries,
   getMemberProfiles,
+  getReactionsForEntries,
   signMediaByEntry,
   type Comment,
   type Entry,
   type MemberProfile,
+  type Reaction,
   type SignedMedia,
 } from "@/lib/data";
 import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline";
@@ -20,6 +22,7 @@ import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
 import EntryComments from "@/app/EntryComments";
+import EntryReactions from "@/app/EntryReactions";
 import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
@@ -55,6 +58,7 @@ function EntryCard({
   userId,
   householdId,
   linkThumb,
+  reactions,
 }: {
   entry: Entry;
   author: MemberProfile;
@@ -65,6 +69,7 @@ function EntryCard({
   userId: string;
   householdId: string;
   linkThumb?: string;
+  reactions: Reaction[];
 }) {
   return (
     <article id={`entry-${entry.id}`} className="entry">
@@ -89,6 +94,7 @@ function EntryCard({
           </div>
         </a>
       ) : null}
+      <EntryReactions entryId={entry.id} householdId={householdId} initial={reactions} userId={userId} />
       <EntryComments
         entryId={entry.id}
         householdId={householdId}
@@ -149,6 +155,9 @@ export default async function Home() {
   const comments = await getCommentsForEntries(supabase, entries.map((e) => e.id));
   const commentsByEntry: Record<string, Comment[]> = {};
   for (const c of comments) (commentsByEntry[c.entry_id] ??= []).push(c);
+  const reactions = await getReactionsForEntries(supabase, entries.map((e) => e.id));
+  const reactionsByEntry: Record<string, Reaction[]> = {};
+  for (const r of reactions) (reactionsByEntry[r.entry_id] ??= []).push(r);
   const fallbackAuthor: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -256,6 +265,7 @@ export default async function Home() {
                   userId={user.id}
                   householdId={membership.household_id}
                   linkThumb={linkThumbByEntry[e.id]}
+                  reactions={reactionsByEntry[e.id] ?? []}
                 />
               ))}
             </section>
