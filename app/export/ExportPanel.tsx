@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ageLabel } from "@/lib/timeline";
 import { snapshotPrompts } from "@/lib/snapshot-prompts";
 import { REACTION_EMOJIS } from "@/app/content-types";
-import type { Child, Comment, ExportEntry, MemberProfile, Reaction, Snapshot } from "@/lib/data";
+import type { Child, Comment, CommentReaction, ExportEntry, MemberProfile, Reaction, Snapshot } from "@/lib/data";
 import {
   buildIndexHtml,
   buildSidecar,
@@ -42,6 +42,7 @@ export default function ExportPanel({
   snapshots,
   comments,
   reactions,
+  commentReactions,
 }: {
   householdName: string;
   childList: Child[];
@@ -51,6 +52,7 @@ export default function ExportPanel({
   snapshots: Snapshot[];
   comments: Comment[];
   reactions: Reaction[];
+  commentReactions: CommentReaction[];
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -97,27 +99,35 @@ export default function ExportPanel({
         if (arr) arr.push(c);
         else commentsByEntry.set(c.entry_id, [c]);
       }
+
+      // aggregate a flat reaction list into pills per emoji, in palette order
+      const aggregate = (rows: { emoji: string }[]): ViewerReaction[] =>
+        REACTION_EMOJIS.map((emoji) => ({ emoji, count: rows.filter((r) => r.emoji === emoji).length })).filter(
+          (r) => r.count > 0,
+        );
+
+      const commentReactionsByComment = new Map<string, CommentReaction[]>();
+      for (const r of commentReactions) {
+        const arr = commentReactionsByComment.get(r.comment_id);
+        if (arr) arr.push(r);
+        else commentReactionsByComment.set(r.comment_id, [r]);
+      }
       const viewerCommentsFor = (entryId: string): ViewerComment[] =>
         (commentsByEntry.get(entryId) ?? []).map((c) => ({
           author: authorOf(c.author_id).name,
           date: fmtCommentDate(c.created_at),
           text: c.body,
+          reactions: aggregate(commentReactionsByComment.get(c.id) ?? []),
         }));
 
-      // reactions aggregated per emoji (in the app's palette order)
+      // entry reactions aggregated per emoji (in the app's palette order)
       const reactionsByEntry = new Map<string, Reaction[]>();
       for (const r of reactions) {
         const arr = reactionsByEntry.get(r.entry_id);
         if (arr) arr.push(r);
         else reactionsByEntry.set(r.entry_id, [r]);
       }
-      const viewerReactionsFor = (entryId: string): ViewerReaction[] => {
-        const rows = reactionsByEntry.get(entryId) ?? [];
-        return REACTION_EMOJIS.map((emoji) => ({
-          emoji,
-          count: rows.filter((r) => r.emoji === emoji).length,
-        })).filter((r) => r.count > 0);
-      };
+      const viewerReactionsFor = (entryId: string): ViewerReaction[] => aggregate(reactionsByEntry.get(entryId) ?? []);
 
       // link preview cards — self-host the thumbnail into the ZIP
       const linkByEntry = new Map<string, ViewerLink>();
