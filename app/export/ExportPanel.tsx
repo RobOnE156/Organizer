@@ -5,7 +5,8 @@ import JSZip from "jszip";
 import { createClient } from "@/lib/supabase/client";
 import { ageLabel } from "@/lib/timeline";
 import { snapshotPrompts } from "@/lib/snapshot-prompts";
-import type { Child, Comment, ExportEntry, MemberProfile, Snapshot } from "@/lib/data";
+import { REACTION_EMOJIS } from "@/app/content-types";
+import type { Child, Comment, ExportEntry, MemberProfile, Reaction, Snapshot } from "@/lib/data";
 import {
   buildIndexHtml,
   buildSidecar,
@@ -16,6 +17,7 @@ import {
   type ViewerComment,
   type ViewerEntry,
   type ViewerLink,
+  type ViewerReaction,
   type ViewerSnapshot,
 } from "@/lib/export-format";
 
@@ -39,6 +41,7 @@ export default function ExportPanel({
   authors,
   snapshots,
   comments,
+  reactions,
 }: {
   householdName: string;
   childList: Child[];
@@ -47,6 +50,7 @@ export default function ExportPanel({
   authors: Record<string, MemberProfile>;
   snapshots: Snapshot[];
   comments: Comment[];
+  reactions: Reaction[];
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -100,6 +104,21 @@ export default function ExportPanel({
           text: c.body,
         }));
 
+      // reactions aggregated per emoji (in the app's palette order)
+      const reactionsByEntry = new Map<string, Reaction[]>();
+      for (const r of reactions) {
+        const arr = reactionsByEntry.get(r.entry_id);
+        if (arr) arr.push(r);
+        else reactionsByEntry.set(r.entry_id, [r]);
+      }
+      const viewerReactionsFor = (entryId: string): ViewerReaction[] => {
+        const rows = reactionsByEntry.get(entryId) ?? [];
+        return REACTION_EMOJIS.map((emoji) => ({
+          emoji,
+          count: rows.filter((r) => r.emoji === emoji).length,
+        })).filter((r) => r.count > 0);
+      };
+
       // link preview cards — self-host the thumbnail into the ZIP
       const linkByEntry = new Map<string, ViewerLink>();
       for (const e of entries) {
@@ -139,6 +158,7 @@ export default function ExportPanel({
           children: kids,
           media: ms,
           link: linkByEntry.get(e.id) ?? null,
+          reactions: viewerReactionsFor(e.id),
           comments: viewerCommentsFor(e.id),
         };
       });
@@ -149,7 +169,7 @@ export default function ExportPanel({
         const paths = (byEntry.get(e.id) ?? []).map(pathOf);
         zip.file(
           "entries/" + e.event_date + "-" + e.id.slice(0, 8) + ".md",
-          buildSidecar(e, a.name, kids, paths, viewerCommentsFor(e.id), linkByEntry.get(e.id) ?? null),
+          buildSidecar(e, a.name, kids, paths, viewerCommentsFor(e.id), linkByEntry.get(e.id) ?? null, viewerReactionsFor(e.id)),
         );
       }
 

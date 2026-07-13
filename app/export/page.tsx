@@ -7,6 +7,7 @@ import {
   getEntriesForExport,
   getMediaForEntries,
   getMemberProfiles,
+  getReactionsForEntries,
   getSnapshotsForExport,
 } from "@/lib/data";
 import ExportPanel from "./ExportPanel";
@@ -29,6 +30,7 @@ export default async function ExportPage() {
   const entryIds = entries.map((e) => e.id);
   const mediaRows = await getMediaForEntries(supabase, entryIds);
   const commentRows = await getCommentsForEntries(supabase, entryIds);
+  const reactionRows = await getReactionsForEntries(supabase, entryIds);
   const authors = await getMemberProfiles(supabase, membership.household_id);
 
   const { data: hh } = await supabase
@@ -63,6 +65,7 @@ export default async function ExportPage() {
         authors={authors}
         snapshots={snapshots}
         comments={commentRows}
+        reactions={reactionRows}
       />
       <p style={{ marginTop: 24 }}>
         <a href="/">← Zurück</a>

@@ -6,6 +6,8 @@ export type ViewerMedia = { path: string; kind: string };
 
 export type ViewerComment = { author: string; date: string; text: string };
 
+export type ViewerReaction = { emoji: string; count: number };
+
 export type ViewerLink = {
   url: string;
   title: string | null;
@@ -26,6 +28,7 @@ export type ViewerEntry = {
   children: string[];
   media: ViewerMedia[];
   link: ViewerLink | null;
+  reactions: ViewerReaction[];
   comments: ViewerComment[];
 };
 
@@ -62,6 +65,9 @@ const VIEWER_CSS = [
   ".grid{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:8px}",
   ".grid img,.grid video{width:100%;border-radius:12px;display:block;background:#000;max-height:340px;object-fit:cover}",
   ".grid audio{width:100%}.empty{color:var(--muted);text-align:center;padding:40px 0}",
+  ".vreacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}",
+  ".vreact{display:inline-flex;align-items:center;gap:4px;font-size:.82rem;border:1px solid var(--faint);border-radius:999px;padding:3px 9px;background:var(--bg)}",
+  ".vreact b{font-weight:700;color:var(--muted);font-size:.76rem}",
   ".vcmts{margin-top:10px;border-top:1px solid var(--faint);padding-top:8px}",
   ".vcmt{font-size:.86rem;margin:0 0 8px;white-space:pre-wrap}.vcmt b{font-weight:700}.vcmt .t{color:var(--muted);font-size:.72rem}",
   ".vlink{display:flex;align-items:stretch;margin-top:10px;border:1px solid var(--faint);border-radius:12px;overflow:hidden;background:var(--surface);text-decoration:none;color:var(--ink)}",
@@ -96,6 +102,7 @@ const VIEWER_JS = [
   "if(e.media&&e.media.length){var g=document.createElement('div');g.className='grid';for(var q=0;q<e.media.length;q++){g.appendChild(mediaEl(e.media[q]));}art.appendChild(g);}",
   "if(e.body){var p=document.createElement('p');p.className='body';p.textContent=e.body;art.appendChild(p);}",
   "if(e.link){var la=document.createElement('a');la.className='vlink';la.href=e.link.url;la.target='_blank';la.rel='noreferrer noopener';if(e.link.thumbPath){var li=document.createElement('img');li.src=e.link.thumbPath;li.alt='';la.appendChild(li);}var lb=document.createElement('div');lb.className='b';if(e.link.provider){var lp=document.createElement('span');lp.className='p';lp.textContent=e.link.provider;lb.appendChild(lp);}var lt=document.createElement('b');lt.className='t2';lt.textContent=e.link.title||e.link.url;lb.appendChild(lt);if(e.link.description){var ld=document.createElement('p');ld.className='d';ld.textContent=e.link.description;lb.appendChild(ld);}la.appendChild(lb);art.appendChild(la);}",
+  "if(e.reactions&&e.reactions.length){var rr=document.createElement('div');rr.className='vreacts';for(var ri=0;ri<e.reactions.length;ri++){var rx=e.reactions[ri];var rp=document.createElement('span');rp.className='vreact';rp.appendChild(document.createTextNode(rx.emoji));var rb=document.createElement('b');rb.textContent=rx.count;rp.appendChild(rb);rr.appendChild(rp);}art.appendChild(rr);}",
   "if(e.comments&&e.comments.length){var cc=document.createElement('div');cc.className='vcmts';for(var ci=0;ci<e.comments.length;ci++){var cm=e.comments[ci];var cp=document.createElement('p');cp.className='vcmt';var cb=document.createElement('b');cb.textContent=cm.author;cp.appendChild(cb);var ct=document.createElement('span');ct.className='t';ct.textContent=' · '+cm.date;cp.appendChild(ct);cp.appendChild(document.createElement('br'));cp.appendChild(document.createTextNode(cm.text));cc.appendChild(cp);}art.appendChild(cc);}return art;}",
   "function mediaEl(m){if(m.kind==='video'){var v=document.createElement('video');v.src=m.path;v.controls=true;v.preload='metadata';return v;}",
   "if(m.kind==='audio'){var a=document.createElement('audio');a.src=m.path;a.controls=true;return a;}",
@@ -138,6 +145,7 @@ export function buildSidecar(
   mediaPaths: string[],
   comments: ViewerComment[] = [],
   link: ViewerLink | null = null,
+  reactions: ViewerReaction[] = [],
 ): string {
   const lines: (string | null)[] = [
     "---",
@@ -154,6 +162,9 @@ export function buildSidecar(
     e.body ?? "",
     link ? "\n## Link\n" + (link.title ?? link.url) + (link.provider ? " (" + link.provider + ")" : "") + "\n" + link.url : null,
     mediaPaths.length ? "\nMedien:\n" + mediaPaths.map((p) => "- " + p).join("\n") : null,
+    reactions.length
+      ? "\n## Reaktionen\n" + reactions.map((r) => r.emoji + " " + r.count).join("  ")
+      : null,
     comments.length
       ? "\n## Kommentare\n" + comments.map((c) => "- **" + c.author + "** (" + c.date + "): " + c.text).join("\n")
       : null,
