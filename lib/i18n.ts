@@ -28,14 +28,49 @@ const M = {
   // top navigation
   "nav.tagline": { de: "Tagebuch", en: "Diary", es: "Diario" },
   "nav.about": { de: "Über {name}", en: "About {name}", es: "Sobre {name}" },
-  "nav.review": { de: "★ Rückblick", en: "★ Highlights", es: "★ Recuerdos" },
-  "nav.map": { de: "🗺️ Karte", en: "🗺️ Map", es: "🗺️ Mapa" },
-  "nav.search": { de: "🔍 Suche", en: "🔍 Search", es: "🔍 Buscar" },
+  "nav.review": { de: "Rückblick", en: "Highlights", es: "Recuerdos" },
+  "nav.map": { de: "Karte", en: "Map", es: "Mapa" },
+  "nav.search": { de: "Suche", en: "Search", es: "Buscar" },
   "nav.profile": { de: "Profil", en: "Profile", es: "Perfil" },
   "nav.household": { de: "Haushalt", en: "Household", es: "Hogar" },
   "nav.export": { de: "Export", en: "Export", es: "Exportar" },
   "nav.signout": { de: "Abmelden", en: "Sign out", es: "Cerrar sesión" },
   "nav.child_fallback": { de: "Kind", en: "child", es: "niño" },
+  "nav.menu": { de: "Menü", en: "Menu", es: "Menú" },
+  "nav.close": { de: "Schließen", en: "Close", es: "Cerrar" },
+  "nav.timeline": { de: "Tagebuch", en: "Diary", es: "Diario" },
+  "nav.explore": { de: "Entdecken", en: "Explore", es: "Explorar" },
+  "nav.settings": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
+  "nav.security": { de: "Sicherheit & 2FA", en: "Security & 2FA", es: "Seguridad y 2FA" },
+
+  // settings hub
+  "settings.eyebrow": { de: "Konto & App", en: "Account & app", es: "Cuenta y app" },
+  "settings.title": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
+  "settings.sub": {
+    de: "Verwalte dein Profil, den Haushalt, die Sicherheit und die Sicherung.",
+    en: "Manage your profile, household, security and backup.",
+    es: "Gestiona tu perfil, el hogar, la seguridad y la copia de seguridad.",
+  },
+  "settings.profile_desc": {
+    de: "Name, Foto, Farbe, Sprache, Barrierefreiheit, Passwort",
+    en: "Name, photo, colour, language, accessibility, password",
+    es: "Nombre, foto, color, idioma, accesibilidad, contraseña",
+  },
+  "settings.household_desc": {
+    de: "Partner einladen und Mitglieder verwalten",
+    en: "Invite your partner and manage members",
+    es: "Invita a tu pareja y gestiona miembros",
+  },
+  "settings.security_desc": {
+    de: "Zwei-Faktor-Authentifizierung",
+    en: "Two-factor authentication",
+    es: "Autenticación de dos factores",
+  },
+  "settings.export_desc": {
+    de: "Das komplette Tagebuch als ZIP sichern",
+    en: "Back up the whole diary as a ZIP",
+    es: "Copia de seguridad de todo el diario en ZIP",
+  },
 
   // home / timeline
   "home.welcome_title": { de: "Willkommen! 👶", en: "Welcome! 👶", es: "¡Bienvenido! 👶" },

@@ -60,7 +60,7 @@ export default async function ProfilePage() {
       </div>
 
       <p style={{ marginTop: 24 }}>
-        <a href="/">{t("common.back")}</a>
+        <a href="/settings">{t("common.back")}</a>
       </p>
     </main>
   );

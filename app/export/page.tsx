@@ -74,7 +74,7 @@ export default async function ExportPage() {
         highlightedIds={highlightedIds}
       />
       <p style={{ marginTop: 24 }}>
-        <a href="/">← Zurück</a>
+        <a href="/settings">← Zurück</a>
       </p>
     </main>
   );

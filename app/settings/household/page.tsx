@@ -35,7 +35,7 @@ export default async function HouseholdPage() {
       </p>
       <InvitePanel isOwner={membership.role === "owner"} />
       <p style={{ marginTop: 24 }}>
-        <a href="/">← Zurück</a>
+        <a href="/settings">← Zurück</a>
       </p>
     </main>
   );

@@ -22,8 +22,8 @@ import {
   type SignedMedia,
 } from "@/lib/data";
 import { ageLabel, fmtDate, monthKey, monthLabel } from "@/lib/timeline";
-import { translator, type T } from "@/lib/i18n";
-import { signOut } from "@/app/auth-actions";
+import { translator } from "@/lib/i18n";
+import TopNav from "@/app/TopNav";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
 import EntryComments from "@/app/EntryComments";
@@ -35,30 +35,6 @@ import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
 export const dynamic = "force-dynamic";
-
-function TopBar({ childName, t }: { childName?: string; t: T }) {
-  return (
-    <header className="topbar">
-      <div className="brand">
-        {childName ?? "Benni-Tagebuch"}
-        <small>{t("nav.tagline")}</small>
-      </div>
-      <nav className="topnav">
-        <a className="iconlink" href="/growth">{t("nav.about", { name: childName ?? t("nav.child_fallback") })}</a>
-        <a className="iconlink" href="/highlights">{t("nav.review")}</a>
-        <a className="iconlink" href="/map">{t("nav.map")}</a>
-        <a className="iconlink" href="/search">{t("nav.search")}</a>
-        <a className="iconlink" href="/settings/profile">{t("nav.profile")}</a>
-        <a className="iconlink" href="/settings/household">{t("nav.household")}</a>
-        <a className="iconlink" href="/settings/security">2FA</a>
-        <a className="iconlink" href="/export">{t("nav.export")}</a>
-        <form action={signOut}>
-          <button className="iconlink" style={{ background: "none", border: 0, cursor: "pointer" }}>{t("nav.signout")}</button>
-        </form>
-      </nav>
-    </header>
-  );
-}
 
 function EntryCard({
   entry,
@@ -154,7 +130,7 @@ export default async function Home() {
   if (!child) {
     return (
       <>
-        <TopBar t={t} />
+        <TopNav />
         <main className="tl">
           <div className="empty">
             <h2 style={{ marginBottom: 8 }}>{t("home.welcome_title")}</h2>
@@ -235,7 +211,7 @@ export default async function Home() {
   return (
     <>
       <RefreshOnFocus />
-      <TopBar childName={child.name} t={t} />
+      <TopNav childName={child.name} />
       <main className="tl">
         <ChildHero
           childId={child.id}

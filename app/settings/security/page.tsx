@@ -25,7 +25,7 @@ export default async function SecurityPage() {
       <p className="sub">Schütze euer Tagebuch mit einem zweiten Faktor (Authenticator-App / TOTP).</p>
       <SecuritySetup hasTotp={hasTotp} />
       <p style={{ marginTop: 24 }}>
-        <a href="/">← Zurück</a>
+        <a href="/settings">← Zurück</a>
       </p>
     </main>
   );
