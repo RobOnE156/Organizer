@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setChildCover } from "@/app/content-actions";
 import CoverCropper from "@/app/CoverCropper";
+import CoverPicker from "@/app/CoverPicker";
 
 export default function ChildHero({
   childId,
@@ -13,6 +14,7 @@ export default function ChildHero({
   age,
   birthLabel,
   coverUrl,
+  coverKey,
 }: {
   childId: string;
   householdId: string;
@@ -20,12 +22,26 @@ export default function ChildHero({
   age: string;
   birthLabel: string | null;
   coverUrl: string | null;
+  coverKey: string | null;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function applyCover(key: string) {
+    setError(null);
+    setBusy(true);
+    const res = await setChildCover(childId, key);
+    setBusy(false);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    router.refresh();
+  }
 
   async function uploadCover(blob: Blob) {
     setCropFile(null);
@@ -74,7 +90,7 @@ export default function ChildHero({
       <button
         type="button"
         className="hero-edit"
-        onClick={() => inputRef.current?.click()}
+        onClick={() => setPickerOpen(true)}
         disabled={busy}
         aria-label="Titelbild ändern"
         title="Titelbild ändern"
@@ -93,6 +109,23 @@ export default function ChildHero({
         }}
       />
       {error ? <p className="hero-err">{error}</p> : null}
+
+      {pickerOpen ? (
+        <CoverPicker
+          childId={childId}
+          householdId={householdId}
+          currentKey={coverKey}
+          onClose={() => setPickerOpen(false)}
+          onPickNew={() => {
+            setPickerOpen(false);
+            inputRef.current?.click();
+          }}
+          onSelect={(key) => {
+            setPickerOpen(false);
+            applyCover(key);
+          }}
+        />
+      ) : null}
       {cropFile ? (
         <CoverCropper file={cropFile} onCancel={() => setCropFile(null)} onDone={uploadCover} />
       ) : null}

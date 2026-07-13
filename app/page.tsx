@@ -151,6 +151,7 @@ export default async function Home() {
           age={age}
           birthLabel={birthLabel}
           coverUrl={coverUrl}
+          coverKey={child.cover_key}
         />
         {entries.length === 0 ? (
           <div className="empty">
