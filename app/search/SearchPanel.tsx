@@ -6,6 +6,7 @@ import type { SearchCommentHit, SearchEntryHit, SearchResult } from "@/app/conte
 import { makeSnippet, type Snippet } from "@/lib/search-format";
 import { fmtDate } from "@/lib/timeline";
 import Avatar from "@/app/Avatar";
+import { useT } from "@/app/LanguageProvider";
 import type { MemberProfile } from "@/lib/data";
 
 function fmtTime(iso: string): string {
@@ -28,6 +29,7 @@ function entrySnippet(e: SearchEntryHit, q: string): Snippet | null {
 }
 
 export default function SearchPanel({ authors }: { authors: Record<string, MemberProfile> }) {
+  const { t } = useT();
   const [q, setQ] = useState("");
   const [res, setRes] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,26 +70,24 @@ export default function SearchPanel({ authors }: { authors: Record<string, Membe
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Titel, Text, Ort oder Kommentar suchen …"
-        aria-label="Im Tagebuch suchen"
+        placeholder={t("search.ph")}
+        aria-label={t("search.title")}
         autoFocus
       />
 
-      {loading ? <p className="muted" style={{ marginTop: 12 }}>Suche …</p> : null}
+      {loading ? <p className="muted" style={{ marginTop: 12 }}>{t("search.searching")}</p> : null}
 
       {!loading && term.length >= 2 && res ? (
         total === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>Keine Treffer für „{term}".</p>
+          <p className="muted" style={{ marginTop: 12 }}>{t("search.none", { term })}</p>
         ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
-            {total} {total === 1 ? "Treffer" : "Treffer"} für „{term}".
-          </p>
+          <p className="muted" style={{ marginTop: 12 }}>{t("search.results", { n: total, term })}</p>
         )
       ) : null}
 
       {!loading && res && res.entries.length > 0 ? (
         <>
-          <h2 className="shead">Einträge</h2>
+          <h2 className="shead">{t("search.entries")}</h2>
           <ul className="shits">
             {res.entries.map((e: SearchEntryHit) => {
               const snip = entrySnippet(e, term);
@@ -96,7 +96,7 @@ export default function SearchPanel({ authors }: { authors: Record<string, Membe
                   <a href={`/#entry-${e.id}`}>
                     <div className="shmeta">
                       <Avatar name={nameOf(e.author_id)} color={colorOf(e.author_id)} url={avatarOf(e.author_id)} className="cava" />
-                      <b>{e.title || "Ohne Titel"}</b>
+                      <b>{e.title || t("search.untitled")}</b>
                       <span className="swhen">{fmtDate(e.event_date)}</span>
                     </div>
                     {e.place_name ? <span className="splace">📍 {e.place_name}</span> : null}
@@ -111,7 +111,7 @@ export default function SearchPanel({ authors }: { authors: Record<string, Membe
 
       {!loading && res && res.comments.length > 0 ? (
         <>
-          <h2 className="shead">Kommentare</h2>
+          <h2 className="shead">{t("search.comments")}</h2>
           <ul className="shits">
             {res.comments.map((c: SearchCommentHit) => {
               const snip = makeSnippet(c.body, term);
@@ -125,7 +125,7 @@ export default function SearchPanel({ authors }: { authors: Record<string, Membe
                     </div>
                     {snip ? <p className="sbody"><Marked s={snip} /></p> : <p className="sbody">{c.body}</p>}
                     <span className="sctx">
-                      zu: {c.entry_title || "Eintrag"}
+                      {t("search.on")} {c.entry_title || t("home.memory")}
                       {c.entry_date ? ` · ${fmtDate(c.entry_date)}` : ""}
                     </span>
                   </a>

@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getChildren } from "@/lib/data";
+import { getChildren, getShellPrefs } from "@/lib/data";
 import { countryOfPoint, countryPaths, MAP_W, MAP_H } from "@/lib/geo/worldmap";
+import { translator } from "@/lib/i18n";
 import GeoBackfill from "./GeoBackfill";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function MapPage() {
   if (!membership) redirect("/onboarding");
 
   const supabase = await createClient();
+  const t = translator((await getShellPrefs(supabase, user.id)).lang);
   const children = await getChildren(supabase, membership.household_id);
   const child = children[0];
   if (!child) redirect("/children/new");
@@ -52,26 +54,19 @@ export default async function MapPage() {
 
   return (
     <main className="page">
-      <p className="eyebrow">Weltkarte</p>
-      <h1 className="title">Wo {child.name} schon war</h1>
-      <p className="sub">
-        Aus den GPS-Daten der hochgeladenen Fotos ermittelt — vollständig offline, ohne externe
-        Kartendienste. Diese Standortdaten bleiben privat (nur ihr beide seht sie) und sind in
-        keinem Export enthalten.
-      </p>
+      <p className="eyebrow">{t("map.eyebrow")}</p>
+      <h1 className="title">{t("map.title", { name: child.name })}</h1>
+      <p className="sub">{t("map.sub")}</p>
 
       {rows.length === 0 ? (
         <div className="empty" style={{ marginTop: 24 }}>
-          <p>Noch keine Orte gefunden.</p>
-          <p className="muted">
-            Sobald ihr Fotos mit GPS-Angabe hochladet, erscheinen die besuchten Länder hier. (Nicht
-            jedes Foto enthält GPS — je nach Kamera-Einstellung.)
-          </p>
+          <p>{t("map.empty")}</p>
+          <p className="muted">{t("map.empty_hint")}</p>
         </div>
       ) : (
         <>
           <div className="mapwrap">
-            <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="worldmap" role="img" aria-label={`Weltkarte mit ${visited.size} besuchten Ländern`}>
+            <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="worldmap" role="img" aria-label={t("map.aria", { n: visited.size })}>
               {paths.map((p) => (
                 <path key={p.id} d={p.d} className={visited.has(p.id) ? "cty on" : "cty"}>
                   <title>{p.name}</title>
@@ -81,8 +76,10 @@ export default async function MapPage() {
           </div>
 
           <p className="mapcount">
-            <b>{visited.size}</b> {visited.size === 1 ? "Land" : "Länder"} besucht
-            {located > 0 ? <span className="muted"> · {located} verortete {located === 1 ? "Erinnerung" : "Erinnerungen"}</span> : null}
+            <b>{visited.size}</b> {visited.size === 1 ? t("map.country_one") : t("map.country_many")}
+            {located > 0 ? (
+              <span className="muted"> · {located === 1 ? t("map.located_one", { n: located }) : t("map.located_many", { n: located })}</span>
+            ) : null}
           </p>
 
           {list.length > 0 ? (
@@ -90,29 +87,24 @@ export default async function MapPage() {
               {list.map((c) => (
                 <li key={c.id}>
                   <b>{c.name}</b>
-                  <span>{c.count} {c.count === 1 ? "Erinnerung" : "Erinnerungen"}</span>
+                  <span>{c.count === 1 ? t("map.memory_one", { n: c.count }) : t("map.memory_many", { n: c.count })}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="muted" style={{ marginTop: 12 }}>
-              Es wurden GPS-Fotos gefunden, aber keinem Land zugeordnet (z. B. auf offener See).
-            </p>
+            <p className="muted" style={{ marginTop: 12 }}>{t("map.no_country")}</p>
           )}
         </>
       )}
 
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--faint)" }}>
-        <h2 className="shead" style={{ marginTop: 0 }}>Orte nachtragen</h2>
-        <p className="muted" style={{ fontSize: ".88rem", marginTop: 0 }}>
-          Deine früher hochgeladenen Fotos wurden noch nicht ausgewertet. Trage ihre Orte
-          nachträglich ein, um Karte und Detailkarten zu füllen.
-        </p>
+        <h2 className="shead" style={{ marginTop: 0 }}>{t("map.backfill_title")}</h2>
+        <p className="muted" style={{ fontSize: ".88rem", marginTop: 0 }}>{t("map.backfill_sub")}</p>
         <GeoBackfill householdId={membership.household_id} userId={user.id} />
       </div>
 
       <p style={{ marginTop: 24 }}>
-        <a href="/">← Zurück zum Tagebuch</a>
+        <a href="/">{t("back.diary")}</a>
       </p>
     </main>
   );

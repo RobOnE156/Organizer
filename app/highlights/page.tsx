@@ -6,9 +6,11 @@ import {
   getEntriesForChild,
   getHighlightedEntryIds,
   getMediaForEntries,
+  getShellPrefs,
   signMediaByEntry,
 } from "@/lib/data";
 import { ageLabel, fmtDate } from "@/lib/timeline";
+import { translator } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,7 @@ export default async function HighlightsPage() {
   if (!membership) redirect("/onboarding");
 
   const supabase = await createClient();
+  const t = translator((await getShellPrefs(supabase, user.id)).lang);
   const children = await getChildren(supabase, membership.household_id);
   const child = children[0];
   if (!child) redirect("/children/new");
@@ -32,26 +35,20 @@ export default async function HighlightsPage() {
 
   return (
     <main className="page">
-      <p className="eyebrow">Rückblick</p>
-      <h1 className="title">★ {child.name}s Höhepunkte</h1>
-      <p className="sub">
-        Die schönsten Erinnerungen an einem Ort. Tippe im Tagebuch bei einer Erinnerung auf den
-        Stern (☆), um sie hier zu sammeln — beide Elternteile pflegen den Rückblick gemeinsam.
-      </p>
+      <p className="eyebrow">{t("hl.eyebrow")}</p>
+      <h1 className="title">{t("hl.title", { name: child.name })}</h1>
+      <p className="sub">{t("hl.sub")}</p>
 
       {highlights.length === 0 ? (
         <div className="empty" style={{ marginTop: 24 }}>
-          <p>Noch keine Höhepunkte markiert.</p>
-          <p className="muted">
-            Öffne das <a href="/">Tagebuch</a> und tippe bei einer besonderen Erinnerung oben rechts
-            auf den Stern.
-          </p>
+          <p>{t("hl.empty")}</p>
+          <p className="muted">{t("hl.empty_hint")}</p>
         </div>
       ) : (
         <section className="hlgrid">
           {highlights.map((e) => {
             const thumb = (mediaByEntry[e.id] ?? []).find((m) => m.kind === "image")?.url;
-            const label = e.title || (e.body ? e.body.slice(0, 80) : "Erinnerung");
+            const label = e.title || (e.body ? e.body.slice(0, 80) : t("home.memory"));
             const age = ageLabel(child.birth_date, e.event_date);
             return (
               <a
@@ -74,7 +71,7 @@ export default async function HighlightsPage() {
       )}
 
       <p style={{ marginTop: 24 }}>
-        <a href="/">← Zurück zum Tagebuch</a>
+        <a href="/">{t("back.diary")}</a>
       </p>
     </main>
   );

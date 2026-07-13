@@ -10,8 +10,10 @@ import {
   getMemberProfiles,
   getReactionsForComments,
   getReactionsForEntries,
+  getShellPrefs,
   getSnapshotsForExport,
 } from "@/lib/data";
+import { translator } from "@/lib/i18n";
 import ExportPanel from "./ExportPanel";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +26,7 @@ export default async function ExportPage() {
   if (!membership) redirect("/onboarding");
 
   const supabase = await createClient();
+  const t = translator((await getShellPrefs(supabase, user.id)).lang);
   const [children, entries, snapshots] = await Promise.all([
     getChildren(supabase, membership.household_id),
     getEntriesForExport(supabase, membership.household_id),
@@ -53,14 +56,9 @@ export default async function ExportPage() {
 
   return (
     <main className="page">
-      <p className="eyebrow">Sicherung</p>
-      <h1 className="title">Tagebuch exportieren</h1>
-      <p className="sub">
-        Lade das komplette Tagebuch als ZIP herunter: alle Original-Fotos und -Videos, jeder Eintrag
-        als offene Textdatei und eine <code>index.html</code>, die das Tagebuch offline in jedem
-        Browser anzeigt — auch in vielen Jahren noch, ohne diese App. So hat jeder Elternteil jederzeit
-        eine vollständige eigene Kopie.
-      </p>
+      <p className="eyebrow">{t("export.eyebrow")}</p>
+      <h1 className="title">{t("export.title")}</h1>
+      <p className="sub">{t("export.sub")}</p>
       <ExportPanel
         householdName={householdName}
         childList={children}
@@ -74,7 +72,7 @@ export default async function ExportPage() {
         highlightedIds={highlightedIds}
       />
       <p style={{ marginTop: 24 }}>
-        <a href="/settings">← Zurück</a>
+        <a href="/settings">{t("common.back")}</a>
       </p>
     </main>
   );

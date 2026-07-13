@@ -160,6 +160,154 @@ const M = {
     en: "Language of the app interface (not of your content).",
     es: "Idioma de la interfaz (no de tus contenidos).",
   },
+
+  "back.diary": { de: "← Zurück zum Tagebuch", en: "← Back to the diary", es: "← Volver al diario" },
+
+  // highlights page
+  "hl.eyebrow": { de: "Rückblick", en: "Highlights", es: "Recuerdos" },
+  "hl.title": { de: "★ {name}s Höhepunkte", en: "★ {name}’s highlights", es: "★ Los mejores momentos de {name}" },
+  "hl.sub": {
+    de: "Die schönsten Erinnerungen an einem Ort. Tippe im Tagebuch bei einer Erinnerung auf den Stern (☆), um sie hier zu sammeln — beide Elternteile pflegen den Rückblick gemeinsam.",
+    en: "Your favourite memories in one place. Tap the star (☆) on a memory in the diary to collect it here — both parents curate the highlights together.",
+    es: "Tus mejores recuerdos en un solo lugar. Toca la estrella (☆) en un recuerdo del diario para reunirlos aquí — ambos padres cuidan los recuerdos juntos.",
+  },
+  "hl.empty": {
+    de: "Noch keine Höhepunkte markiert.",
+    en: "No highlights yet.",
+    es: "Aún no hay momentos destacados.",
+  },
+  "hl.empty_hint": {
+    de: "Tippe im Tagebuch bei einer besonderen Erinnerung oben rechts auf den Stern.",
+    en: "Tap the star in the top right of a special memory in the diary.",
+    es: "Toca la estrella arriba a la derecha de un recuerdo especial en el diario.",
+  },
+
+  // map page
+  "map.eyebrow": { de: "Weltkarte", en: "World map", es: "Mapa mundial" },
+  "map.title": { de: "Wo {name} schon war", en: "Where {name} has been", es: "Dónde ha estado {name}" },
+  "map.sub": {
+    de: "Aus den GPS-Daten der hochgeladenen Fotos ermittelt — vollständig offline, ohne externe Kartendienste. Diese Standortdaten bleiben privat (nur ihr beide seht sie) und sind in keinem Export enthalten.",
+    en: "Derived from the GPS data of your uploaded photos — fully offline, without external map services. These locations stay private (only the two of you can see them) and are never included in an export.",
+    es: "Obtenido de los datos GPS de tus fotos — totalmente sin conexión, sin servicios de mapas externos. Estas ubicaciones son privadas (solo las veis vosotros dos) y nunca se incluyen en una exportación.",
+  },
+  "map.empty": { de: "Noch keine Orte gefunden.", en: "No locations found yet.", es: "Aún no se han encontrado ubicaciones." },
+  "map.empty_hint": {
+    de: "Sobald ihr Fotos mit GPS-Angabe hochladet, erscheinen die besuchten Länder hier. (Nicht jedes Foto enthält GPS — je nach Kamera-Einstellung.)",
+    en: "As soon as you upload photos with GPS data, the visited countries appear here. (Not every photo has GPS — it depends on your camera settings.)",
+    es: "En cuanto subáis fotos con datos GPS, los países visitados aparecen aquí. (No todas las fotos tienen GPS — depende de los ajustes de la cámara.)",
+  },
+  "map.aria": {
+    de: "Weltkarte mit {n} besuchten Ländern",
+    en: "World map with {n} visited countries",
+    es: "Mapa mundial con {n} países visitados",
+  },
+  "map.country_one": { de: "Land besucht", en: "country visited", es: "país visitado" },
+  "map.country_many": { de: "Länder besucht", en: "countries visited", es: "países visitados" },
+  "map.located_one": { de: "{n} verortete Erinnerung", en: "{n} located memory", es: "{n} recuerdo ubicado" },
+  "map.located_many": { de: "{n} verortete Erinnerungen", en: "{n} located memories", es: "{n} recuerdos ubicados" },
+  "map.memory_one": { de: "{n} Erinnerung", en: "{n} memory", es: "{n} recuerdo" },
+  "map.memory_many": { de: "{n} Erinnerungen", en: "{n} memories", es: "{n} recuerdos" },
+  "map.no_country": {
+    de: "Es wurden GPS-Fotos gefunden, aber keinem Land zugeordnet (z. B. auf offener See).",
+    en: "GPS photos were found but couldn’t be matched to a country (e.g. on open water).",
+    es: "Se encontraron fotos con GPS, pero no se pudieron asignar a un país (p. ej. en mar abierto).",
+  },
+  "map.backfill_title": { de: "Orte nachtragen", en: "Add locations", es: "Añadir ubicaciones" },
+  "map.backfill_sub": {
+    de: "Deine früher hochgeladenen Fotos wurden noch nicht ausgewertet. Trage ihre Orte nachträglich ein, um Karte und Detailkarten zu füllen.",
+    en: "Your earlier uploaded photos haven’t been analysed yet. Add their locations to fill the map and the per-entry mini-maps.",
+    es: "Tus fotos subidas antes aún no se han analizado. Añade sus ubicaciones para llenar el mapa y los mini-mapas de cada entrada.",
+  },
+
+  // geo backfill
+  "gb.button": {
+    de: "Orte aus vorhandenen Fotos nachtragen",
+    en: "Add locations from existing photos",
+    es: "Añadir ubicaciones de fotos existentes",
+  },
+  "gb.busy": { de: "Trage nach …", en: "Adding …", es: "Añadiendo …" },
+  "gb.searching": { de: "Suche deine Einträge ohne Ort …", en: "Finding your entries without a location …", es: "Buscando tus entradas sin ubicación …" },
+  "gb.checking": {
+    de: "Prüfe {i}/{n} … {found} verortet",
+    en: "Checking {i}/{n} … {found} located",
+    es: "Revisando {i}/{n} … {found} ubicadas",
+  },
+  "gb.none": {
+    de: "Keine deiner Erinnerungen ohne Ort mit Foto gefunden — alles aktuell ✓",
+    en: "No memories of yours without a location have photos — all up to date ✓",
+    es: "Ninguno de tus recuerdos sin ubicación tiene fotos — todo al día ✓",
+  },
+  "gb.done_some": {
+    de: "Fertig ✓ {found} von {scanned} Erinnerungen einen Ort ergänzt.",
+    en: "Done ✓ Added a location to {found} of {scanned} memories.",
+    es: "Listo ✓ Se añadió ubicación a {found} de {scanned} recuerdos.",
+  },
+  "gb.done_none": {
+    de: "Fertig — in {scanned} geprüften Fotos war kein GPS enthalten.",
+    en: "Done — none of the {scanned} photos checked contained GPS.",
+    es: "Listo — ninguna de las {scanned} fotos revisadas tenía GPS.",
+  },
+  "gb.failed": { de: "Nachtragen fehlgeschlagen.", en: "Adding locations failed.", es: "No se pudieron añadir las ubicaciones." },
+  "gb.hint": {
+    de: "Liest die GPS-Angaben aus deinen bereits hochgeladenen Fotos (nur deine eigenen Einträge). Die Fotos werden dafür kurz geladen — am besten im WLAN ausführen. Es werden keine Daten an Dritte gesendet.",
+    en: "Reads the GPS data from your already-uploaded photos (only your own entries). The photos are briefly downloaded for this — best done on Wi-Fi. No data is sent to third parties.",
+    es: "Lee los datos GPS de tus fotos ya subidas (solo tus propias entradas). Las fotos se descargan brevemente — mejor con Wi-Fi. No se envían datos a terceros.",
+  },
+
+  // search page
+  "search.eyebrow": { de: "Suche", en: "Search", es: "Buscar" },
+  "search.title": { de: "Im Tagebuch suchen", en: "Search the diary", es: "Buscar en el diario" },
+  "search.sub": {
+    de: "Durchsuche Titel, Texte, Orte und Kommentare. Es werden nur Erinnerungen gefunden, die du auch sehen darfst.",
+    en: "Search titles, text, places and comments. Only memories you’re allowed to see are found.",
+    es: "Busca en títulos, textos, lugares y comentarios. Solo se encuentran recuerdos que puedes ver.",
+  },
+  "search.ph": {
+    de: "Titel, Text, Ort oder Kommentar suchen …",
+    en: "Search title, text, place or comment …",
+    es: "Buscar título, texto, lugar o comentario …",
+  },
+  "search.searching": { de: "Suche …", en: "Searching …", es: "Buscando …" },
+  "search.none": { de: "Keine Treffer für „{term}“.", en: "No results for “{term}”.", es: "Sin resultados para «{term}»." },
+  "search.results": { de: "{n} Treffer für „{term}“.", en: "{n} results for “{term}”.", es: "{n} resultados para «{term}»." },
+  "search.entries": { de: "Einträge", en: "Entries", es: "Entradas" },
+  "search.comments": { de: "Kommentare", en: "Comments", es: "Comentarios" },
+  "search.untitled": { de: "Ohne Titel", en: "Untitled", es: "Sin título" },
+  "search.on": { de: "zu:", en: "on:", es: "en:" },
+
+  // export page
+  "export.eyebrow": { de: "Sicherung", en: "Backup", es: "Copia de seguridad" },
+  "export.title": { de: "Tagebuch exportieren", en: "Export the diary", es: "Exportar el diario" },
+  "export.sub": {
+    de: "Lade das komplette Tagebuch als ZIP herunter: alle Original-Fotos und -Videos, jeder Eintrag als offene Textdatei und eine index.html, die das Tagebuch offline in jedem Browser anzeigt — auch in vielen Jahren noch, ohne diese App. So hat jeder Elternteil jederzeit eine vollständige eigene Kopie.",
+    en: "Download the whole diary as a ZIP: all original photos and videos, every entry as an open text file, and an index.html that shows the diary offline in any browser — even many years from now, without this app. That way each parent always has a complete copy.",
+    es: "Descarga todo el diario como ZIP: todas las fotos y vídeos originales, cada entrada como archivo de texto abierto y un index.html que muestra el diario sin conexión en cualquier navegador — incluso dentro de muchos años, sin esta app. Así cada padre tiene siempre una copia completa.",
+  },
+  "export.summary": {
+    de: "{n} Einträge · {m} Mediendateien",
+    en: "{n} entries · {m} media files",
+    es: "{n} entradas · {m} archivos",
+  },
+  "export.busy": { de: "Exportiere …", en: "Exporting …", es: "Exportando …" },
+  "export.loading_media": { de: "Lade Medien … {i}/{n}", en: "Loading media … {i}/{n}", es: "Cargando archivos … {i}/{n}" },
+  "export.building": { de: "Erstelle Tagebuch-Seite …", en: "Building the diary page …", es: "Creando la página del diario …" },
+  "export.zipping": { de: "Packe ZIP … {p}%", en: "Packing ZIP … {p}%", es: "Comprimiendo ZIP … {p}%" },
+  "export.done": {
+    de: "Fertig ✓ Die ZIP-Datei wurde heruntergeladen.",
+    en: "Done ✓ The ZIP file was downloaded.",
+    es: "Listo ✓ Se descargó el archivo ZIP.",
+  },
+  "export.failed": { de: "Export fehlgeschlagen.", en: "Export failed.", es: "La exportación falló." },
+  "export.warn": {
+    de: "{failed} von {total} Mediendateien konnten nicht geladen werden und fehlen im Export. Bitte erneut versuchen.",
+    en: "{failed} of {total} media files couldn’t be loaded and are missing from the export. Please try again.",
+    es: "No se pudieron cargar {failed} de {total} archivos y faltan en la exportación. Inténtalo de nuevo.",
+  },
+  "export.hint": {
+    de: "Bei sehr vielen oder großen Videos den Export am besten am Computer ausführen. Die Datei wird lokal auf deinem Gerät erstellt — es werden keine Daten an Dritte gesendet.",
+    en: "For lots of or large videos, it’s best to run the export on a computer. The file is created locally on your device — no data is sent to third parties.",
+    es: "Con muchos vídeos o vídeos grandes, es mejor exportar desde un ordenador. El archivo se crea localmente en tu dispositivo — no se envían datos a terceros.",
+  },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

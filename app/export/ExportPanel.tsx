@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import JSZip from "jszip";
+import { useT } from "@/app/LanguageProvider";
 import { createClient } from "@/lib/supabase/client";
 import { ageLabel } from "@/lib/timeline";
 import { snapshotPrompts } from "@/lib/snapshot-prompts";
@@ -56,6 +57,7 @@ export default function ExportPanel({
   commentReactions: CommentReaction[];
   highlightedIds: string[];
 }) {
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export default function ExportPanel({
       let done = 0;
       let failed = 0;
       for (const m of media) {
-        setStatus("Lade Medien … " + (done + 1) + "/" + media.length);
+        setStatus(t("export.loading_media", { i: done + 1, n: media.length }));
         const { data: blob, error: dErr } = await supabase.storage.from("media").download(m.storage_key);
         if (dErr || !blob) failed += 1;
         else zip.file(pathOf(m), blob);
@@ -154,7 +156,7 @@ export default function ExportPanel({
         });
       }
 
-      setStatus("Erstelle Tagebuch-Seite …");
+      setStatus(t("export.building"));
       const viewerEntries: ViewerEntry[] = entries.map((e) => {
         const a = authorOf(e.author_id);
         const kids = e.child_ids.map((id) => childName.get(id)).filter((n): n is string => Boolean(n));
@@ -227,7 +229,7 @@ export default function ExportPanel({
 
       // 3) zip it up and hand the file to the browser
       const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" }, (meta) => {
-        setStatus("Packe ZIP … " + Math.round(meta.percent) + "%");
+        setStatus(t("export.zipping", { p: Math.round(meta.percent) }));
       });
       const date = new Date().toISOString().slice(0, 10);
       const url = URL.createObjectURL(blob);
@@ -240,11 +242,11 @@ export default function ExportPanel({
       setTimeout(() => URL.revokeObjectURL(url), 15000);
 
       if (failed > 0) {
-        setWarn(failed + " von " + media.length + " Mediendateien konnten nicht geladen werden und fehlen im Export. Bitte erneut versuchen.");
+        setWarn(t("export.warn", { failed, total: media.length }));
       }
-      setStatus("Fertig ✓ Die ZIP-Datei wurde heruntergeladen.");
+      setStatus(t("export.done"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Export fehlgeschlagen.");
+      setError(err instanceof Error ? err.message : t("export.failed"));
       setStatus("");
     } finally {
       setBusy(false);
@@ -254,19 +256,15 @@ export default function ExportPanel({
   return (
     <div className="stack" style={{ maxWidth: 520 }}>
       <p className="muted" style={{ fontSize: ".9rem", margin: 0 }}>
-        {entries.length} {entries.length === 1 ? "Eintrag" : "Einträge"} · {media.length}{" "}
-        {media.length === 1 ? "Mediendatei" : "Mediendateien"}
+        {t("export.summary", { n: entries.length, m: media.length })}
       </p>
       <button className="btn btn-primary" onClick={run} disabled={busy || entries.length === 0}>
-        {busy ? "Exportiere …" : "Tagebuch exportieren"}
+        {busy ? t("export.busy") : t("export.title")}
       </button>
       {status ? <p className="msg">{status}</p> : null}
       {warn ? <p className="err">{warn}</p> : null}
       {error ? <p className="err">{error}</p> : null}
-      <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>
-        Bei sehr vielen oder großen Videos den Export am besten am Computer ausführen. Die Datei wird
-        lokal auf deinem Gerät erstellt — es werden keine Daten an Dritte gesendet.
-      </p>
+      <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{t("export.hint")}</p>
     </div>
   );
 }

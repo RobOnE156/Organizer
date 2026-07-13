@@ -6,9 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import { getEntriesNeedingGeo } from "@/lib/data";
 import { gpsFromBlob } from "@/lib/exif-gps";
 import { setEntryGeo } from "@/app/content-actions";
+import { useT } from "@/app/LanguageProvider";
 
 export default function GeoBackfill({ householdId, userId }: { householdId: string; userId: string }) {
   const router = useRouter();
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [done, setDone] = useState<{ found: number; scanned: number } | null>(null);
@@ -18,7 +20,7 @@ export default function GeoBackfill({ householdId, userId }: { householdId: stri
     setBusy(true);
     setDone(null);
     setError(null);
-    setStatus("Suche deine Einträge ohne Ort …");
+    setStatus(t("gb.searching"));
     try {
       const supabase = createClient();
       const items = await getEntriesNeedingGeo(supabase, householdId, userId);
@@ -30,7 +32,7 @@ export default function GeoBackfill({ householdId, userId }: { householdId: stri
       }
       let found = 0;
       for (let i = 0; i < items.length; i++) {
-        setStatus(`Prüfe Erinnerung ${i + 1}/${items.length} … ${found} ${found === 1 ? "Ort" : "Orte"} gefunden`);
+        setStatus(t("gb.checking", { i: i + 1, n: items.length, found }));
         const item = items[i]!;
         for (const key of item.keys) {
           const { data: blob } = await supabase.storage.from("media").download(key);
@@ -47,7 +49,7 @@ export default function GeoBackfill({ householdId, userId }: { householdId: stri
       setStatus("");
       if (found > 0) router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nachtragen fehlgeschlagen.");
+      setError(err instanceof Error ? err.message : t("gb.failed"));
       setStatus("");
     } finally {
       setBusy(false);
@@ -57,24 +59,20 @@ export default function GeoBackfill({ householdId, userId }: { householdId: stri
   return (
     <div className="backfill">
       <button className="btn" onClick={run} disabled={busy}>
-        {busy ? "Trage nach …" : "Orte aus vorhandenen Fotos nachtragen"}
+        {busy ? t("gb.busy") : t("gb.button")}
       </button>
       {status ? <p className="msg" style={{ marginTop: 8 }}>{status}</p> : null}
       {done ? (
         <p className="msg" style={{ marginTop: 8 }}>
           {done.scanned === 0
-            ? "Keine deiner Erinnerungen ohne Ort mit Foto gefunden — alles aktuell ✓"
+            ? t("gb.none")
             : done.found > 0
-              ? `Fertig ✓ ${done.found} von ${done.scanned} Erinnerungen einen Ort ergänzt.`
-              : `Fertig — in ${done.scanned} geprüften Fotos war kein GPS enthalten.`}
+              ? t("gb.done_some", { found: done.found, scanned: done.scanned })
+              : t("gb.done_none", { scanned: done.scanned })}
         </p>
       ) : null}
       {error ? <p className="err" style={{ marginTop: 8 }}>{error}</p> : null}
-      <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
-        Liest die GPS-Angaben aus deinen bereits hochgeladenen Fotos (nur deine eigenen Einträge).
-        Die Fotos werden dafür kurz geladen — am besten im WLAN ausführen. Es werden keine Daten an
-        Dritte gesendet.
-      </p>
+      <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>{t("gb.hint")}</p>
     </div>
   );
 }
