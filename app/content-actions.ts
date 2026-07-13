@@ -106,6 +106,8 @@ export async function createEntryGetId(input: {
   isPrivate: boolean;
   place: string;
   childId: string;
+  lat?: number | null;
+  lng?: number | null;
 }): Promise<CreateEntryResult> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
   if (!input.title.trim() && !input.body.trim()) return { error: "Bitte einen Titel oder Text eingeben." };
@@ -119,21 +121,24 @@ export async function createEntryGetId(input: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet." };
 
-  const { data: entry, error } = await supabase
-    .from("entries")
-    .insert({
-      household_id: membership.household_id,
-      author_id: user.id,
-      created_by: user.id,
-      kind: "text",
-      title: input.title.trim() || null,
-      body: input.body.trim() || null,
-      event_date: input.eventDate || todayISO(),
-      is_private: input.isPrivate,
-      place_name: input.place.trim() || null,
-    })
-    .select("id")
-    .single();
+  const row: Record<string, unknown> = {
+    household_id: membership.household_id,
+    author_id: user.id,
+    created_by: user.id,
+    kind: "text",
+    title: input.title.trim() || null,
+    body: input.body.trim() || null,
+    event_date: input.eventDate || todayISO(),
+    is_private: input.isPrivate,
+    place_name: input.place.trim() || null,
+  };
+  // Only reference the geo columns when we actually captured GPS, so a
+  // no-GPS entry never depends on migration 0015 having run.
+  if (Number.isFinite(input.lat) && Number.isFinite(input.lng)) {
+    row.lat = input.lat;
+    row.lng = input.lng;
+  }
+  const { data: entry, error } = await supabase.from("entries").insert(row).select("id").single();
   if (error || !entry) return { error: error?.message ?? "Speichern fehlgeschlagen." };
 
   const entryId = (entry as { id: string }).id;
@@ -212,7 +217,15 @@ export async function deleteMedia(mediaId: string): Promise<{ error?: string }> 
 // previous version automatically, so edits are never silently lost.
 export async function updateEntry(
   entryId: string,
-  input: { title: string; body: string; eventDate: string; isPrivate: boolean; place: string },
+  input: {
+    title: string;
+    body: string;
+    eventDate: string;
+    isPrivate: boolean;
+    place: string;
+    lat?: number | null;
+    lng?: number | null;
+  },
 ): Promise<{ error?: string }> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
   if (!input.title.trim() && !input.body.trim()) return { error: "Bitte einen Titel oder Text eingeben." };
@@ -231,6 +244,12 @@ export async function updateEntry(
     updated_by: user.id,
   };
   if (input.eventDate) patch.event_date = input.eventDate;
+  // Only stamp GPS when we actually found some (from a newly added photo);
+  // never clear an existing location on a plain text edit.
+  if (Number.isFinite(input.lat) && Number.isFinite(input.lng)) {
+    patch.lat = input.lat;
+    patch.lng = input.lng;
+  }
 
   const { error } = await supabase.from("entries").update(patch).eq("id", entryId);
   if (error) return { error: error.message };

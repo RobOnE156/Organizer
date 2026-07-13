@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createEntryGetId, recordMedia, attachLink } from "@/app/content-actions";
 import VoiceRecorder from "@/app/VoiceRecorder";
+import { firstPhotoGps } from "@/lib/exif-gps";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
 function todayISO(): string {
@@ -56,6 +57,9 @@ export default function EntryForm({
     setBusy(true);
     try {
       const fd = new FormData(e.currentTarget);
+      // Read GPS from the photos (in the browser) so the private map can show
+      // where this memory happened. Best-effort — most photos won't have it.
+      const gps = await firstPhotoGps(files);
       const res = await createEntryGetId({
         title: String(fd.get("title") ?? ""),
         body: String(fd.get("body") ?? ""),
@@ -63,6 +67,8 @@ export default function EntryForm({
         isPrivate: fd.get("is_private") === "on",
         place: String(fd.get("place") ?? ""),
         childId,
+        lat: gps?.lat ?? null,
+        lng: gps?.lng ?? null,
       });
       if (res.error || !res.entryId || !res.householdId) {
         setError(res.error ?? "Speichern fehlgeschlagen.");

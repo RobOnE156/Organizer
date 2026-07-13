@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updateEntry, recordMedia, deleteMedia, attachLink } from "@/app/content-actions";
 import VoiceRecorder from "@/app/VoiceRecorder";
+import { firstPhotoGps } from "@/lib/exif-gps";
 import { useConfirm } from "@/app/ConfirmProvider";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
@@ -92,12 +93,16 @@ export default function EditEntryForm({
     setBusy(true);
     try {
       const fd = new FormData(e.currentTarget);
+      // If a newly added photo carries GPS, capture it (never clears existing).
+      const gps = await firstPhotoGps(files);
       const res = await updateEntry(entryId, {
         title: String(fd.get("title") ?? ""),
         body: String(fd.get("body") ?? ""),
         eventDate: String(fd.get("event_date") ?? ""),
         isPrivate: fd.get("is_private") === "on",
         place: String(fd.get("place") ?? ""),
+        lat: gps?.lat ?? null,
+        lng: gps?.lng ?? null,
       });
       if (res.error) {
         setError(res.error);
