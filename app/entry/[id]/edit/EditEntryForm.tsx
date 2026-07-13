@@ -7,6 +7,7 @@ import { updateEntry, recordMedia, deleteMedia, attachLink } from "@/app/content
 import VoiceRecorder from "@/app/VoiceRecorder";
 import { firstPhotoGps } from "@/lib/exif-gps";
 import { useConfirm } from "@/app/ConfirmProvider";
+import { useT } from "@/app/LanguageProvider";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
 export type ExistingMedia = { id: string; kind: string; url: string };
@@ -48,6 +49,7 @@ export default function EditEntryForm({
 }) {
   const router = useRouter();
   const confirm = useConfirm();
+  const { t } = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [existing, setExisting] = useState<ExistingMedia[]>(existingMedia);
   const [files, setFiles] = useState<File[]>([]);
@@ -71,8 +73,8 @@ export default function EditEntryForm({
 
   async function onRemoveExisting(id: string) {
     const ok = await confirm({
-      title: "Medium entfernen?",
-      body: "Dieses Foto/Video wird dauerhaft gelöscht.",
+      title: t("ee.rm_media_title"),
+      body: t("ee.rm_media_body"),
       danger: true,
     });
     if (!ok) return;
@@ -121,7 +123,7 @@ export default function EditEntryForm({
             .from("media")
             .upload(path, file, { contentType: file.type || undefined, upsert: false });
           if (upErr) {
-            setError(`Upload fehlgeschlagen: ${upErr.message}`);
+            setError(t("common.upload_failed") + upErr.message);
             setBusy(false);
             return;
           }
@@ -149,7 +151,7 @@ export default function EditEntryForm({
       router.push("/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler.");
+      setError(err instanceof Error ? err.message : t("common.unknown_error"));
       setBusy(false);
     }
   }
@@ -157,18 +159,18 @@ export default function EditEntryForm({
   return (
     <form className="card stack" onSubmit={onSubmit}>
       <div>
-        <p className="eyebrow">Erinnerung bearbeiten</p>
-        <h1 className="title">Eintrag ändern</h1>
-        <p className="sub">Text, Ort, Datum, Sichtbarkeit und Fotos/Videos anpassen.</p>
+        <p className="eyebrow">{t("ee.eyebrow")}</p>
+        <h1 className="title">{t("ee.title")}</h1>
+        <p className="sub">{t("ee.sub")}</p>
       </div>
 
       <div className="field">
-        <label htmlFor="title">Titel (optional)</label>
+        <label htmlFor="title">{t("ef.title_label")}</label>
         <input id="title" name="title" type="text" maxLength={80} defaultValue={initialTitle} />
       </div>
 
       <div className="field">
-        <label>Fotos / Videos</label>
+        <label>{t("ee.media_label")}</label>
         {existing.length > 0 ? (
           <div className="filestrip">
             {existing.map((m) => (
@@ -183,7 +185,7 @@ export default function EditEntryForm({
                 <button
                   type="button"
                   className="x"
-                  aria-label="Entfernen"
+                  aria-label={t("common.remove")}
                   disabled={removingId === m.id}
                   onClick={() => onRemoveExisting(m.id)}
                 >
@@ -193,12 +195,10 @@ export default function EditEntryForm({
             ))}
           </div>
         ) : (
-          <p className="muted" style={{ fontSize: "0.85rem", margin: "2px 0 0" }}>
-            Noch keine Medien in diesem Eintrag.
-          </p>
+          <p className="muted" style={{ fontSize: "0.85rem", margin: "2px 0 0" }}>{t("ee.no_media")}</p>
         )}
         <div className="filedrop" style={{ marginTop: 10 }} onClick={() => inputRef.current?.click()}>
-          ＋ Fotos/Videos/Audio hinzufügen (mehrere möglich)
+          {t("ee.add_media")}
         </div>
         <input
           ref={inputRef}
@@ -223,7 +223,7 @@ export default function EditEntryForm({
                 ) : (
                   <span className="lbl">🎧</span>
                 )}
-                <button type="button" className="x" aria-label="Entfernen" onClick={() => removeNewFile(i)}>
+                <button type="button" className="x" aria-label={t("common.remove")} onClick={() => removeNewFile(i)}>
                   ✕
                 </button>
               </div>
@@ -233,24 +233,24 @@ export default function EditEntryForm({
       </div>
 
       <div className="field">
-        <label htmlFor="body">Text</label>
+        <label htmlFor="body">{t("ef.text_label")}</label>
         <textarea id="body" name="body" rows={5} defaultValue={initialBody} />
       </div>
 
       <div className="field">
-        <label htmlFor="event_date">Zeitpunkt der Erinnerung</label>
+        <label htmlFor="event_date">{t("ef.when_label")}</label>
         <input id="event_date" name="event_date" type="date" defaultValue={initialDate} />
       </div>
 
       <div className="field">
-        <label htmlFor="place">Ort (optional)</label>
+        <label htmlFor="place">{t("ef.place_label")}</label>
         <input
           id="place"
           name="place"
           type="text"
           maxLength={120}
           defaultValue={initialPlace}
-          placeholder="z. B. Berlin, bei Oma"
+          placeholder={t("ef.place_ph")}
           list="place-list"
           autoComplete="off"
         />
@@ -264,23 +264,23 @@ export default function EditEntryForm({
       </div>
 
       <div className="field">
-        <label htmlFor="link">Link (optional)</label>
-        <input id="link" name="link" type="url" inputMode="url" defaultValue={initialLink} placeholder="z. B. ein Spotify- oder YouTube-Link" />
-        <small className="muted" style={{ fontSize: ".76rem" }}>Wird als Vorschaukarte angezeigt. Leer lassen entfernt den Link.</small>
+        <label htmlFor="link">{t("ef.link_label")}</label>
+        <input id="link" name="link" type="url" inputMode="url" defaultValue={initialLink} placeholder={t("ef.link_ph")} />
+        <small className="muted" style={{ fontSize: ".76rem" }}>{t("ee.link_hint")}</small>
       </div>
 
       <label className="checkline">
         <input type="checkbox" name="is_private" defaultChecked={initialPrivate} />
         <span className="pt">
-          <b>Nur für mich (privat)</b>
-          <small>Nur du siehst diesen Eintrag — später auch das Kind, nicht der andere Elternteil.</small>
+          <b>{t("ef.private_title")}</b>
+          <small>{t("ef.private_hint")}</small>
         </span>
       </label>
 
       {error ? <p className="err">{error}</p> : null}
       <div className="row">
-        <button className="btn btn-primary" disabled={busy}>{busy ? "Speichere …" : "Speichern"}</button>
-        <a className="btn" href="/">Abbrechen</a>
+        <button className="btn btn-primary" disabled={busy}>{busy ? t("common.saving") : t("common.save")}</button>
+        <a className="btn" href="/">{t("common.cancel")}</a>
       </div>
     </form>
   );

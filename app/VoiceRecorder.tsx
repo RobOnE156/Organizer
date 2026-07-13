@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/app/LanguageProvider";
 
 function fmt(s: number): string {
   const m = Math.floor(s / 60);
@@ -31,6 +32,7 @@ function extFor(mime: string): string {
 // either keep it (handed back as a File to the entry's uploads) or re-record —
 // nothing is attached to the entry until you tap "Übernehmen".
 export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File) => void }) {
+  const { t } = useT();
   const [mode, setMode] = useState<"idle" | "recording" | "review">("idle");
   const [secs, setSecs] = useState(0);
   const [pending, setPending] = useState<{ url: string; file: File } | null>(null);
@@ -47,7 +49,7 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((track) => track.stop());
       if (pendingRef.current) URL.revokeObjectURL(pendingRef.current.url);
     };
   }, []);
@@ -73,7 +75,7 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
       rec.onstop = () => {
         const type = rec.mimeType || mime || "audio/webm";
         const blob = new Blob(chunksRef.current, { type });
-        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         if (blob.size > 0) {
           const url = URL.createObjectURL(blob);
@@ -91,15 +93,15 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
       timerRef.current = setInterval(() => setSecs((s) => s + 1), 1000);
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
-      let msg = "Mikrofon-Zugriff nicht möglich.";
+      let msg = t("vr.err_generic");
       if (name === "NotAllowedError" || name === "SecurityError") {
-        msg = "Mikrofon-Zugriff ist blockiert. Erlaube ihn in den Website-Einstellungen (Symbol links neben der Web-Adresse → Mikrofon → Zulassen) und lade die Seite neu.";
+        msg = t("vr.err_blocked");
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
-        msg = "Kein Mikrofon gefunden. Schließe eins an — oder nimm am Handy auf.";
+        msg = t("vr.err_notfound");
       } else if (name === "NotReadableError") {
-        msg = "Das Mikrofon wird gerade von einem anderen Programm benutzt. Schließe es und versuche es erneut.";
+        msg = t("vr.err_busy");
       } else if (typeof window !== "undefined" && !window.isSecureContext) {
-        msg = "Aufnahme braucht eine sichere (HTTPS-)Verbindung.";
+        msg = t("vr.err_secure");
       }
       setError(msg);
       setMode("idle");
@@ -126,9 +128,7 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
 
   if (!supported) {
     return (
-      <p className="muted" style={{ fontSize: ".8rem", margin: "8px 0 0" }}>
-        Aufnahme wird von diesem Browser nicht unterstützt — du kannst aber eine Audiodatei anhängen.
-      </p>
+      <p className="muted" style={{ fontSize: ".8rem", margin: "8px 0 0" }}>{t("vr.unsupported")}</p>
     );
   }
 
@@ -136,19 +136,19 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
     <div style={{ marginTop: 8 }}>
       {mode === "recording" ? (
         <button type="button" className="btn recbtn" onClick={stop}>
-          <span className="recdot" /> Stopp · {fmt(secs)}
+          <span className="recdot" /> {t("vr.stop")} · {fmt(secs)}
         </button>
       ) : mode === "review" && pending ? (
         <div className="recreview">
-          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>Aufnahme anhören:</p>
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{t("vr.listen")}</p>
           <audio controls src={pending.url} />
           <div className="row">
-            <button type="button" className="btn btn-primary" onClick={accept}>✓ Übernehmen</button>
-            <button type="button" className="btn" onClick={start}>↻ Neu aufnehmen</button>
+            <button type="button" className="btn btn-primary" onClick={accept}>{t("vr.accept")}</button>
+            <button type="button" className="btn" onClick={start}>{t("vr.rerecord")}</button>
           </div>
         </div>
       ) : (
-        <button type="button" className="btn" onClick={start}>🎙️ Sprachnotiz aufnehmen</button>
+        <button type="button" className="btn" onClick={start}>{t("vr.record")}</button>
       )}
       {error ? <p className="err" style={{ marginTop: 6 }}>{error}</p> : null}
     </div>

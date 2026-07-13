@@ -398,6 +398,161 @@ const M = {
   "sp.loves.l": { de: "Liebt gerade", en: "Loves right now", es: "Le encanta ahora" },
   "sp.loves.p": { de: "Menschen, Tiere, Orte, Aktivitäten …", en: "People, animals, places, activities …", es: "Personas, animales, lugares, actividades …" },
   "sp.laugh.l": { de: "Was bringt {name} zum Lachen?", en: "What makes {name} laugh?", es: "¿Qué hace reír a {name}?" },
+
+  // more common words
+  "common.remove": { de: "Entfernen", en: "Remove", es: "Quitar" },
+  "common.loading": { de: "Lädt …", en: "Loading …", es: "Cargando …" },
+  "common.apply": { de: "Übernehmen", en: "Apply", es: "Aplicar" },
+  "common.unknown_error": { de: "Unbekannter Fehler.", en: "Unknown error.", es: "Error desconocido." },
+  "common.upload_failed": { de: "Upload fehlgeschlagen: ", en: "Upload failed: ", es: "Error al subir: " },
+
+  // entry menu
+  "em.del_title": { de: "Eintrag löschen?", en: "Delete entry?", es: "¿Eliminar entrada?" },
+  "em.del_body": { de: "Der Eintrag wird aus dem Tagebuch entfernt.", en: "The entry will be removed from the diary.", es: "La entrada se eliminará del diario." },
+  "em.options": { de: "Optionen", en: "Options", es: "Opciones" },
+  "em.deleting": { de: "Löschen…", en: "Deleting…", es: "Eliminando…" },
+
+  // media / lightbox
+  "media.zoom": { de: "Vergrößern", en: "Enlarge", es: "Ampliar" },
+  "lb.view": { de: "Großansicht", en: "Full view", es: "Vista ampliada" },
+  "lb.prev": { de: "Zurück", en: "Previous", es: "Anterior" },
+  "lb.next": { de: "Weiter", en: "Next", es: "Siguiente" },
+
+  // reactions
+  "react.aria": { de: "Reaktion {emoji}", en: "Reaction {emoji}", es: "Reacción {emoji}" },
+  "react.add": { de: "Reagieren", en: "React", es: "Reaccionar" },
+
+  // child hero + covers
+  "hero.born": { de: "geboren am {date}", en: "born on {date}", es: "nacido el {date}" },
+  "hero.change_cover": { de: "Titelbild ändern", en: "Change cover", es: "Cambiar portada" },
+  "hero.cover_change": { de: "📷 Ändern", en: "📷 Change", es: "📷 Cambiar" },
+  "hero.cover_add": { de: "📷 Titelbild", en: "📷 Cover", es: "📷 Portada" },
+  "cp.choose": { de: "Titelbild wählen", en: "Choose cover", es: "Elegir portada" },
+  "cp.new_photo": { de: "Neues Foto", en: "New photo", es: "Nueva foto" },
+  "cp.none": { de: "Noch keine früheren Titelbilder.", en: "No earlier covers yet.", es: "Aún no hay portadas anteriores." },
+  "cp.use": { de: "Dieses Titelbild verwenden", en: "Use this cover", es: "Usar esta portada" },
+  "cp.current": { de: "Aktuell", en: "Current", es: "Actual" },
+  "cp.del_title": { de: "Titelbild löschen?", en: "Delete cover?", es: "¿Eliminar portada?" },
+  "cp.del_body": { de: "Dieses Titelbild wird dauerhaft aus dem Speicher entfernt.", en: "This cover will be permanently removed from storage.", es: "Esta portada se eliminará permanentemente del almacenamiento." },
+  "cp.del_perm": { de: "Dauerhaft löschen", en: "Delete permanently", es: "Eliminar permanentemente" },
+  "cp.del_fail": {
+    de: "Löschen nicht möglich — evtl. kann nur der Elternteil löschen, der dieses Bild hochgeladen hat.",
+    en: "Couldn’t delete — maybe only the parent who uploaded this image can delete it.",
+    es: "No se pudo eliminar — quizá solo el padre que subió la imagen puede eliminarla.",
+  },
+  "cc.crop": { de: "Titelbild zuschneiden", en: "Crop cover", es: "Recortar portada" },
+  "cc.zoom": { de: "Zoom", en: "Zoom", es: "Zoom" },
+  "cc.hint": {
+    de: "Ziehen zum Verschieben · Slider oder Mausrad zum Zoomen",
+    en: "Drag to move · slider or scroll to zoom",
+    es: "Arrastra para mover · barra o rueda para ampliar",
+  },
+
+  // voice recorder
+  "vr.unsupported": {
+    de: "Aufnahme wird von diesem Browser nicht unterstützt — du kannst aber eine Audiodatei anhängen.",
+    en: "Recording isn’t supported by this browser — but you can attach an audio file.",
+    es: "Este navegador no admite grabación — pero puedes adjuntar un archivo de audio.",
+  },
+  "vr.stop": { de: "Stopp", en: "Stop", es: "Detener" },
+  "vr.listen": { de: "Aufnahme anhören:", en: "Listen to the recording:", es: "Escuchar la grabación:" },
+  "vr.accept": { de: "✓ Übernehmen", en: "✓ Use it", es: "✓ Usar" },
+  "vr.rerecord": { de: "↻ Neu aufnehmen", en: "↻ Re-record", es: "↻ Grabar de nuevo" },
+  "vr.record": { de: "🎙️ Sprachnotiz aufnehmen", en: "🎙️ Record voice note", es: "🎙️ Grabar nota de voz" },
+  "vr.err_generic": { de: "Mikrofon-Zugriff nicht möglich.", en: "Can’t access the microphone.", es: "No se puede acceder al micrófono." },
+  "vr.err_blocked": {
+    de: "Mikrofon-Zugriff ist blockiert. Erlaube ihn in den Website-Einstellungen (Symbol links neben der Web-Adresse → Mikrofon → Zulassen) und lade die Seite neu.",
+    en: "Microphone access is blocked. Allow it in the site settings (icon to the left of the address bar → Microphone → Allow) and reload the page.",
+    es: "El acceso al micrófono está bloqueado. Permítelo en los ajustes del sitio (icono a la izquierda de la dirección → Micrófono → Permitir) y recarga la página.",
+  },
+  "vr.err_notfound": {
+    de: "Kein Mikrofon gefunden. Schließe eins an — oder nimm am Handy auf.",
+    en: "No microphone found. Connect one — or record on your phone.",
+    es: "No se encontró micrófono. Conecta uno — o graba en el móvil.",
+  },
+  "vr.err_busy": {
+    de: "Das Mikrofon wird gerade von einem anderen Programm benutzt. Schließe es und versuche es erneut.",
+    en: "The microphone is being used by another program. Close it and try again.",
+    es: "El micrófono lo está usando otro programa. Ciérralo e inténtalo de nuevo.",
+  },
+  "vr.err_secure": {
+    de: "Aufnahme braucht eine sichere (HTTPS-)Verbindung.",
+    en: "Recording needs a secure (HTTPS) connection.",
+    es: "La grabación necesita una conexión segura (HTTPS).",
+  },
+
+  // comments
+  "ec.edit": { de: "Kommentar bearbeiten", en: "Edit comment", es: "Editar comentario" },
+  "ec.delete": { de: "Kommentar löschen", en: "Delete comment", es: "Eliminar comentario" },
+  "ec.del_title": { de: "Kommentar löschen?", en: "Delete comment?", es: "¿Eliminar comentario?" },
+  "ec.del_body": { de: "Dein Kommentar wird entfernt.", en: "Your comment will be removed.", es: "Se eliminará tu comentario." },
+  "ec.ph": { de: "Kommentar schreiben …", en: "Write a comment …", es: "Escribe un comentario …" },
+  "ec.send": { de: "Senden", en: "Send", es: "Enviar" },
+  "ec.label": { de: "Kommentar", en: "Comment", es: "Comentario" },
+  "ec.save_fail": { de: "Kommentar konnte nicht gespeichert werden.", en: "The comment couldn’t be saved.", es: "No se pudo guardar el comentario." },
+
+  // new entry form
+  "ef.eyebrow": { de: "Neue Erinnerung", en: "New memory", es: "Nuevo recuerdo" },
+  "ef.for": { de: "Für {name}", en: "For {name}", es: "Para {name}" },
+  "ef.sub": {
+    de: "Halte einen Moment fest — mit Text, Fotos und Videos.",
+    en: "Capture a moment — with text, photos and videos.",
+    es: "Guarda un momento — con texto, fotos y vídeos.",
+  },
+  "ef.title_label": { de: "Titel (optional)", en: "Title (optional)", es: "Título (opcional)" },
+  "ef.title_ph": { de: "z. B. Erster Zahn", en: "e.g. First tooth", es: "p. ej. Primer diente" },
+  "ef.media_label": { de: "Fotos / Videos / Audio (optional)", en: "Photos / videos / audio (optional)", es: "Fotos / vídeos / audio (opcional)" },
+  "ef.pick_files": { de: "＋ Dateien wählen (mehrere möglich)", en: "＋ Choose files (multiple)", es: "＋ Elegir archivos (varios)" },
+  "ef.text_label": { de: "Text", en: "Text", es: "Texto" },
+  "ef.text_ph": { de: "Was ist passiert?", en: "What happened?", es: "¿Qué pasó?" },
+  "ef.link_label": { de: "Link (optional)", en: "Link (optional)", es: "Enlace (opcional)" },
+  "ef.link_ph": {
+    de: "z. B. ein Spotify- oder YouTube-Link",
+    en: "e.g. a Spotify or YouTube link",
+    es: "p. ej. un enlace de Spotify o YouTube",
+  },
+  "ef.link_hint": {
+    de: "Wird als Vorschaukarte angezeigt (Titel + Bild).",
+    en: "Shown as a preview card (title + image).",
+    es: "Se muestra como tarjeta de vista previa (título + imagen).",
+  },
+  "ef.when_label": { de: "Zeitpunkt der Erinnerung", en: "When it happened", es: "Cuándo ocurrió" },
+  "ef.place_label": { de: "Ort (optional)", en: "Place (optional)", es: "Lugar (opcional)" },
+  "ef.place_ph": { de: "z. B. Berlin, bei Oma", en: "e.g. Berlin, at Grandma’s", es: "p. ej. Berlín, en casa de la abuela" },
+  "ef.private_title": { de: "Nur für mich (privat)", en: "Just for me (private)", es: "Solo para mí (privado)" },
+  "ef.private_hint": {
+    de: "Nur du siehst diesen Eintrag — später auch das Kind, nicht der andere Elternteil.",
+    en: "Only you see this entry — later also the child, but not the other parent.",
+    es: "Solo tú ves esta entrada — más adelante también el niño, pero no el otro padre.",
+  },
+  "ef.save_fail": { de: "Speichern fehlgeschlagen.", en: "Saving failed.", es: "No se pudo guardar." },
+
+  // edit entry form
+  "ee.eyebrow": { de: "Erinnerung bearbeiten", en: "Edit memory", es: "Editar recuerdo" },
+  "ee.title": { de: "Eintrag ändern", en: "Change entry", es: "Cambiar entrada" },
+  "ee.sub": {
+    de: "Text, Ort, Datum, Sichtbarkeit und Fotos/Videos anpassen.",
+    en: "Adjust text, place, date, visibility and photos/videos.",
+    es: "Ajusta texto, lugar, fecha, visibilidad y fotos/vídeos.",
+  },
+  "ee.media_label": { de: "Fotos / Videos", en: "Photos / videos", es: "Fotos / vídeos" },
+  "ee.no_media": { de: "Noch keine Medien in diesem Eintrag.", en: "No media in this entry yet.", es: "Aún no hay archivos en esta entrada." },
+  "ee.add_media": {
+    de: "＋ Fotos/Videos/Audio hinzufügen (mehrere möglich)",
+    en: "＋ Add photos/videos/audio (multiple)",
+    es: "＋ Añadir fotos/vídeos/audio (varios)",
+  },
+  "ee.rm_media_title": { de: "Medium entfernen?", en: "Remove media?", es: "¿Quitar archivo?" },
+  "ee.rm_media_body": {
+    de: "Dieses Foto/Video wird dauerhaft gelöscht.",
+    en: "This photo/video will be permanently deleted.",
+    es: "Esta foto/vídeo se eliminará permanentemente.",
+  },
+  "ee.link_hint": {
+    de: "Wird als Vorschaukarte angezeigt. Leer lassen entfernt den Link.",
+    en: "Shown as a preview card. Leave empty to remove the link.",
+    es: "Se muestra como tarjeta de vista previa. Déjalo vacío para quitar el enlace.",
+  },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

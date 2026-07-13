@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useT } from "@/app/LanguageProvider";
 
 export const COVER_ASPECT = 2.5; // hero banner ratio (width : height)
 const OUT_W = 1600;
@@ -23,6 +24,7 @@ export default function CoverCropper({
   onCancel: () => void;
   onDone: (blob: Blob) => void;
 }) {
+  const { t } = useT();
   const frameRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
@@ -125,9 +127,9 @@ export default function CoverCropper({
   const step = maxScale > minScale ? (maxScale - minScale) / 100 : 0.01;
 
   return createPortal(
-    <div className="cropwrap" role="dialog" aria-modal="true" aria-label="Titelbild zuschneiden">
+    <div className="cropwrap" role="dialog" aria-modal="true" aria-label={t("cc.crop")}>
       <div className="cropcard">
-        <p className="eyebrow" style={{ marginBottom: 8 }}>Titelbild zuschneiden</p>
+        <p className="eyebrow" style={{ marginBottom: 8 }}>{t("cc.crop")}</p>
         <div
           ref={frameRef}
           className="cropframe"
@@ -146,7 +148,7 @@ export default function CoverCropper({
               style={{ position: "absolute", left: offset.x, top: offset.y, width: nat.w * scale, height: nat.h * scale }}
             />
           ) : (
-            <div className="cropload">Lädt …</div>
+            <div className="cropload">{t("common.loading")}</div>
           )}
           <div className="cropgrid" aria-hidden />
         </div>
@@ -157,17 +159,15 @@ export default function CoverCropper({
           step={step}
           value={scale}
           onChange={(e) => zoomTo(parseFloat(e.target.value))}
-          aria-label="Zoom"
+          aria-label={t("cc.zoom")}
           style={{ width: "100%" }}
         />
-        <p className="muted" style={{ fontSize: ".78rem", margin: "4px 0 12px" }}>
-          Ziehen zum Verschieben · Slider oder Mausrad zum Zoomen
-        </p>
+        <p className="muted" style={{ fontSize: ".78rem", margin: "4px 0 12px" }}>{t("cc.hint")}</p>
         <div className="row">
           <button className="btn btn-primary" onClick={confirm} disabled={busy || !nat}>
-            {busy ? "…" : "Übernehmen"}
+            {busy ? "…" : t("common.apply")}
           </button>
-          <button className="btn" onClick={onCancel} disabled={busy}>Abbrechen</button>
+          <button className="btn" onClick={onCancel} disabled={busy}>{t("common.cancel")}</button>
         </div>
       </div>
     </div>,

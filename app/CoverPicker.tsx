@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "@/app/ConfirmProvider";
+import { useT } from "@/app/LanguageProvider";
 
 type Cover = { key: string; url: string };
 
@@ -28,6 +29,7 @@ export default function CoverPicker({
   onClose: () => void;
 }) {
   const confirm = useConfirm();
+  const { t } = useT();
   const [covers, setCovers] = useState<Cover[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -65,8 +67,8 @@ export default function CoverPicker({
   async function onDelete(key: string, e: React.MouseEvent) {
     e.stopPropagation();
     const ok = await confirm({
-      title: "Titelbild löschen?",
-      body: "Dieses Titelbild wird dauerhaft aus dem Speicher entfernt.",
+      title: t("cp.del_title"),
+      body: t("cp.del_body"),
       danger: true,
     });
     if (!ok) return;
@@ -80,47 +82,47 @@ export default function CoverPicker({
       return;
     }
     if (!data || data.length === 0) {
-      setError("Löschen nicht möglich — evtl. kann nur der Elternteil löschen, der dieses Bild hochgeladen hat.");
+      setError(t("cp.del_fail"));
       return;
     }
     setCovers((prev) => (prev ? prev.filter((c) => c.key !== key) : prev));
   }
 
   return createPortal(
-    <div className="cropwrap" role="dialog" aria-modal="true" aria-label="Titelbild wählen" onClick={onClose}>
+    <div className="cropwrap" role="dialog" aria-modal="true" aria-label={t("cp.choose")} onClick={onClose}>
       <div className="cropcard" onClick={(e) => e.stopPropagation()}>
         <div className="spread" style={{ marginBottom: 12 }}>
-          <p className="eyebrow" style={{ margin: 0 }}>Titelbild wählen</p>
-          <button type="button" className="btn" onClick={onClose}>Schließen</button>
+          <p className="eyebrow" style={{ margin: 0 }}>{t("cp.choose")}</p>
+          <button type="button" className="btn" onClick={onClose}>{t("nav.close")}</button>
         </div>
         <div className="gal">
           <button type="button" className="galnew" onClick={onPickNew}>
             ＋<br />
-            Neues Foto
+            {t("cp.new_photo")}
           </button>
           {covers === null ? (
-            <p className="muted" style={{ gridColumn: "1 / -1", fontSize: ".85rem" }}>Lädt …</p>
+            <p className="muted" style={{ gridColumn: "1 / -1", fontSize: ".85rem" }}>{t("common.loading")}</p>
           ) : covers.length === 0 ? (
-            <p className="muted" style={{ gridColumn: "1 / -1", fontSize: ".85rem" }}>Noch keine früheren Titelbilder.</p>
+            <p className="muted" style={{ gridColumn: "1 / -1", fontSize: ".85rem" }}>{t("cp.none")}</p>
           ) : (
             covers.map((c) => {
               const isCurrent = c.key === currentKey;
               return (
                 <div key={c.key} className={"galtile" + (isCurrent ? " current" : "")}>
-                  <button type="button" className="galpick" onClick={() => onSelect(c.key)} aria-label="Dieses Titelbild verwenden">
+                  <button type="button" className="galpick" onClick={() => onSelect(c.key)} aria-label={t("cp.use")}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={c.url} alt="" />
                   </button>
                   {isCurrent ? (
-                    <span className="galbadge">Aktuell</span>
+                    <span className="galbadge">{t("cp.current")}</span>
                   ) : (
                     <button
                       type="button"
                       className="galdel"
                       onClick={(e) => onDelete(c.key, e)}
                       disabled={deleting === c.key}
-                      aria-label="Titelbild löschen"
-                      title="Dauerhaft löschen"
+                      aria-label={t("cp.del_title")}
+                      title={t("cp.del_perm")}
                     >
                       {deleting === c.key ? "…" : "✕"}
                     </button>

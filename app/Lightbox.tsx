@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useT } from "@/app/LanguageProvider";
 import type { SignedMedia } from "@/lib/data";
 
 // Fullscreen media viewer: blurred/darkened backdrop, keyboard + swipe
@@ -17,6 +18,7 @@ export default function Lightbox({
   onClose: () => void;
   onIndex: (i: number) => void;
 }) {
+  const { t } = useT();
   const count = items.length;
   const go = useCallback(
     (delta: number) => {
@@ -68,12 +70,12 @@ export default function Lightbox({
       className="lb"
       role="dialog"
       aria-modal="true"
-      aria-label="Großansicht"
+      aria-label={t("lb.view")}
       onClick={onClose}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <button className="lb-x" type="button" aria-label="Schließen" onClick={onClose}>
+      <button className="lb-x" type="button" aria-label={t("nav.close")} onClick={onClose}>
         ✕
       </button>
       {count > 1 ? (
@@ -85,7 +87,7 @@ export default function Lightbox({
         <button
           className="lb-nav lb-prev"
           type="button"
-          aria-label="Zurück"
+          aria-label={t("lb.prev")}
           onClick={(e) => {
             e.stopPropagation();
             go(-1);
@@ -105,7 +107,7 @@ export default function Lightbox({
         <button
           className="lb-nav lb-next"
           type="button"
-          aria-label="Weiter"
+          aria-label={t("lb.next")}
           onClick={(e) => {
             e.stopPropagation();
             go(1);

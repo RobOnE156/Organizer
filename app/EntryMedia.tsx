@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import Lightbox from "./Lightbox";
 import { createClient } from "@/lib/supabase/client";
 import { averageColor } from "@/lib/color";
+import { useT } from "@/app/LanguageProvider";
 import type { SignedMedia } from "@/lib/data";
 
 // The media grid for one entry. Images and videos open in a fullscreen
@@ -11,6 +12,7 @@ import type { SignedMedia } from "@/lib/data";
 // card also gets a soft "ambient light" glow in the dominant colour of the
 // first photo (extracted client-side from a downloaded copy — no CORS).
 export default function EntryMedia({ media }: { media: SignedMedia[] }) {
+  const { t } = useT();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [glow, setGlow] = useState<string | null>(null);
   const viewable = media.filter((m) => m.kind === "image" || m.kind === "video");
@@ -68,7 +70,7 @@ export default function EntryMedia({ media }: { media: SignedMedia[] }) {
               key={i}
               type="button"
               className="mediatile"
-              aria-label="Vergrößern"
+              aria-label={t("media.zoom")}
               onClick={() => setOpenIndex(vi)}
             >
               {m.kind === "video" ? (

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { setChildCover } from "@/app/content-actions";
 import CoverCropper from "@/app/CoverCropper";
 import CoverPicker from "@/app/CoverPicker";
+import { useT } from "@/app/LanguageProvider";
 
 export default function ChildHero({
   childId,
@@ -25,6 +26,7 @@ export default function ChildHero({
   coverKey: string | null;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
@@ -54,7 +56,7 @@ export default function ChildHero({
         .from("media")
         .upload(path, blob, { contentType: "image/jpeg", upsert: false });
       if (upErr) {
-        setError("Upload fehlgeschlagen: " + upErr.message);
+        setError(t("common.upload_failed") + upErr.message);
         setBusy(false);
         return;
       }
@@ -66,7 +68,7 @@ export default function ChildHero({
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler.");
+      setError(err instanceof Error ? err.message : t("common.unknown_error"));
     } finally {
       setBusy(false);
     }
@@ -79,12 +81,12 @@ export default function ChildHero({
         <img className="hero-bg" src={coverUrl} alt="" />
       ) : null}
       <div className="hero-inner">
-        <p className="hero-eyebrow">Tagebuch</p>
+        <p className="hero-eyebrow">{t("nav.timeline")}</p>
         <h1 className="hero-name">{name}</h1>
         <p className="hero-sub">
           {age ? age : null}
           {age && birthLabel ? " · " : null}
-          {birthLabel ? `geboren am ${birthLabel}` : null}
+          {birthLabel ? t("hero.born", { date: birthLabel }) : null}
         </p>
       </div>
       <button
@@ -92,10 +94,10 @@ export default function ChildHero({
         className="hero-edit"
         onClick={() => setPickerOpen(true)}
         disabled={busy}
-        aria-label="Titelbild ändern"
-        title="Titelbild ändern"
+        aria-label={t("hero.change_cover")}
+        title={t("hero.change_cover")}
       >
-        {busy ? "…" : coverUrl ? "📷 Ändern" : "📷 Titelbild"}
+        {busy ? "…" : coverUrl ? t("hero.cover_change") : t("hero.cover_add")}
       </button>
       <input
         ref={inputRef}

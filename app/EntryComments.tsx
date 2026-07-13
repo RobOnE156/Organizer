@@ -5,6 +5,7 @@ import { addComment, updateComment, deleteComment } from "@/app/content-actions"
 import { useConfirm } from "@/app/ConfirmProvider";
 import ReactionBar from "@/app/ReactionBar";
 import Avatar from "@/app/Avatar";
+import { useT } from "@/app/LanguageProvider";
 import type { Comment, CommentReaction, MemberProfile } from "@/lib/data";
 
 function fmtTime(iso: string): string {
@@ -27,6 +28,7 @@ export default function EntryComments({
   commentReactions?: CommentReaction[];
 }) {
   const confirm = useConfirm();
+  const { t } = useT();
   const reactionsByComment = new Map<string, CommentReaction[]>();
   for (const r of commentReactions) {
     const arr = reactionsByComment.get(r.comment_id);
@@ -71,7 +73,7 @@ export default function EntryComments({
     const res = await addComment(entryId, householdId, body);
     setBusy(false);
     if (res.error || !res.comment) {
-      setError(res.error ?? "Kommentar konnte nicht gespeichert werden.");
+      setError(res.error ?? t("ec.save_fail"));
       return;
     }
     setComments((prev) => [...prev, { entry_id: entryId, ...res.comment! }]);
@@ -79,7 +81,7 @@ export default function EntryComments({
   }
 
   async function onDelete(id: string) {
-    const ok = await confirm({ title: "Kommentar löschen?", body: "Dein Kommentar wird entfernt.", danger: true });
+    const ok = await confirm({ title: t("ec.del_title"), body: t("ec.del_body"), danger: true });
     if (!ok) return;
     const res = await deleteComment(id);
     if (res.error) {
@@ -104,10 +106,10 @@ export default function EntryComments({
                     <span>{fmtTime(c.created_at)}</span>
                     {c.author_id === userId && editingId !== c.id ? (
                       <span className="cactions">
-                        <button type="button" className="cedit" aria-label="Kommentar bearbeiten" onClick={() => startEdit(c)}>
+                        <button type="button" className="cedit" aria-label={t("ec.edit")} onClick={() => startEdit(c)}>
                           ✎
                         </button>
-                        <button type="button" className="cdel" aria-label="Kommentar löschen" onClick={() => onDelete(c.id)}>
+                        <button type="button" className="cdel" aria-label={t("ec.delete")} onClick={() => onDelete(c.id)}>
                           ✕
                         </button>
                       </span>
@@ -127,11 +129,11 @@ export default function EntryComments({
                         onChange={(e) => setEditText(e.target.value)}
                         maxLength={4000}
                         autoFocus
-                        aria-label="Kommentar bearbeiten"
+                        aria-label={t("ec.edit")}
                       />
-                      <button className="btn btn-primary" disabled={busy || !editText.trim()}>Speichern</button>
+                      <button className="btn btn-primary" disabled={busy || !editText.trim()}>{t("common.save")}</button>
                       <button type="button" className="btn" onClick={() => setEditingId(null)} disabled={busy}>
-                        Abbrechen
+                        {t("common.cancel")}
                       </button>
                     </form>
                   ) : (
@@ -158,11 +160,11 @@ export default function EntryComments({
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Kommentar schreiben …"
+          placeholder={t("ec.ph")}
           maxLength={4000}
-          aria-label="Kommentar"
+          aria-label={t("ec.label")}
         />
-        <button className="btn btn-primary" disabled={busy || !text.trim()}>{busy ? "…" : "Senden"}</button>
+        <button className="btn btn-primary" disabled={busy || !text.trim()}>{busy ? "…" : t("ec.send")}</button>
       </form>
       {error ? <p className="err" style={{ marginTop: 6 }}>{error}</p> : null}
     </div>

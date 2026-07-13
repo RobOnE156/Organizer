@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { addReaction, removeReaction } from "@/app/content-actions";
 import { REACTION_EMOJIS, type ReactTarget } from "@/app/content-types";
+import { useT } from "@/app/LanguageProvider";
 
 type Reacted = { author_id: string; emoji: string };
 
@@ -21,6 +22,7 @@ export default function ReactionBar({
   userId: string;
   compact?: boolean;
 }) {
+  const { t } = useT();
   const [reactions, setReactions] = useState<Reacted[]>(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -62,7 +64,7 @@ export default function ReactionBar({
           onClick={() => toggle(emoji)}
           disabled={busy === emoji}
           aria-pressed={mine(emoji)}
-          aria-label={"Reaktion " + emoji}
+          aria-label={t("react.aria", { emoji })}
         >
           <span className="re">{emoji}</span>
           <span className="rc">{countOf(emoji)}</span>
@@ -74,7 +76,7 @@ export default function ReactionBar({
           className="react addbtn"
           onClick={() => setPaletteOpen((o) => !o)}
           aria-expanded={paletteOpen}
-          aria-label="Reagieren"
+          aria-label={t("react.add")}
         >
           🙂<span className="plus">＋</span>
         </button>

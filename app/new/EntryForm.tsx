@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { createEntryGetId, recordMedia, attachLink } from "@/app/content-actions";
 import VoiceRecorder from "@/app/VoiceRecorder";
 import { firstPhotoGps } from "@/lib/exif-gps";
+import { useT } from "@/app/LanguageProvider";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
 function todayISO(): string {
@@ -32,6 +33,7 @@ export default function EntryForm({
   placeSuggestions: string[];
 }) {
   const router = useRouter();
+  const { t } = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -71,7 +73,7 @@ export default function EntryForm({
         lng: gps?.lng ?? null,
       });
       if (res.error || !res.entryId || !res.householdId) {
-        setError(res.error ?? "Speichern fehlgeschlagen.");
+        setError(res.error ?? t("ef.save_fail"));
         setBusy(false);
         return;
       }
@@ -86,7 +88,7 @@ export default function EntryForm({
             .from("media")
             .upload(path, file, { contentType: file.type || undefined, upsert: false });
           if (upErr) {
-            setError(`Upload fehlgeschlagen: ${upErr.message}`);
+            setError(t("common.upload_failed") + upErr.message);
             setBusy(false);
             return;
           }
@@ -113,7 +115,7 @@ export default function EntryForm({
       router.push("/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler.");
+      setError(err instanceof Error ? err.message : t("common.unknown_error"));
       setBusy(false);
     }
   }
@@ -121,20 +123,20 @@ export default function EntryForm({
   return (
     <form className="card stack" onSubmit={onSubmit}>
       <div>
-        <p className="eyebrow">Neue Erinnerung</p>
-        <h1 className="title">Für {childName}</h1>
-        <p className="sub">Halte einen Moment fest — mit Text, Fotos und Videos.</p>
+        <p className="eyebrow">{t("ef.eyebrow")}</p>
+        <h1 className="title">{t("ef.for", { name: childName })}</h1>
+        <p className="sub">{t("ef.sub")}</p>
       </div>
 
       <div className="field">
-        <label htmlFor="title">Titel (optional)</label>
-        <input id="title" name="title" type="text" maxLength={80} placeholder="z. B. Erster Zahn" />
+        <label htmlFor="title">{t("ef.title_label")}</label>
+        <input id="title" name="title" type="text" maxLength={80} placeholder={t("ef.title_ph")} />
       </div>
 
       <div className="field">
-        <label>Fotos / Videos / Audio (optional)</label>
+        <label>{t("ef.media_label")}</label>
         <div className="filedrop" onClick={() => inputRef.current?.click()}>
-          ＋ Dateien wählen (mehrere möglich)
+          {t("ef.pick_files")}
         </div>
         <input
           ref={inputRef}
@@ -159,7 +161,7 @@ export default function EntryForm({
                 ) : (
                   <span className="lbl">🎧</span>
                 )}
-                <button type="button" className="x" aria-label="Entfernen" onClick={() => removeFile(i)}>
+                <button type="button" className="x" aria-label={t("common.remove")} onClick={() => removeFile(i)}>
                   ✕
                 </button>
               </div>
@@ -169,12 +171,12 @@ export default function EntryForm({
       </div>
 
       <div className="field">
-        <label htmlFor="body">Text</label>
+        <label htmlFor="body">{t("ef.text_label")}</label>
         <textarea
           id="body"
           name="body"
           rows={5}
-          placeholder="Was ist passiert?"
+          placeholder={t("ef.text_ph")}
           style={{
             width: "100%",
             padding: "11px 13px",
@@ -188,24 +190,24 @@ export default function EntryForm({
       </div>
 
       <div className="field">
-        <label htmlFor="link">Link (optional)</label>
-        <input id="link" name="link" type="url" inputMode="url" placeholder="z. B. ein Spotify- oder YouTube-Link" />
-        <small className="muted" style={{ fontSize: ".76rem" }}>Wird als Vorschaukarte angezeigt (Titel + Bild).</small>
+        <label htmlFor="link">{t("ef.link_label")}</label>
+        <input id="link" name="link" type="url" inputMode="url" placeholder={t("ef.link_ph")} />
+        <small className="muted" style={{ fontSize: ".76rem" }}>{t("ef.link_hint")}</small>
       </div>
 
       <div className="field">
-        <label htmlFor="event_date">Zeitpunkt der Erinnerung</label>
+        <label htmlFor="event_date">{t("ef.when_label")}</label>
         <input id="event_date" name="event_date" type="date" defaultValue={todayISO()} />
       </div>
 
       <div className="field">
-        <label htmlFor="place">Ort (optional)</label>
+        <label htmlFor="place">{t("ef.place_label")}</label>
         <input
           id="place"
           name="place"
           type="text"
           maxLength={120}
-          placeholder="z. B. Berlin, bei Oma"
+          placeholder={t("ef.place_ph")}
           list="place-list"
           autoComplete="off"
         />
@@ -221,15 +223,15 @@ export default function EntryForm({
       <label className="checkline">
         <input type="checkbox" name="is_private" />
         <span className="pt">
-          <b>Nur für mich (privat)</b>
-          <small>Nur du siehst diesen Eintrag — später auch das Kind, nicht der andere Elternteil.</small>
+          <b>{t("ef.private_title")}</b>
+          <small>{t("ef.private_hint")}</small>
         </span>
       </label>
 
       {error ? <p className="err">{error}</p> : null}
       <div className="row">
-        <button className="btn btn-primary" disabled={busy}>{busy ? "Speichere …" : "Speichern"}</button>
-        <a className="btn" href="/">Abbrechen</a>
+        <button className="btn btn-primary" disabled={busy}>{busy ? t("common.saving") : t("common.save")}</button>
+        <a className="btn" href="/">{t("common.cancel")}</a>
       </div>
     </form>
   );
