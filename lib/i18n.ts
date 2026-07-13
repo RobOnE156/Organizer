@@ -553,6 +553,56 @@ const M = {
     en: "Shown as a preview card. Leave empty to remove the link.",
     es: "Se muestra como tarjeta de vista previa. Déjalo vacío para quitar el enlace.",
   },
+
+  // household
+  "role.owner": { de: "Eigentümer:in", en: "Owner", es: "Propietario" },
+  "role.parent": { de: "Elternteil", en: "Parent", es: "Progenitor" },
+  "hh.member_one": { de: "{n} Mitglied", en: "{n} member", es: "{n} miembro" },
+  "hh.member_many": { de: "{n} Mitglieder", en: "{n} members", es: "{n} miembros" },
+  "hh.your_role": { de: "deine Rolle: {role}", en: "your role: {role}", es: "tu rol: {role}" },
+  "inv.not_owner": {
+    de: "Nur der/die Haushalts-Eigentümer:in kann einladen.",
+    en: "Only the household owner can invite.",
+    es: "Solo el propietario del hogar puede invitar.",
+  },
+  "inv.intro": {
+    de: "Lade den zweiten Elternteil ein: erzeuge einen Link und schicke ihn per E-Mail, WhatsApp o. Ä. Der/die Eingeladene registriert sich und tritt damit automatisch bei.",
+    en: "Invite the second parent: create a link and send it by email, WhatsApp, etc. The invitee signs up and joins automatically.",
+    es: "Invita al segundo progenitor: crea un enlace y envíalo por correo, WhatsApp, etc. La persona invitada se registra y se une automáticamente.",
+  },
+  "inv.create": { de: "Einladungs-Link erzeugen", en: "Create invite link", es: "Crear enlace de invitación" },
+  "inv.valid": { de: "Gültig 14 Tage · einmalig verwendbar:", en: "Valid for 14 days · single use:", es: "Válido 14 días · un solo uso:" },
+  "inv.share": { de: "Teilen", en: "Share", es: "Compartir" },
+  "inv.copy": { de: "Link kopieren", en: "Copy link", es: "Copiar enlace" },
+  "inv.copied": { de: "Kopiert ✓", en: "Copied ✓", es: "Copiado ✓" },
+  "inv.share_text": {
+    de: "Tritt unserem digitalen Tagebuch für Benni bei:",
+    en: "Join our digital diary for Benni:",
+    es: "Únete a nuestro diario digital de Benni:",
+  },
+
+  // security
+  "sec.eyebrow": { de: "Konto & Sicherheit", en: "Account & security", es: "Cuenta y seguridad" },
+  "sec.title": { de: "Zwei-Faktor-Authentifizierung", en: "Two-factor authentication", es: "Autenticación de dos factores" },
+  "sec.sub": {
+    de: "Schütze euer Tagebuch mit einem zweiten Faktor (Authenticator-App / TOTP).",
+    en: "Protect your diary with a second factor (authenticator app / TOTP).",
+    es: "Protege vuestro diario con un segundo factor (app de autenticación / TOTP).",
+  },
+  "sec.active": {
+    de: "✅ Zwei-Faktor ist aktiv. Damit dich ein verlorenes Handy nicht aussperrt, nutze eine Authenticator-App mit Cloud-Backup (z. B. iPhone-„Passwörter“, 1Password oder Authy). Geht der Zugang trotzdem verloren, kann der/die Haushalts-Eigentümer:in den zweiten Faktor zurücksetzen.",
+    en: "✅ Two-factor is active. So a lost phone doesn’t lock you out, use an authenticator app with cloud backup (e.g. iPhone “Passwords”, 1Password or Authy). If access is still lost, the household owner can reset the second factor.",
+    es: "✅ La verificación en dos pasos está activa. Para que un móvil perdido no te bloquee, usa una app de autenticación con copia en la nube (p. ej. «Contraseñas» de iPhone, 1Password o Authy). Si aun así pierdes el acceso, el propietario del hogar puede restablecer el segundo factor.",
+  },
+  "sec.enable": { de: "Zwei-Faktor aktivieren", en: "Enable two-factor", es: "Activar dos factores" },
+  "sec.scan": {
+    de: "Scanne den QR-Code mit deiner Authenticator-App und gib dann den 6-stelligen Code ein.",
+    en: "Scan the QR code with your authenticator app, then enter the 6-digit code.",
+    es: "Escanea el código QR con tu app de autenticación e introduce el código de 6 dígitos.",
+  },
+  "sec.manual": { de: "Manuell:", en: "Manual:", es: "Manual:" },
+  "sec.code": { de: "Code", en: "Code", es: "Código" },
+  "sec.confirm": { de: "Bestätigen & aktivieren", en: "Confirm & activate", es: "Confirmar y activar" },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

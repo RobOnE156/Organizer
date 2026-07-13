@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getUser, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/env";
+import { getShellPrefs } from "@/lib/data";
+import { translator } from "@/lib/i18n";
 import SecuritySetup from "./SecuritySetup";
 
 export const dynamic = "force-dynamic";
@@ -11,21 +13,22 @@ export default async function SecurityPage() {
   if (!user) redirect("/login");
   await enforceSecondFactor();
 
+  const supabase = await createClient();
+  const t = translator((await getShellPrefs(supabase, user.id)).lang);
   let hasTotp = false;
   if (hasSupabaseEnv()) {
-    const supabase = await createClient();
     const { data } = await supabase.auth.mfa.listFactors();
     hasTotp = Boolean(data?.totp?.some((f) => f.status === "verified"));
   }
 
   return (
     <main className="page">
-      <p className="eyebrow">Konto &amp; Sicherheit</p>
-      <h1 className="title">Zwei-Faktor-Authentifizierung</h1>
-      <p className="sub">Schütze euer Tagebuch mit einem zweiten Faktor (Authenticator-App / TOTP).</p>
+      <p className="eyebrow">{t("sec.eyebrow")}</p>
+      <h1 className="title">{t("sec.title")}</h1>
+      <p className="sub">{t("sec.sub")}</p>
       <SecuritySetup hasTotp={hasTotp} />
       <p style={{ marginTop: 24 }}>
-        <a href="/settings">← Zurück</a>
+        <a href="/settings">{t("common.back")}</a>
       </p>
     </main>
   );
