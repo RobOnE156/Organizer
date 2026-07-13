@@ -27,21 +27,28 @@ function extFor(mime: string): string {
   return "webm";
 }
 
-// Records a voice note in the browser (MediaRecorder) and hands it back as a
-// File, so it flows through the same upload path as a picked audio file.
+// Records a voice note in the browser. After stopping you can listen to it and
+// either keep it (handed back as a File to the entry's uploads) or re-record —
+// nothing is attached to the entry until you tap "Übernehmen".
 export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File) => void }) {
-  const [recording, setRecording] = useState(false);
+  const [mode, setMode] = useState<"idle" | "recording" | "review">("idle");
   const [secs, setSecs] = useState(0);
+  const [pending, setPending] = useState<{ url: string; file: File } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingRef = useRef<{ url: string } | null>(null);
+
+  // keep a ref to the pending url so cleanup can revoke it without re-running
+  pendingRef.current = pending ? { url: pending.url } : null;
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (pendingRef.current) URL.revokeObjectURL(pendingRef.current.url);
     };
   }, []);
 
@@ -50,6 +57,10 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
 
   async function start() {
     setError(null);
+    if (pending) {
+      URL.revokeObjectURL(pending.url);
+      setPending(null);
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -62,19 +73,25 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
       rec.onstop = () => {
         const type = rec.mimeType || mime || "audio/webm";
         const blob = new Blob(chunksRef.current, { type });
-        if (blob.size > 0) {
-          onRecorded(new File([blob], `sprachnotiz-${Date.now()}.${extFor(type)}`, { type }));
-        }
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        if (blob.size > 0) {
+          const url = URL.createObjectURL(blob);
+          const file = new File([blob], `sprachnotiz-${Date.now()}.${extFor(type)}`, { type });
+          setPending({ url, file });
+          setMode("review");
+        } else {
+          setMode("idle");
+        }
       };
       recRef.current = rec;
       rec.start();
-      setRecording(true);
+      setMode("recording");
       setSecs(0);
       timerRef.current = setInterval(() => setSecs((s) => s + 1), 1000);
     } catch {
       setError("Mikrofon nicht verfügbar oder Zugriff verweigert.");
+      setMode("idle");
     }
   }
 
@@ -85,7 +102,15 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
     }
     recRef.current?.stop();
     recRef.current = null;
-    setRecording(false);
+    // mode → "review" happens in rec.onstop
+  }
+
+  function accept() {
+    if (!pending) return;
+    onRecorded(pending.file);
+    URL.revokeObjectURL(pending.url);
+    setPending(null);
+    setMode("idle");
   }
 
   if (!supported) {
@@ -98,10 +123,19 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
 
   return (
     <div style={{ marginTop: 8 }}>
-      {recording ? (
+      {mode === "recording" ? (
         <button type="button" className="btn recbtn" onClick={stop}>
           <span className="recdot" /> Stopp · {fmt(secs)}
         </button>
+      ) : mode === "review" && pending ? (
+        <div className="recreview">
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>Aufnahme anhören:</p>
+          <audio controls src={pending.url} />
+          <div className="row">
+            <button type="button" className="btn btn-primary" onClick={accept}>✓ Übernehmen</button>
+            <button type="button" className="btn" onClick={start}>↻ Neu aufnehmen</button>
+          </div>
+        </div>
       ) : (
         <button type="button" className="btn" onClick={start}>🎙️ Sprachnotiz aufnehmen</button>
       )}
