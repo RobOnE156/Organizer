@@ -93,7 +93,7 @@ export default function VoiceRecorder({ onRecorded }: { onRecorded: (file: File)
       const name = err instanceof DOMException ? err.name : "";
       let msg = "Mikrofon-Zugriff nicht möglich.";
       if (name === "NotAllowedError" || name === "SecurityError") {
-        msg = "Mikrofon-Zugriff ist blockiert. Erlaube ihn über das Schloss-Symbol neben der Adresse (Mikrofon → Zulassen) und lade neu.";
+        msg = "Mikrofon-Zugriff ist blockiert. Erlaube ihn in den Website-Einstellungen (Symbol links neben der Web-Adresse → Mikrofon → Zulassen) und lade die Seite neu.";
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
         msg = "Kein Mikrofon gefunden. Schließe eins an — oder nimm am Handy auf.";
       } else if (name === "NotReadableError") {
