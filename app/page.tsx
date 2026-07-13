@@ -16,6 +16,7 @@ import {
 import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline";
 import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
+import EntryMedia from "@/app/EntryMedia";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
 export const dynamic = "force-dynamic";
@@ -37,12 +38,6 @@ function TopBar({ childName }: { childName?: string }) {
       </nav>
     </header>
   );
-}
-
-function MediaTile({ item }: { item: SignedMedia }) {
-  if (item.kind === "video") return <video controls preload="metadata" src={item.url} />;
-  if (item.kind === "audio") return <audio controls preload="metadata" src={item.url} style={{ width: "100%" }} />;
-  return <img src={item.url} alt="" loading="lazy" />;
 }
 
 function EntryCard({
@@ -67,13 +62,7 @@ function EntryCard({
       </div>
       {entry.title ? <h3>{entry.title}</h3> : null}
       {entry.place_name ? <p className="place">📍 {entry.place_name}</p> : null}
-      {media.length > 0 ? (
-        <div className="mediagrid">
-          {media.map((m, i) => (
-            <MediaTile key={i} item={m} />
-          ))}
-        </div>
-      ) : null}
+      {media.length > 0 ? <EntryMedia media={media} /> : null}
       {entry.body ? <p className="body">{entry.body}</p> : null}
     </article>
   );
