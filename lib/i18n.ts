@@ -692,7 +692,72 @@ const M = {
     es: "Este enlace de invitación no es válido, ya se usó o caducó. Pide al otro progenitor un enlace nuevo.",
   },
   "join.home": { de: "Zur Startseite", en: "Go to home", es: "Ir al inicio" },
+
+  // export bundle (README + offline viewer + sidecars)
+  "exp.note": {
+    de: "Offline-Sicherung · in jedem Browser ohne Internet lesbar",
+    en: "Offline backup · readable in any browser without internet",
+    es: "Copia de seguridad sin conexión · legible en cualquier navegador sin internet",
+  },
+  "exp.v_empty": { de: "Noch keine Einträge.", en: "No entries yet.", es: "Aún no hay entradas." },
+  "exp.v_snapshots": { de: "Schnappschüsse", en: "Snapshots", es: "Instantáneas" },
+  "exp.v_with": { de: "mit", en: "at", es: "con" },
+  "exp.v_highlight": { de: "Höhepunkt", en: "Highlight", es: "Momento destacado" },
+  "exp.h_reactions": { de: "Reaktionen", en: "Reactions", es: "Reacciones" },
+  "exp.h_comments": { de: "Kommentare", en: "Comments", es: "Comentarios" },
+  "exp.h_link": { de: "Link", en: "Link", es: "Enlace" },
+  "exp.h_media": { de: "Medien", en: "Media", es: "Medios" },
+  "exp.readme": {
+    de:
+      "Benni-Tagebuch — Offline-Sicherung\n\n" +
+      "So öffnest du dein Tagebuch:\n" +
+      "1. Diese ZIP-Datei vollständig entpacken.\n" +
+      "2. Im entpackten Ordner die Datei 'index.html' mit einem Browser öffnen (Doppelklick).\n" +
+      "   Es funktioniert komplett offline — ohne App, ohne Internet.\n\n" +
+      "Was ist enthalten:\n" +
+      "- index.html   : dein Tagebuch als Webseite, in jedem Browser lesbar.\n" +
+      "- media/       : alle Original-Fotos, -Videos und -Audios.\n" +
+      "- entries/     : jeder Eintrag als einzelne Textdatei (Markdown, offen lesbar).\n" +
+      "- snapshots/   : die „Wer ist … gerade?“-Schnappschüsse als Textdateien.\n" +
+      "- links/       : Vorschaubilder der verlinkten Inhalte (Spotify/YouTube/…).\n" +
+      "- entries.json : alle Einträge als strukturierte Daten.\n\n" +
+      "Tipp: Bewahre mindestens zwei Kopien an verschiedenen Orten auf\n" +
+      "(z. B. Computer + externe Festplatte oder ein zweiter Cloud-Speicher).\n",
+    en:
+      "Benni Diary — Offline backup\n\n" +
+      "How to open your diary:\n" +
+      "1. Fully extract this ZIP file.\n" +
+      "2. In the extracted folder, open 'index.html' in a browser (double-click).\n" +
+      "   It works completely offline — no app, no internet.\n\n" +
+      "What's included:\n" +
+      "- index.html   : your diary as a web page, readable in any browser.\n" +
+      "- media/       : all original photos, videos and audio.\n" +
+      "- entries/     : each entry as a single text file (Markdown, openly readable).\n" +
+      "- snapshots/   : the “Who is … right now?” snapshots as text files.\n" +
+      "- links/       : preview images of linked content (Spotify/YouTube/…).\n" +
+      "- entries.json : all entries as structured data.\n\n" +
+      "Tip: Keep at least two copies in different places\n" +
+      "(e.g. computer + external drive or a second cloud storage).\n",
+    es:
+      "Diario de Benni — Copia de seguridad sin conexión\n\n" +
+      "Cómo abrir tu diario:\n" +
+      "1. Extrae por completo este archivo ZIP.\n" +
+      "2. En la carpeta extraída, abre 'index.html' en un navegador (doble clic).\n" +
+      "   Funciona totalmente sin conexión — sin app, sin internet.\n\n" +
+      "Qué incluye:\n" +
+      "- index.html   : tu diario como página web, legible en cualquier navegador.\n" +
+      "- media/       : todas las fotos, vídeos y audios originales.\n" +
+      "- entries/     : cada entrada como archivo de texto (Markdown, legible).\n" +
+      "- snapshots/   : las instantáneas “¿Quién es … ahora?” como archivos de texto.\n" +
+      "- links/       : imágenes de vista previa del contenido enlazado (Spotify/YouTube/…).\n" +
+      "- entries.json : todas las entradas como datos estructurados.\n\n" +
+      "Consejo: Guarda al menos dos copias en lugares distintos\n" +
+      "(p. ej. ordenador + disco externo o un segundo almacenamiento en la nube).\n",
+  },
 } satisfies Record<string, Msg>;
+
+// Intl locale for each UI language (used by the offline viewer for dates).
+export const LOCALE_OF: Record<Lang, string> = { de: "de-DE", en: "en-US", es: "es-ES" };
 
 export type MsgKey = keyof typeof M;
 

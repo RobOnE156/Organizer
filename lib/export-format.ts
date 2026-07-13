@@ -2,6 +2,8 @@
 // so they can be unit-tested directly (see the export restore test). The
 // index.html they produce opens in any browser from file://, forever.
 
+import { translator, LOCALE_OF, type Lang } from "@/lib/i18n";
+
 export type ViewerMedia = { path: string; kind: string };
 
 export type ViewerReaction = { emoji: string; count: number };
@@ -81,26 +83,26 @@ const VIEWER_CSS = [
 const VIEWER_JS = [
   "document.querySelector('header h1').textContent=TITLE;",
   "var tl=document.getElementById('tl');",
-  "if(!ENTRIES.length){var d=document.createElement('p');d.className='empty';d.textContent='Noch keine Einträge.';tl.appendChild(d);}",
+  "if(!ENTRIES.length){var d=document.createElement('p');d.className='empty';d.textContent=L.empty;tl.appendChild(d);}",
   "var months={},order=[];",
   "for(var i=0;i<ENTRIES.length;i++){var e=ENTRIES[i];var k=e.date.slice(0,7);if(!months[k]){months[k]=[];order.push(k);}months[k].push(e);}",
   "order.sort();order.reverse();",
-  "var fmt=new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'long',year:'numeric'});",
-  "var mfmt=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'});",
+  "var fmt=new Intl.DateTimeFormat(LOCALE,{day:'2-digit',month:'long',year:'numeric'});",
+  "var mfmt=new Intl.DateTimeFormat(LOCALE,{month:'long',year:'numeric'});",
   "for(var j=0;j<order.length;j++){var kk=order[j];var sec=document.createElement('section');",
   "var h2=document.createElement('h2');h2.className='month';h2.textContent=mfmt.format(new Date(kk+'-01T00:00:00'));sec.appendChild(h2);",
   "var list=months[kk];list.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.created_at<b.created_at?1:-1);});",
   "for(var m=0;m<list.length;m++){sec.appendChild(card(list[m]));}tl.appendChild(sec);}",
-  "if(typeof SNAPSHOTS!=='undefined'&&SNAPSHOTS.length){var sh=document.createElement('h2');sh.className='month';sh.textContent='Schnappschüsse';tl.appendChild(sh);for(var si=0;si<SNAPSHOTS.length;si++){tl.appendChild(snapCard(SNAPSHOTS[si]));}}",
-  "function snapCard(s){var art=document.createElement('article');art.className='entry';var meta=document.createElement('div');meta.className='meta';var nm=document.createElement('span');nm.className='nm';nm.textContent=s.date+(s.age?(' · '+s.child+' mit '+s.age):'');meta.appendChild(nm);art.appendChild(meta);",
+  "if(typeof SNAPSHOTS!=='undefined'&&SNAPSHOTS.length){var sh=document.createElement('h2');sh.className='month';sh.textContent=L.snapshots;tl.appendChild(sh);for(var si=0;si<SNAPSHOTS.length;si++){tl.appendChild(snapCard(SNAPSHOTS[si]));}}",
+  "function snapCard(s){var art=document.createElement('article');art.className='entry';var meta=document.createElement('div');meta.className='meta';var nm=document.createElement('span');nm.className='nm';nm.textContent=s.date+(s.age?(' · '+s.child+' '+L.with+' '+s.age):'');meta.appendChild(nm);art.appendChild(meta);",
   "for(var i=0;i<s.items.length;i++){var it=s.items[i];var k=document.createElement('p');k.className='place';k.textContent=it.label;art.appendChild(k);var v=document.createElement('p');v.className='body';v.style.marginTop='2px';v.textContent=it.value;art.appendChild(v);}return art;}",
   "function card(e){var art=document.createElement('article');art.className='entry';",
   "var meta=document.createElement('div');meta.className='meta';",
   "var dot=document.createElement('span');dot.className='dot';dot.style.background=e.color||'#999';dot.textContent=(e.author||'?').slice(0,1).toUpperCase();",
-  "var nm=document.createElement('span');nm.className='nm';nm.textContent=e.author||'Elternteil';meta.appendChild(dot);meta.appendChild(nm);",
-  "if(e.private){var pb=document.createElement('span');pb.className='priv';pb.textContent='🔒 Privat';meta.appendChild(pb);}",
+  "var nm=document.createElement('span');nm.className='nm';nm.textContent=e.author||L.parent;meta.appendChild(dot);meta.appendChild(nm);",
+  "if(e.private){var pb=document.createElement('span');pb.className='priv';pb.textContent=L.private;meta.appendChild(pb);}",
   "var wh=document.createElement('span');wh.className='when';wh.textContent=fmt.format(new Date(e.date+'T00:00:00'));meta.appendChild(wh);",
-  "if(e.highlight){var hl=document.createElement('span');hl.className='hlmark';hl.textContent='★';hl.title='Höhepunkt';meta.appendChild(hl);}art.appendChild(meta);",
+  "if(e.highlight){var hl=document.createElement('span');hl.className='hlmark';hl.textContent='★';hl.title=L.highlight;meta.appendChild(hl);}art.appendChild(meta);",
   "if(e.title){var h3=document.createElement('h3');h3.textContent=e.title;art.appendChild(h3);}",
   "if(e.place){var pl=document.createElement('p');pl.className='place';pl.textContent='📍 '+e.place;art.appendChild(pl);}",
   "if(e.media&&e.media.length){var g=document.createElement('div');g.className='grid';for(var q=0;q<e.media.length;q++){g.appendChild(mediaEl(e.media[q]));}art.appendChild(g);}",
@@ -113,23 +115,40 @@ const VIEWER_JS = [
   "var img=document.createElement('img');img.src=m.path;img.loading='lazy';img.alt='';return img;}",
 ].join("\n");
 
-export function buildIndexHtml(title: string, entries: ViewerEntry[], snapshots: ViewerSnapshot[] = []): string {
+export function buildIndexHtml(
+  title: string,
+  entries: ViewerEntry[],
+  snapshots: ViewerSnapshot[] = [],
+  lang: Lang = "de",
+): string {
+  const t = translator(lang);
   const json = JSON.stringify(entries).replace(/</g, "\\u003c");
   const snapJson = JSON.stringify(snapshots).replace(/</g, "\\u003c");
+  // Labels the offline viewer needs at runtime, injected as a JSON object.
+  const labels = {
+    empty: t("exp.v_empty"),
+    snapshots: t("exp.v_snapshots"),
+    with: t("exp.v_with"),
+    private: t("entry.private"),
+    highlight: t("exp.v_highlight"),
+    parent: t("role.parent"),
+  };
   return [
     "<!doctype html>",
-    '<html lang="de">',
+    '<html lang="' + lang + '">',
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    "<title>Tagebuch</title>",
+    "<title>" + t("nav.timeline") + "</title>",
     "<style>" + VIEWER_CSS + "</style>",
     "</head>",
     "<body>",
-    '<header><h1></h1><p class="note">Offline-Sicherung · in jedem Browser ohne Internet lesbar</p></header>',
+    '<header><h1></h1><p class="note">' + t("exp.note") + "</p></header>",
     '<main id="tl"></main>',
     "<script>",
     "var TITLE=" + JSON.stringify(title) + ";",
+    "var LOCALE=" + JSON.stringify(LOCALE_OF[lang]) + ";",
+    "var L=" + JSON.stringify(labels).replace(/</g, "\\u003c") + ";",
     "var ENTRIES=" + json + ";",
     "var SNAPSHOTS=" + snapJson + ";",
     VIEWER_JS,
@@ -151,7 +170,9 @@ export function buildSidecar(
   link: ViewerLink | null = null,
   reactions: ViewerReaction[] = [],
   highlight = false,
+  lang: Lang = "de",
 ): string {
+  const t = translator(lang);
   const lines: (string | null)[] = [
     "---",
     "date: " + e.event_date,
@@ -166,13 +187,15 @@ export function buildSidecar(
     e.title ? "# " + (highlight ? "★ " : "") + e.title : null,
     "",
     e.body ?? "",
-    link ? "\n## Link\n" + (link.title ?? link.url) + (link.provider ? " (" + link.provider + ")" : "") + "\n" + link.url : null,
-    mediaPaths.length ? "\nMedien:\n" + mediaPaths.map((p) => "- " + p).join("\n") : null,
+    link
+      ? "\n## " + t("exp.h_link") + "\n" + (link.title ?? link.url) + (link.provider ? " (" + link.provider + ")" : "") + "\n" + link.url
+      : null,
+    mediaPaths.length ? "\n" + t("exp.h_media") + ":\n" + mediaPaths.map((p) => "- " + p).join("\n") : null,
     reactions.length
-      ? "\n## Reaktionen\n" + reactions.map((r) => r.emoji + " " + r.count).join("  ")
+      ? "\n## " + t("exp.h_reactions") + "\n" + reactions.map((r) => r.emoji + " " + r.count).join("  ")
       : null,
     comments.length
-      ? "\n## Kommentare\n" +
+      ? "\n## " + t("exp.h_comments") + "\n" +
         comments
           .map(
             (c) =>
@@ -191,7 +214,9 @@ export function buildSnapshotSidecar(
   child: string,
   age: string,
   items: { label: string; value: string }[],
+  lang: Lang = "de",
 ): string {
+  const t = translator(lang);
   const lines: (string | null)[] = [
     "---",
     "date: " + date,
@@ -199,28 +224,16 @@ export function buildSnapshotSidecar(
     age ? "age: " + yaml(age) : null,
     "---",
     "",
-    "# Wer ist " + child + " gerade? (" + date + ")",
+    "# " + t("snap.who", { name: child }) + " (" + date + ")",
     "",
     ...items.map((it) => "**" + it.label + "**\n" + it.value + "\n"),
   ];
   return lines.filter((l): l is string => l !== null).join("\n");
 }
 
-export const EXPORT_README =
-  "Benni-Tagebuch — Offline-Sicherung\n\n" +
-  "So öffnest du dein Tagebuch:\n" +
-  "1. Diese ZIP-Datei vollständig entpacken.\n" +
-  "2. Im entpackten Ordner die Datei 'index.html' mit einem Browser öffnen (Doppelklick).\n" +
-  "   Es funktioniert komplett offline — ohne App, ohne Internet.\n\n" +
-  "Was ist enthalten:\n" +
-  "- index.html   : dein Tagebuch als Webseite, in jedem Browser lesbar.\n" +
-  "- media/       : alle Original-Fotos, -Videos und -Audios.\n" +
-  "- entries/     : jeder Eintrag als einzelne Textdatei (Markdown, offen lesbar).\n" +
-  "- snapshots/   : die „Wer ist … gerade?\"-Schnappschüsse als Textdateien.\n" +
-  "- links/       : Vorschaubilder der verlinkten Inhalte (Spotify/YouTube/…).\n" +
-  "- entries.json : alle Einträge als strukturierte Daten.\n\n" +
-  "Tipp: Bewahre mindestens zwei Kopien an verschiedenen Orten auf\n" +
-  "(z. B. Computer + externe Festplatte oder ein zweiter Cloud-Speicher).\n";
+export function exportReadme(lang: Lang = "de"): string {
+  return translator(lang)("exp.readme");
+}
 
 export function fileNameOf(storageKey: string, position: number): string {
   const last = storageKey.split("/").pop();

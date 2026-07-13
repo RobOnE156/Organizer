@@ -12,7 +12,7 @@ import {
   buildIndexHtml,
   buildSidecar,
   buildSnapshotSidecar,
-  EXPORT_README,
+  exportReadme,
   fileNameOf,
   slugify,
   type ViewerComment,
@@ -194,6 +194,7 @@ export default function ExportPanel({
             linkByEntry.get(e.id) ?? null,
             viewerReactionsFor(e.id),
             highlightSet.has(e.id),
+            lang,
           ),
         );
       }
@@ -210,7 +211,7 @@ export default function ExportPanel({
         if (items.length === 0) continue;
         const age = ageLabel(child?.birth_date ?? null, s.taken_on);
         viewerSnapshots.push({ date: s.taken_on, child: cname, age, items });
-        zip.file("snapshots/" + s.taken_on + "-" + s.id.slice(0, 8) + ".md", buildSnapshotSidecar(s.taken_on, cname, age, items));
+        zip.file("snapshots/" + s.taken_on + "-" + s.id.slice(0, 8) + ".md", buildSnapshotSidecar(s.taken_on, cname, age, items, lang));
       }
       if (viewerSnapshots.length > 0) {
         zip.file("snapshots.json", JSON.stringify({ snapshots: viewerSnapshots }, null, 2));
@@ -224,8 +225,8 @@ export default function ExportPanel({
           2,
         ),
       );
-      zip.file("index.html", buildIndexHtml(householdName, viewerEntries, viewerSnapshots));
-      zip.file("README.txt", EXPORT_README);
+      zip.file("index.html", buildIndexHtml(householdName, viewerEntries, viewerSnapshots, lang));
+      zip.file("README.txt", exportReadme(lang));
 
       // 3) zip it up and hand the file to the browser
       const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" }, (meta) => {
