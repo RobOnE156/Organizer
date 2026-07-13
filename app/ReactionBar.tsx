@@ -2,21 +2,26 @@
 
 import { useState } from "react";
 import { addReaction, removeReaction } from "@/app/content-actions";
-import { REACTION_EMOJIS } from "@/app/content-types";
-import type { Reaction } from "@/lib/data";
+import { REACTION_EMOJIS, type ReactTarget } from "@/app/content-types";
 
-export default function EntryReactions({
-  entryId,
+type Reacted = { author_id: string; emoji: string };
+
+export default function ReactionBar({
+  targetType,
+  targetId,
   householdId,
   initial,
   userId,
+  compact = false,
 }: {
-  entryId: string;
+  targetType: ReactTarget;
+  targetId: string;
   householdId: string;
-  initial: Reaction[];
+  initial: Reacted[];
   userId: string;
+  compact?: boolean;
 }) {
-  const [reactions, setReactions] = useState<Reaction[]>(initial);
+  const [reactions, setReactions] = useState<Reacted[]>(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -31,22 +36,24 @@ export default function EntryReactions({
     setReactions((prev) =>
       hadMine
         ? prev.filter((r) => !(r.emoji === emoji && r.author_id === userId))
-        : [...prev, { entry_id: entryId, author_id: userId, emoji }],
+        : [...prev, { author_id: userId, emoji }],
     );
-    const res = hadMine ? await removeReaction(entryId, emoji) : await addReaction(entryId, householdId, emoji);
+    const res = hadMine
+      ? await removeReaction(targetType, targetId, emoji)
+      : await addReaction(targetType, targetId, householdId, emoji);
     setBusy(null);
     if (res.error) {
       // revert the optimistic change
       setReactions((prev) =>
         hadMine
-          ? [...prev, { entry_id: entryId, author_id: userId, emoji }]
+          ? [...prev, { author_id: userId, emoji }]
           : prev.filter((r) => !(r.emoji === emoji && r.author_id === userId)),
       );
     }
   }
 
   return (
-    <div className="reacts">
+    <div className={"reacts" + (compact ? " sm" : "")}>
       {present.map((emoji) => (
         <button
           key={emoji}

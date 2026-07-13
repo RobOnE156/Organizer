@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(71);
+select plan(78);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -315,6 +315,39 @@ select throws_ok($$ insert into reactions (household_id, target_type, target_id,
 reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
 select lives_ok($$ delete from reactions where target_id='e1111111-1111-1111-1111-111111111111' $$, 'author can delete his own reaction');
 select is((select count(*) from reactions where target_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'the reaction is gone after the author deletes it');
+
+-- =====================================================================
+-- reactions on comments: same table with target_type='comment'; a member
+-- may react on a visible comment, only the reaction's author may remove it,
+-- and a cross-household user is denied
+-- =====================================================================
+-- alice leaves a comment to react to (fixture)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+insert into comments (id, household_id, entry_id, author_id, body)
+  values ('c1111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e1111111-1111-1111-1111-111111111111','11111111-1111-1111-1111-111111111111','Reagier mal');
+
+-- bob (co-parent) reacts to alice's comment
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into reactions (household_id, target_type, target_id, author_id, emoji)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','comment','c1111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','👏') $$,
+  'co-parent can react to a comment');
+select is((select count(*) from reactions where target_type='comment' and target_id='c1111111-1111-1111-1111-111111111111')::int, 1, 'the comment reaction is stored');
+
+-- carol (other household) cannot react to that comment
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select throws_ok($$ insert into reactions (household_id, target_type, target_id, author_id, emoji)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','comment','c1111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','👏') $$,
+  '42501', null, 'a cross-household user cannot react to a comment');
+
+-- alice (not the reaction's author) cannot delete bob's comment reaction
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ delete from reactions where target_type='comment' and target_id='c1111111-1111-1111-1111-111111111111' $$, 'non-author delete of a comment reaction is a no-op');
+select is((select count(*) from reactions where target_type='comment' and target_id='c1111111-1111-1111-1111-111111111111')::int, 1, 'the comment reaction survived the non-author delete');
+
+-- bob deletes his own comment reaction
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ delete from reactions where target_type='comment' and target_id='c1111111-1111-1111-1111-111111111111' $$, 'author can delete his own comment reaction');
+select is((select count(*) from reactions where target_type='comment' and target_id='c1111111-1111-1111-1111-111111111111')::int, 0, 'the comment reaction is gone after the author deletes it');
 
 reset role;
 select * from finish();

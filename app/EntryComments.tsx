@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { addComment, updateComment, deleteComment } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
+import ReactionBar from "@/app/ReactionBar";
 import { initial } from "@/lib/timeline";
-import type { Comment, MemberProfile } from "@/lib/data";
+import type { Comment, CommentReaction, MemberProfile } from "@/lib/data";
 
 function fmtTime(iso: string): string {
   return new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -16,14 +17,22 @@ export default function EntryComments({
   initialComments,
   authors,
   userId,
+  commentReactions = [],
 }: {
   entryId: string;
   householdId: string;
   initialComments: Comment[];
   authors: Record<string, MemberProfile>;
   userId: string;
+  commentReactions?: CommentReaction[];
 }) {
   const confirm = useConfirm();
+  const reactionsByComment = new Map<string, CommentReaction[]>();
+  for (const r of commentReactions) {
+    const arr = reactionsByComment.get(r.comment_id);
+    if (arr) arr.push(r);
+    else reactionsByComment.set(r.comment_id, [r]);
+  }
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -126,7 +135,17 @@ export default function EntryComments({
                       </button>
                     </form>
                   ) : (
-                    <p>{c.body}</p>
+                    <>
+                      <p>{c.body}</p>
+                      <ReactionBar
+                        targetType="comment"
+                        targetId={c.id}
+                        householdId={householdId}
+                        initial={reactionsByComment.get(c.id) ?? []}
+                        userId={userId}
+                        compact
+                      />
+                    </>
                   )}
                 </div>
               </li>

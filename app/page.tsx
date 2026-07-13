@@ -9,9 +9,11 @@ import {
   getEntriesForChild,
   getMediaForEntries,
   getMemberProfiles,
+  getReactionsForComments,
   getReactionsForEntries,
   signMediaByEntry,
   type Comment,
+  type CommentReaction,
   type Entry,
   type MemberProfile,
   type Reaction,
@@ -22,7 +24,7 @@ import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
 import EntryComments from "@/app/EntryComments";
-import EntryReactions from "@/app/EntryReactions";
+import ReactionBar from "@/app/ReactionBar";
 import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
@@ -59,6 +61,7 @@ function EntryCard({
   householdId,
   linkThumb,
   reactions,
+  commentReactions,
 }: {
   entry: Entry;
   author: MemberProfile;
@@ -70,6 +73,7 @@ function EntryCard({
   householdId: string;
   linkThumb?: string;
   reactions: Reaction[];
+  commentReactions: CommentReaction[];
 }) {
   return (
     <article id={`entry-${entry.id}`} className="entry">
@@ -94,13 +98,14 @@ function EntryCard({
           </div>
         </a>
       ) : null}
-      <EntryReactions entryId={entry.id} householdId={householdId} initial={reactions} userId={userId} />
+      <ReactionBar targetType="entry" targetId={entry.id} householdId={householdId} initial={reactions} userId={userId} />
       <EntryComments
         entryId={entry.id}
         householdId={householdId}
         initialComments={comments}
         authors={authors}
         userId={userId}
+        commentReactions={commentReactions}
       />
     </article>
   );
@@ -158,6 +163,15 @@ export default async function Home() {
   const reactions = await getReactionsForEntries(supabase, entries.map((e) => e.id));
   const reactionsByEntry: Record<string, Reaction[]> = {};
   for (const r of reactions) (reactionsByEntry[r.entry_id] ??= []).push(r);
+  const commentReactions = await getReactionsForComments(supabase, comments.map((c) => c.id));
+  // group comment reactions by the entry their comment belongs to, so each
+  // EntryCard gets just the ones it needs.
+  const commentToEntry = new Map(comments.map((c) => [c.id, c.entry_id]));
+  const commentReactionsByEntry: Record<string, CommentReaction[]> = {};
+  for (const r of commentReactions) {
+    const entryId = commentToEntry.get(r.comment_id);
+    if (entryId) (commentReactionsByEntry[entryId] ??= []).push(r);
+  }
   const fallbackAuthor: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -266,6 +280,7 @@ export default async function Home() {
                   householdId={membership.household_id}
                   linkThumb={linkThumbByEntry[e.id]}
                   reactions={reactionsByEntry[e.id] ?? []}
+                  commentReactions={commentReactionsByEntry[e.id] ?? []}
                 />
               ))}
             </section>
