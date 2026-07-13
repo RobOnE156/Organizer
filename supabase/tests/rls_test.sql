@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(86);
+select plan(88);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -386,6 +386,21 @@ select is((select count(*) from highlights where entry_id='e1111111-1111-1111-11
 reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
 select lives_ok($$ delete from highlights where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'either parent can unstar a shared entry');
 select is((select count(*) from highlights where entry_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'the highlight is gone after unstarring');
+
+-- =====================================================================
+-- search: searchDiary is just an ILIKE read under the caller's session, so
+-- RLS scopes it. A co-parent's private entry must never surface via search,
+-- even when its text matches the query.
+-- =====================================================================
+-- bob cannot find alice's private entry e2 ("Private one") by its title
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from entries where deleted_at is null and title ilike '%Private one%')::int, 0,
+  'search (ILIKE) does not surface a co-parent private entry');
+
+-- alice finds her own private entry via the same search
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from entries where deleted_at is null and title ilike '%Private one%')::int, 1,
+  'the author finds her own private entry via search');
 
 reset role;
 select * from finish();

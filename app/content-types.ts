@@ -17,3 +17,25 @@ export type CreateEntryResult = { error?: string; entryId?: string; householdId?
 export const REACTION_EMOJIS = ["❤️", "😍", "😂", "🥰", "👏", "🎉"] as const;
 
 export type ReactTarget = "entry" | "comment";
+
+// ---- search --------------------------------------------------------
+export type SearchEntryHit = {
+  id: string;
+  title: string | null;
+  body: string | null;
+  place_name: string | null;
+  event_date: string;
+  author_id: string;
+};
+
+export type SearchCommentHit = {
+  id: string;
+  entry_id: string;
+  body: string;
+  author_id: string;
+  created_at: string;
+  entry_title: string | null;
+  entry_date: string | null;
+};
+
+export type SearchResult = { entries: SearchEntryHit[]; comments: SearchCommentHit[]; error?: string };

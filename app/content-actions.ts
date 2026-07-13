@@ -5,8 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 import { getMembership } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
 import { fetchLinkPreview, fetchImageBytes } from "@/lib/link-preview";
+import { escapeLike } from "@/lib/search-format";
 import type { FormState } from "@/app/auth-types";
-import { REACTION_EMOJIS, type CreateEntryResult, type MediaInput, type ReactTarget } from "@/app/content-types";
+import {
+  REACTION_EMOJIS,
+  type CreateEntryResult,
+  type MediaInput,
+  type ReactTarget,
+  type SearchCommentHit,
+  type SearchEntryHit,
+  type SearchResult,
+} from "@/app/content-types";
 
 const NOT_CONFIGURED = "Supabase ist noch nicht konfiguriert.";
 
@@ -449,6 +458,69 @@ export async function setHighlight(
     if (error) return { error: error.message };
   }
   return {};
+}
+
+// ---- search --------------------------------------------------------
+// Full-text-ish search over the household's entries (title, body, place)
+// and comments. Every query runs under the caller's session, so RLS scopes
+// results to what they may see — a co-parent's private entry never surfaces.
+export async function searchDiary(rawQuery: string): Promise<SearchResult> {
+  if (!hasSupabaseEnv()) return { entries: [], comments: [], error: NOT_CONFIGURED };
+  const q = rawQuery.trim();
+  if (q.length < 2) return { entries: [], comments: [] };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { entries: [], comments: [], error: "Nicht angemeldet." };
+
+  const pat = "%" + escapeLike(q) + "%";
+  const cols = "id, title, body, place_name, event_date, author_id";
+  const [t, b, p] = await Promise.all([
+    supabase.from("entries").select(cols).is("deleted_at", null).ilike("title", pat).limit(50),
+    supabase.from("entries").select(cols).is("deleted_at", null).ilike("body", pat).limit(50),
+    supabase.from("entries").select(cols).is("deleted_at", null).ilike("place_name", pat).limit(50),
+  ]);
+  const byId = new Map<string, SearchEntryHit>();
+  for (const row of [...(t.data ?? []), ...(b.data ?? []), ...(p.data ?? [])] as SearchEntryHit[]) {
+    byId.set(row.id, row);
+  }
+  const entries = Array.from(byId.values())
+    .sort((a, b2) => (a.event_date < b2.event_date ? 1 : a.event_date > b2.event_date ? -1 : 0))
+    .slice(0, 40);
+
+  const { data: cData } = await supabase
+    .from("comments")
+    .select("id, entry_id, body, author_id, created_at")
+    .is("deleted_at", null)
+    .ilike("body", pat)
+    .order("created_at", { ascending: false })
+    .limit(40);
+  const commentRows = (cData as Omit<SearchCommentHit, "entry_title" | "entry_date">[] | null) ?? [];
+
+  // Fetch parent-entry context (title/date) for the matched comments. This
+  // read is RLS-scoped too, so a comment whose entry we can't see is dropped.
+  const parentIds = Array.from(new Set(commentRows.map((c) => c.entry_id)));
+  const parentById = new Map<string, { title: string | null; event_date: string }>();
+  if (parentIds.length > 0) {
+    const { data: pData } = await supabase
+      .from("entries")
+      .select("id, title, event_date")
+      .in("id", parentIds)
+      .is("deleted_at", null);
+    for (const e of (pData as { id: string; title: string | null; event_date: string }[] | null) ?? []) {
+      parentById.set(e.id, { title: e.title, event_date: e.event_date });
+    }
+  }
+  const comments: SearchCommentHit[] = commentRows
+    .filter((c) => parentById.has(c.entry_id))
+    .map((c) => ({
+      ...c,
+      entry_title: parentById.get(c.entry_id)?.title ?? null,
+      entry_date: parentById.get(c.entry_id)?.event_date ?? null,
+    }));
+
+  return { entries, comments };
 }
 
 // ---- comments ------------------------------------------------------
