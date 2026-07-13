@@ -65,7 +65,7 @@ function EntryCard({
   householdId: string;
 }) {
   return (
-    <article className="entry">
+    <article id={`entry-${entry.id}`} className="entry">
       <div className="meta">
         <span className="ava" style={{ background: author.color }}>{initial(author.name)}</span>
         <span className="nm">{author.name}</span>
@@ -160,6 +160,11 @@ export default async function Home() {
     group.entries.push(e);
   }
 
+  // "An diesem Tag": entries from the same calendar day in previous years.
+  const onThisDay = entries.filter(
+    (e) => e.event_date.slice(5, 10) === today.slice(5, 10) && e.event_date.slice(0, 4) < today.slice(0, 4),
+  );
+
   return (
     <>
       <RefreshOnFocus />
@@ -174,6 +179,31 @@ export default async function Home() {
           coverUrl={coverUrl}
           coverKey={child.cover_key}
         />
+        {onThisDay.length > 0 ? (
+          <section className="otd">
+            <h2 className="otdhead">✨ An diesem Tag</h2>
+            <div className="otdrow">
+              {onThisDay.map((e) => {
+                const years = Number(today.slice(0, 4)) - Number(e.event_date.slice(0, 4));
+                const thumb = (mediaByEntry[e.id] ?? []).find((m) => m.kind === "image")?.url;
+                const label = e.title || (e.body ? e.body.slice(0, 70) : "Erinnerung");
+                return (
+                  <a
+                    key={e.id}
+                    className="otdcard"
+                    href={`#entry-${e.id}`}
+                    style={thumb ? { backgroundImage: `url("${thumb}")` } : undefined}
+                  >
+                    <div className="otdgrad">
+                      <span className="otdyears">vor {years} {years === 1 ? "Jahr" : "Jahren"}</span>
+                      <b className="otdtitle">{label}</b>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
         {entries.length === 0 ? (
           <div className="empty">
             <p>Noch keine Erinnerungen für {child.name}.</p>
