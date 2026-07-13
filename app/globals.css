@@ -175,3 +175,20 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 .checkline .pt small { color: var(--muted); font-size: 0.78rem; }
 .qr { background: #fff; padding: 12px; border-radius: 12px; width: max-content; }
 .qr svg { display: block; width: 200px; height: 200px; }
+
+/* growth & milestones */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--faint); background: var(--surface-2); color: var(--muted); font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+.tab:hover { color: var(--ink); }
+.tab.active { background: var(--gold); color: #20160a; border-color: transparent; }
+.chart { width: 100%; height: auto; background: var(--surface); border: 1px solid var(--faint); border-radius: 14px; padding: 6px; }
+.cline { stroke: var(--gold); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.cdot { fill: var(--gold); }
+.cax { fill: var(--muted); font-size: 9px; font-family: system-ui, sans-serif; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 6px 11px; border-radius: 999px; border: 1px dashed var(--faint); background: var(--surface-2); color: var(--muted); font-size: 0.82rem; cursor: pointer; }
+.chip:hover { border-color: var(--gold); color: var(--ink); }
+.mlist { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 1px solid var(--faint); border-radius: 11px; padding: 9px 13px; }
+.mx { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 4px 6px; border-radius: 8px; flex: 0 0 auto; }
+.mx:hover { color: var(--danger); background: var(--surface-2); }

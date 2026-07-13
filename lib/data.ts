@@ -146,6 +146,48 @@ export async function signMediaByEntry(
   return byEntry;
 }
 
+export type MetricKind = "weight" | "height" | "head";
+
+export type Measurement = {
+  id: string;
+  child_id: string;
+  measured_on: string;
+  metric: MetricKind;
+  value_num: number;
+  unit: string;
+  author_id: string;
+};
+
+export async function getMeasurements(supabase: SupabaseClient, childId: string): Promise<Measurement[]> {
+  const { data } = await supabase
+    .from("growth_measurements")
+    .select("id, child_id, measured_on, metric, value_num, unit, author_id")
+    .eq("child_id", childId)
+    .is("deleted_at", null)
+    .order("measured_on", { ascending: true });
+  return (data as Measurement[] | null) ?? [];
+}
+
+export type Milestone = {
+  id: string;
+  child_id: string;
+  key: string;
+  title: string;
+  achieved_on: string | null;
+  entry_id: string | null;
+  author_id: string;
+};
+
+export async function getMilestones(supabase: SupabaseClient, childId: string): Promise<Milestone[]> {
+  const { data } = await supabase
+    .from("milestones")
+    .select("id, child_id, key, title, achieved_on, entry_id, author_id")
+    .eq("child_id", childId)
+    .is("deleted_at", null)
+    .order("achieved_on", { ascending: true, nullsFirst: false });
+  return (data as Milestone[] | null) ?? [];
+}
+
 // user_id -> { display name, colour } for everyone in the household.
 export async function getMemberProfiles(
   supabase: SupabaseClient,

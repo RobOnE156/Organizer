@@ -227,6 +227,94 @@ export async function updateEntry(
   return {};
 }
 
+// ---- growth measurements -------------------------------------------
+export async function addMeasurement(input: {
+  childId: string;
+  metric: "weight" | "height" | "head";
+  value: number;
+  unit: string;
+  measuredOn: string;
+}): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!input.childId) return { error: "Kein Kind ausgewählt." };
+  if (!Number.isFinite(input.value) || input.value <= 0) return { error: "Bitte einen gültigen Wert eingeben." };
+
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { error } = await supabase.from("growth_measurements").insert({
+    household_id: membership.household_id,
+    child_id: input.childId,
+    metric: input.metric,
+    value_num: input.value,
+    unit: input.unit,
+    measured_on: input.measuredOn || todayISO(),
+    author_id: user.id,
+  });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function deleteMeasurement(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("growth_measurements").delete().eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+// ---- milestones ("erste Male") -------------------------------------
+export async function addMilestone(input: {
+  childId: string;
+  title: string;
+  achievedOn: string;
+  key?: string;
+}): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!input.childId) return { error: "Kein Kind ausgewählt." };
+  if (!input.title.trim()) return { error: "Bitte einen Titel eingeben." };
+
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { error } = await supabase.from("milestones").insert({
+    household_id: membership.household_id,
+    child_id: input.childId,
+    key: input.key?.trim() || "custom",
+    title: input.title.trim(),
+    achieved_on: input.achievedOn || null,
+    author_id: user.id,
+  });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function deleteMilestone(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("milestones").delete().eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Soft-delete an entry (RLS allows this only for its author). It disappears
 // from the timeline but is not permanently destroyed.
 export async function deleteEntry(entryId: string): Promise<{ error?: string }> {

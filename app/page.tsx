@@ -29,6 +29,7 @@ function TopBar({ childName }: { childName?: string }) {
         <small>Tagebuch</small>
       </div>
       <nav className="topnav">
+        <a className="iconlink" href="/growth">Wachstum</a>
         <a className="iconlink" href="/settings/household">Haushalt</a>
         <a className="iconlink" href="/settings/security">2FA</a>
         <a className="iconlink" href="/export">Export</a>
