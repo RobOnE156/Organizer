@@ -20,7 +20,7 @@ import {
   type Reaction,
   type SignedMedia,
 } from "@/lib/data";
-import { ageLabel, fmtDate, initial, monthKey, monthLabel } from "@/lib/timeline";
+import { ageLabel, fmtDate, monthKey, monthLabel } from "@/lib/timeline";
 import { signOut } from "@/app/auth-actions";
 import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
@@ -28,6 +28,7 @@ import EntryComments from "@/app/EntryComments";
 import ReactionBar from "@/app/ReactionBar";
 import HighlightStar from "@/app/HighlightStar";
 import EntryMiniMap from "@/app/EntryMiniMap";
+import Avatar from "@/app/Avatar";
 import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
@@ -87,7 +88,7 @@ function EntryCard({
   return (
     <article id={`entry-${entry.id}`} className="entry">
       <div className="meta">
-        <span className="ava" style={{ background: author.color }}>{initial(author.name)}</span>
+        <Avatar name={author.name} color={author.color} url={author.avatarUrl} />
         <span className="nm">{author.name}</span>
         {entry.is_private ? <span className="privbadge">🔒 Privat</span> : null}
         <span className="when">{fmtDate(entry.event_date)}</span>

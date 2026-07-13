@@ -1,26 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateProfile } from "@/app/content-actions";
+import { createClient } from "@/lib/supabase/client";
+import { updateProfile, setAvatar } from "@/app/content-actions";
 import { AUTHOR_COLORS } from "@/app/content-types";
-import { initial } from "@/lib/timeline";
+import Avatar from "@/app/Avatar";
+
+function sanitizeExt(name: string): string {
+  const ext = (name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return ext || "jpg";
+}
 
 export default function ProfileForm({
   initialName,
   initialColor,
   email,
+  householdId,
+  userId,
+  initialAvatarUrl,
 }: {
   initialName: string;
   initialColor: string;
   email: string;
+  householdId: string;
+  userId: string;
+  initialAvatarUrl: string | null;
 }) {
   const router = useRouter();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initialName);
   const [color, setColor] = useState(initialColor);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  async function onPickAvatar(file: File) {
+    setError(null);
+    setSaved(false);
+    setAvatarBusy(true);
+    try {
+      const supabase = createClient();
+      const key = `${householdId}/avatar/${userId}-${Date.now()}.${sanitizeExt(file.name)}`;
+      const { error: upErr } = await supabase.storage
+        .from("media")
+        .upload(key, file, { contentType: file.type || undefined, upsert: true });
+      if (upErr) {
+        setError(`Upload fehlgeschlagen: ${upErr.message}`);
+        return;
+      }
+      const res = await setAvatar(key);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      setAvatarUrl(URL.createObjectURL(file));
+      router.refresh();
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function removeAvatar() {
+    setError(null);
+    setSaved(false);
+    setAvatarBusy(true);
+    const res = await setAvatar(null);
+    setAvatarBusy(false);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setAvatarUrl(null);
+    router.refresh();
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,10 +97,36 @@ export default function ProfileForm({
   return (
     <form className="card stack" onSubmit={onSubmit}>
       <div className="profileprev">
-        <span className="ava ava-lg" style={{ background: color }}>{initial(preview)}</span>
+        <Avatar name={preview} color={color} url={avatarUrl} className="ava-lg" />
         <div>
           <b>{preview}</b>
           {email ? <small className="muted" style={{ display: "block" }}>{email}</small> : null}
+          <div className="avactions">
+            <button
+              type="button"
+              className="linkbtn"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarBusy}
+            >
+              {avatarBusy ? "…" : avatarUrl ? "Foto ändern" : "Foto hinzufügen"}
+            </button>
+            {avatarUrl ? (
+              <button type="button" className="linkbtn danger" onClick={removeAvatar} disabled={avatarBusy}>
+                Entfernen
+              </button>
+            ) : null}
+          </div>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPickAvatar(f);
+              e.target.value = "";
+            }}
+          />
         </div>
       </div>
 

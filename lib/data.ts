@@ -29,7 +29,7 @@ export type Entry = {
   created_at: string;
 };
 
-export type MemberProfile = { name: string; color: string };
+export type MemberProfile = { name: string; color: string; avatarUrl?: string | null };
 
 export type Comment = {
   id: string;
@@ -336,13 +336,29 @@ export async function getMemberProfiles(
   if (list.length === 0) return map;
 
   const ids = list.map((m) => m.user_id);
-  const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, color").in("user_id", ids);
-  const byId = new Map(
-    ((profiles as { user_id: string; display_name: string; color: string }[] | null) ?? []).map((p) => [p.user_id, p]),
-  );
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, display_name, color, avatar_url")
+    .in("user_id", ids);
+  const rows =
+    (profiles as { user_id: string; display_name: string; color: string; avatar_url: string | null }[] | null) ?? [];
+  const byId = new Map(rows.map((p) => [p.user_id, p]));
+
+  // Sign the avatar photos (private bucket) in one call.
+  const keys = rows.map((p) => p.avatar_url).filter((k): k is string => Boolean(k));
+  const urlByKey = new Map<string, string>();
+  if (keys.length > 0) {
+    const { data: signed } = await supabase.storage.from("media").createSignedUrls(keys, 3600);
+    for (const s of signed ?? []) if (s.signedUrl && s.path) urlByKey.set(s.path, s.signedUrl);
+  }
+
   for (const m of list) {
     const p = byId.get(m.user_id);
-    map[m.user_id] = { name: p?.display_name || "Elternteil", color: p?.color || "#c98fb0" };
+    map[m.user_id] = {
+      name: p?.display_name || "Elternteil",
+      color: p?.color || "#c98fb0",
+      avatarUrl: p?.avatar_url ? urlByKey.get(p.avatar_url) ?? null : null,
+    };
   }
   return map;
 }

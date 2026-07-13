@@ -4,7 +4,7 @@ import { useState } from "react";
 import { addComment, updateComment, deleteComment } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
 import ReactionBar from "@/app/ReactionBar";
-import { initial } from "@/lib/timeline";
+import Avatar from "@/app/Avatar";
 import type { Comment, CommentReaction, MemberProfile } from "@/lib/data";
 
 function fmtTime(iso: string): string {
@@ -97,7 +97,7 @@ export default function EntryComments({
             const a = authors[c.author_id] ?? fallback;
             return (
               <li className="cmt" key={c.id}>
-                <span className="cava" style={{ background: a.color }}>{initial(a.name)}</span>
+                <Avatar name={a.name} color={a.color} url={a.avatarUrl} className="cava" />
                 <div className="cbody">
                   <div className="cmeta">
                     <b>{a.name}</b>

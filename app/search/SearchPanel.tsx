@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { searchDiary } from "@/app/content-actions";
 import type { SearchCommentHit, SearchEntryHit, SearchResult } from "@/app/content-types";
 import { makeSnippet, type Snippet } from "@/lib/search-format";
-import { fmtDate, initial } from "@/lib/timeline";
+import { fmtDate } from "@/lib/timeline";
+import Avatar from "@/app/Avatar";
 import type { MemberProfile } from "@/lib/data";
 
 function fmtTime(iso: string): string {
@@ -33,6 +34,7 @@ export default function SearchPanel({ authors }: { authors: Record<string, Membe
   const fallback: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
   const nameOf = (id: string) => (authors[id] ?? fallback).name;
   const colorOf = (id: string) => (authors[id] ?? fallback).color;
+  const avatarOf = (id: string) => (authors[id] ?? fallback).avatarUrl ?? null;
 
   useEffect(() => {
     const term = q.trim();
@@ -93,7 +95,7 @@ export default function SearchPanel({ authors }: { authors: Record<string, Membe
                 <li key={e.id} className="shit">
                   <a href={`/#entry-${e.id}`}>
                     <div className="shmeta">
-                      <span className="cava" style={{ background: colorOf(e.author_id) }}>{initial(nameOf(e.author_id))}</span>
+                      <Avatar name={nameOf(e.author_id)} color={colorOf(e.author_id)} url={avatarOf(e.author_id)} className="cava" />
                       <b>{e.title || "Ohne Titel"}</b>
                       <span className="swhen">{fmtDate(e.event_date)}</span>
                     </div>
@@ -117,7 +119,7 @@ export default function SearchPanel({ authors }: { authors: Record<string, Membe
                 <li key={c.id} className="shit">
                   <a href={`/#entry-${c.entry_id}`}>
                     <div className="shmeta">
-                      <span className="cava" style={{ background: colorOf(c.author_id) }}>{initial(nameOf(c.author_id))}</span>
+                      <Avatar name={nameOf(c.author_id)} color={colorOf(c.author_id)} url={avatarOf(c.author_id)} className="cava" />
                       <b>{nameOf(c.author_id)}</b>
                       <span className="swhen">{fmtTime(c.created_at)}</span>
                     </div>

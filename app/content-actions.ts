@@ -281,6 +281,22 @@ export async function updateProfile(input: {
   return {};
 }
 
+// Set (or remove) your own avatar photo. The image is already uploaded to
+// storage by the browser; here we just record its key (or null) on the profile.
+export async function setAvatar(key: string | null): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ user_id: user.id, avatar_url: key }, { onConflict: "user_id" });
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Save accessibility preferences (own profile row).
 export async function updateA11y(input: {
   textSize: string;
