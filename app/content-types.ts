@@ -18,6 +18,19 @@ export const REACTION_EMOJIS = ["❤️", "😍", "😂", "🥰", "👏", "🎉"
 
 export type ReactTarget = "entry" | "comment";
 
+// Author colours: a distinguishable, colour-blind-friendly set, all dark
+// enough for white avatar initials. Whitelisted server-side.
+export const AUTHOR_COLORS = [
+  "#0072B2", // blue
+  "#009E73", // green
+  "#D55E00", // vermillion
+  "#CC79A7", // pink
+  "#7A5CC0", // purple
+  "#B8860B", // gold
+  "#2E8B8B", // teal
+  "#C2185B", // magenta
+] as const;
+
 // ---- search --------------------------------------------------------
 export type SearchEntryHit = {
   id: string;

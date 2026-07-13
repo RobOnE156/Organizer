@@ -8,6 +8,7 @@ import { fetchLinkPreview, fetchImageBytes } from "@/lib/link-preview";
 import { escapeLike } from "@/lib/search-format";
 import type { FormState } from "@/app/auth-types";
 import {
+  AUTHOR_COLORS,
   REACTION_EMOJIS,
   type CreateEntryResult,
   type MediaInput,
@@ -252,6 +253,30 @@ export async function updateEntry(
   }
 
   const { error } = await supabase.from("entries").update(patch).eq("id", entryId);
+  if (error) return { error: error.message };
+  return {};
+}
+
+// ---- profile -------------------------------------------------------
+// Edit your own profile: display name + author colour. Own-row only (RLS
+// profiles_insert/update both check user_id = auth.uid()).
+export async function updateProfile(input: {
+  displayName: string;
+  color: string;
+}): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const name = input.displayName.trim();
+  if (!name) return { error: "Bitte einen Namen eingeben." };
+  if (name.length > 40) return { error: "Name ist zu lang (max. 40 Zeichen)." };
+  if (!(AUTHOR_COLORS as readonly string[]).includes(input.color)) return { error: "Ungültige Farbe." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ user_id: user.id, display_name: name, color: input.color }, { onConflict: "user_id" });
   if (error) return { error: error.message };
   return {};
 }

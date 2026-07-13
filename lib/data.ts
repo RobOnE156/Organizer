@@ -321,26 +321,38 @@ export async function getSnapshotsForExport(supabase: SupabaseClient, householdI
   return (data as Snapshot[] | null) ?? [];
 }
 
-// user_id -> { display name, colour } for everyone in the household.
+// user_id -> { display name, colour } for everyone in the household. Both name
+// and colour come from the (self-editable) profile now.
 export async function getMemberProfiles(
   supabase: SupabaseClient,
   householdId: string,
 ): Promise<Record<string, MemberProfile>> {
   const { data: members } = await supabase
     .from("memberships")
-    .select("user_id, color")
+    .select("user_id")
     .eq("household_id", householdId);
-  const list = (members as { user_id: string; color: string }[] | null) ?? [];
+  const list = (members as { user_id: string }[] | null) ?? [];
   const map: Record<string, MemberProfile> = {};
   if (list.length === 0) return map;
 
   const ids = list.map((m) => m.user_id);
-  const { data: profiles } = await supabase.from("profiles").select("user_id, display_name").in("user_id", ids);
-  const names = new Map(
-    ((profiles as { user_id: string; display_name: string }[] | null) ?? []).map((p) => [p.user_id, p.display_name]),
+  const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, color").in("user_id", ids);
+  const byId = new Map(
+    ((profiles as { user_id: string; display_name: string; color: string }[] | null) ?? []).map((p) => [p.user_id, p]),
   );
   for (const m of list) {
-    map[m.user_id] = { name: names.get(m.user_id) || "Elternteil", color: m.color };
+    const p = byId.get(m.user_id);
+    map[m.user_id] = { name: p?.display_name || "Elternteil", color: p?.color || "#c98fb0" };
   }
   return map;
+}
+
+// The signed-in user's own editable profile.
+export async function getMyProfile(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ display_name: string; color: string }> {
+  const { data } = await supabase.from("profiles").select("display_name, color").eq("user_id", userId).maybeSingle();
+  const p = data as { display_name: string; color: string } | null;
+  return { display_name: p?.display_name ?? "", color: p?.color ?? "#c98fb0" };
 }

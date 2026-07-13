@@ -45,6 +45,7 @@ function TopBar({ childName }: { childName?: string }) {
         <a className="iconlink" href="/highlights">★ Rückblick</a>
         <a className="iconlink" href="/map">🗺️ Karte</a>
         <a className="iconlink" href="/search">🔍 Suche</a>
+        <a className="iconlink" href="/settings/profile">Profil</a>
         <a className="iconlink" href="/settings/household">Haushalt</a>
         <a className="iconlink" href="/settings/security">2FA</a>
         <a className="iconlink" href="/export">Export</a>

@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(88);
+select plan(93);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -33,6 +33,11 @@ insert into entries (id, household_id, author_id, kind, title, is_private, creat
   ('e1111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','text','Public one',   false,'11111111-1111-1111-1111-111111111111'),
   ('e2222222-2222-2222-2222-222222222222','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','text','Private one',  true, '11111111-1111-1111-1111-111111111111'),
   ('e3333333-3333-3333-3333-333333333333','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','33333333-3333-3333-3333-333333333333','text','Carol public', false,'33333333-3333-3333-3333-333333333333');
+
+-- Profiles (display name + author colour; colour column added in 0016)
+insert into profiles (user_id, display_name, color) values
+  ('11111111-1111-1111-1111-111111111111','Alice','#0072B2'),
+  ('22222222-2222-2222-2222-222222222222','Bob','#009E73');
 
 -- =====================================================================
 -- anonymous: no table privileges at all
@@ -401,6 +406,28 @@ select is((select count(*) from entries where deleted_at is null and title ilike
 reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
 select is((select count(*) from entries where deleted_at is null and title ilike '%Private one%')::int, 1,
   'the author finds her own private entry via search');
+
+-- =====================================================================
+-- profiles: a user edits their OWN name + author colour (colour on profiles
+-- since 0016); nobody can edit anyone else's profile
+-- =====================================================================
+-- alice edits her own profile
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update profiles set display_name='Mama', color='#CC79A7' where user_id='11111111-1111-1111-1111-111111111111' $$,
+  'a user can edit their own profile (name + colour)');
+select is((select color from profiles where user_id='11111111-1111-1111-1111-111111111111'), '#CC79A7',
+  'the profile colour change took effect');
+
+-- bob (co-member) can SEE alice but cannot edit her profile — silent no-op
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from profiles where user_id='11111111-1111-1111-1111-111111111111')::int, 1, 'a co-member can see the other profile');
+select lives_ok($$ update profiles set display_name='hacked', color='#000000' where user_id='11111111-1111-1111-1111-111111111111' $$,
+  'a cross-user profile update raises no error but changes nothing');
+
+-- alice confirms her profile is untouched
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select display_name from profiles where user_id='11111111-1111-1111-1111-111111111111'), 'Mama',
+  'the profile is unchanged after another user''s attempt');
 
 reset role;
 select * from finish();
