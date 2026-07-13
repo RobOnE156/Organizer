@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(78);
+select plan(86);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -348,6 +348,44 @@ select is((select count(*) from reactions where target_type='comment' and target
 reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
 select lives_ok($$ delete from reactions where target_type='comment' and target_id='c1111111-1111-1111-1111-111111111111' $$, 'author can delete his own comment reaction');
 select is((select count(*) from reactions where target_type='comment' and target_id='c1111111-1111-1111-1111-111111111111')::int, 0, 'the comment reaction is gone after the author deletes it');
+
+-- =====================================================================
+-- highlights: a shared per-entry "best-of" mark. Either parent may star a
+-- visible entry (unique entry_id), a private entry can't be starred by the
+-- co-parent (can_see_entry), and cross-household is denied (0014).
+-- =====================================================================
+-- bob (co-parent) stars the shared entry e1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into highlights (household_id, entry_id, created_by)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e1111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222') $$,
+  'a parent can star a shared entry');
+
+-- alice sees the highlight
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from highlights where entry_id='e1111111-1111-1111-1111-111111111111')::int, 1, 'the co-parent sees the highlight');
+
+-- a second star on the same entry violates the unique(entry_id) constraint
+select throws_ok($$ insert into highlights (household_id, entry_id, created_by)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e1111111-1111-1111-1111-111111111111','11111111-1111-1111-1111-111111111111') $$,
+  '23505', null, 'an entry can only be highlighted once (unique entry_id)');
+
+-- bob cannot star alice's PRIVATE entry e2 (he can't see it)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select throws_ok($$ insert into highlights (household_id, entry_id, created_by)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e2222222-2222-2222-2222-222222222222','22222222-2222-2222-2222-222222222222') $$,
+  '42501', null, 'the co-parent cannot highlight a private entry he cannot see');
+
+-- carol (other household) cannot star e1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select throws_ok($$ insert into highlights (household_id, entry_id, created_by)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','e1111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333') $$,
+  '42501', null, 'a cross-household user cannot highlight an entry');
+select is((select count(*) from highlights where entry_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'a cross-household user cannot even see the highlight');
+
+-- alice (the other parent, did not star it) can unstar the shared entry
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ delete from highlights where entry_id='e1111111-1111-1111-1111-111111111111' $$, 'either parent can unstar a shared entry');
+select is((select count(*) from highlights where entry_id='e1111111-1111-1111-1111-111111111111')::int, 0, 'the highlight is gone after unstarring');
 
 reset role;
 select * from finish();

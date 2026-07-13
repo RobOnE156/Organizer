@@ -423,6 +423,34 @@ export async function removeReaction(
   return {};
 }
 
+// ---- highlights ----------------------------------------------------
+// A highlight is a shared per-entry mark (unique entry_id). Toggling on
+// upserts a row; toggling off deletes it. Either parent may curate an
+// entry they can see (RLS enforces visibility).
+export async function setHighlight(
+  entryId: string,
+  householdId: string,
+  on: boolean,
+): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  if (on) {
+    const { error } = await supabase.from("highlights").upsert(
+      { household_id: householdId, entry_id: entryId, created_by: user.id },
+      { onConflict: "entry_id", ignoreDuplicates: true },
+    );
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("highlights").delete().eq("entry_id", entryId);
+    if (error) return { error: error.message };
+  }
+  return {};
+}
+
 // ---- comments ------------------------------------------------------
 export async function addComment(
   entryId: string,

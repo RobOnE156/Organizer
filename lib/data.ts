@@ -50,6 +50,14 @@ export async function getReactionsForEntries(supabase: SupabaseClient, entryIds:
   return rows.map((r) => ({ entry_id: r.target_id, author_id: r.author_id, emoji: r.emoji }));
 }
 
+// Entry ids the household has starred as highlights (shared "best-of" reel).
+export async function getHighlightedEntryIds(supabase: SupabaseClient, entryIds: string[]): Promise<string[]> {
+  if (entryIds.length === 0) return [];
+  const { data } = await supabase.from("highlights").select("entry_id").in("entry_id", entryIds);
+  const rows = (data as { entry_id: string }[] | null) ?? [];
+  return rows.map((r) => r.entry_id);
+}
+
 export type CommentReaction = { comment_id: string; author_id: string; emoji: string };
 
 export async function getReactionsForComments(supabase: SupabaseClient, commentIds: string[]): Promise<CommentReaction[]> {

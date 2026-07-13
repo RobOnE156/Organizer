@@ -7,6 +7,7 @@ import {
   getChildren,
   getCommentsForEntries,
   getEntriesForChild,
+  getHighlightedEntryIds,
   getMediaForEntries,
   getMemberProfiles,
   getReactionsForComments,
@@ -25,6 +26,7 @@ import EntryMenu from "@/app/EntryMenu";
 import EntryMedia from "@/app/EntryMedia";
 import EntryComments from "@/app/EntryComments";
 import ReactionBar from "@/app/ReactionBar";
+import HighlightStar from "@/app/HighlightStar";
 import ChildHero from "@/app/ChildHero";
 import RefreshOnFocus from "@/app/RefreshOnFocus";
 
@@ -39,6 +41,7 @@ function TopBar({ childName }: { childName?: string }) {
       </div>
       <nav className="topnav">
         <a className="iconlink" href="/growth">Über {childName ?? "Kind"}</a>
+        <a className="iconlink" href="/highlights">★ Rückblick</a>
         <a className="iconlink" href="/settings/household">Haushalt</a>
         <a className="iconlink" href="/settings/security">2FA</a>
         <a className="iconlink" href="/export">Export</a>
@@ -62,6 +65,7 @@ function EntryCard({
   linkThumb,
   reactions,
   commentReactions,
+  isHighlight,
 }: {
   entry: Entry;
   author: MemberProfile;
@@ -74,6 +78,7 @@ function EntryCard({
   linkThumb?: string;
   reactions: Reaction[];
   commentReactions: CommentReaction[];
+  isHighlight: boolean;
 }) {
   return (
     <article id={`entry-${entry.id}`} className="entry">
@@ -82,6 +87,7 @@ function EntryCard({
         <span className="nm">{author.name}</span>
         {entry.is_private ? <span className="privbadge">🔒 Privat</span> : null}
         <span className="when">{fmtDate(entry.event_date)}</span>
+        <HighlightStar entryId={entry.id} householdId={householdId} initial={isHighlight} />
         {isOwn ? <EntryMenu entryId={entry.id} /> : null}
       </div>
       {entry.title ? <h3>{entry.title}</h3> : null}
@@ -172,6 +178,7 @@ export default async function Home() {
     const entryId = commentToEntry.get(r.comment_id);
     if (entryId) (commentReactionsByEntry[entryId] ??= []).push(r);
   }
+  const highlightedIds = new Set(await getHighlightedEntryIds(supabase, entries.map((e) => e.id)));
   const fallbackAuthor: MemberProfile = { name: "Elternteil", color: "#8a8a8a" };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -281,6 +288,7 @@ export default async function Home() {
                   linkThumb={linkThumbByEntry[e.id]}
                   reactions={reactionsByEntry[e.id] ?? []}
                   commentReactions={commentReactionsByEntry[e.id] ?? []}
+                  isHighlight={highlightedIds.has(e.id)}
                 />
               ))}
             </section>
