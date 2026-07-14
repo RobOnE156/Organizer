@@ -21,17 +21,48 @@
   }
 }
 
-/* per-user colour schemes (a `theme-<key>` class on <html>): swap the accent
-   + a subtle background tint; neutral surfaces + ink stay for readability. */
-html.theme-rose   { --gold: #c8497f; --bg: #fdf5f9; }
-html.theme-ocean  { --gold: #2b7fb8; --bg: #f1f7fb; }
-html.theme-forest { --gold: #3f8f5b; --bg: #f1faf4; }
-html.theme-plum   { --gold: #8a63c9; --bg: #f7f4fc; }
+/* per-user colour schemes (a `theme-<key>` class on <html>): each theme sets
+   its --accent (light + dark); a shared rule then derives the accent,
+   background AND the tinted card surfaces + borders from it, so the whole
+   scheme shifts — not just the buttons. Neutral ink/muted stay for
+   readability. 'default' (no class) keeps the classic amber base. */
+html.theme-coral   { --accent: #db6b4d; }
+html.theme-cherry  { --accent: #cf4a52; }
+html.theme-rose    { --accent: #c8497f; }
+html.theme-magenta { --accent: #a94aa6; }
+html.theme-plum    { --accent: #8a63c9; }
+html.theme-indigo  { --accent: #5a63c9; }
+html.theme-ocean   { --accent: #2b7fb8; }
+html.theme-teal    { --accent: #1f9e97; }
+html.theme-forest  { --accent: #3f8f5b; }
+html.theme-lime    { --accent: #6f9b1f; }
+html.theme-slate   { --accent: #607089; }
+html[class*="theme-"] {
+  --gold: var(--accent);
+  --bg: color-mix(in oklab, var(--accent) 10%, #f7f6f8);
+  --surface: color-mix(in oklab, var(--accent) 6%, #ffffff);
+  --surface-2: color-mix(in oklab, var(--accent) 15%, #f1f0f3);
+  --faint: color-mix(in oklab, var(--accent) 22%, transparent);
+}
 @media (prefers-color-scheme: dark) {
-  html.theme-rose   { --gold: #ec86b0; --bg: #1a1016; }
-  html.theme-ocean  { --gold: #5cb0e0; --bg: #0e161f; }
-  html.theme-forest { --gold: #6cc389; --bg: #0e1712; }
-  html.theme-plum   { --gold: #b394e6; --bg: #14101d; }
+  html.theme-coral   { --accent: #f2916f; }
+  html.theme-cherry  { --accent: #ee7f85; }
+  html.theme-rose    { --accent: #ec86b0; }
+  html.theme-magenta { --accent: #d382cf; }
+  html.theme-plum    { --accent: #b394e6; }
+  html.theme-indigo  { --accent: #8f97e6; }
+  html.theme-ocean   { --accent: #5cb0e0; }
+  html.theme-teal    { --accent: #54cfc6; }
+  html.theme-forest  { --accent: #6cc389; }
+  html.theme-lime    { --accent: #a9c94f; }
+  html.theme-slate   { --accent: #93a3bd; }
+  html[class*="theme-"] {
+    --gold: var(--accent);
+    --bg: color-mix(in oklab, var(--accent) 15%, #101114);
+    --surface: color-mix(in oklab, var(--accent) 17%, #1c1e22);
+    --surface-2: color-mix(in oklab, var(--accent) 24%, #24272d);
+    --faint: color-mix(in oklab, var(--accent) 28%, transparent);
+  }
 }
 
 * { box-sizing: border-box; }

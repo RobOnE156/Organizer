@@ -9,10 +9,17 @@ export type ThemeDef = { key: string; label: MsgKey; accent: string };
 
 export const THEMES: ThemeDef[] = [
   { key: "default", label: "theme.default", accent: "#c99a3f" },
+  { key: "coral", label: "theme.coral", accent: "#db6b4d" },
+  { key: "cherry", label: "theme.cherry", accent: "#cf4a52" },
   { key: "rose", label: "theme.rose", accent: "#c8497f" },
-  { key: "ocean", label: "theme.ocean", accent: "#2b7fb8" },
-  { key: "forest", label: "theme.forest", accent: "#3f8f5b" },
+  { key: "magenta", label: "theme.magenta", accent: "#a94aa6" },
   { key: "plum", label: "theme.plum", accent: "#8a63c9" },
+  { key: "indigo", label: "theme.indigo", accent: "#5a63c9" },
+  { key: "ocean", label: "theme.ocean", accent: "#2b7fb8" },
+  { key: "teal", label: "theme.teal", accent: "#1f9e97" },
+  { key: "forest", label: "theme.forest", accent: "#3f8f5b" },
+  { key: "lime", label: "theme.lime", accent: "#6f9b1f" },
+  { key: "slate", label: "theme.slate", accent: "#607089" },
 ];
 
 export const THEME_KEYS = new Set(THEMES.map((t) => t.key));
