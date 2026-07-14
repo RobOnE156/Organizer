@@ -31,41 +31,79 @@ function jpegName(name: string): string {
   return sanitize(base) + ".jpg";
 }
 
+// Never let a single stubborn photo stall the whole save: if any step takes too
+// long (a HEIC that a browser struggles to decode, memory pressure on a phone),
+// give up and fall back to the original file.
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
 export async function compressImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
   if (/gif|svg/i.test(file.type)) return file; // keep animation / vectors
-  if (typeof createImageBitmap !== "function" || typeof document === "undefined") return file;
+  if (typeof document === "undefined") return file;
 
-  let bitmap: ImageBitmap;
+  // Decode via <img>, not createImageBitmap: iOS Safari renders HEIC in <img>
+  // but can hang/fail on createImageBitmap, which was stalling multi-photo
+  // saves. <img> also applies EXIF orientation when drawn to a canvas.
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.decoding = "async";
   try {
-    try {
-      bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-    } catch {
-      bitmap = await createImageBitmap(file); // option unsupported on older engines
-    }
+    img.src = url;
+    const ready = img.decode
+      ? img.decode()
+      : new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("load"));
+        });
+    await withTimeout(ready, 10000);
   } catch {
-    return file; // undecodable in this browser (e.g. HEIC) — upload as-is
+    URL.revokeObjectURL(url);
+    return file; // undecodable or too slow — upload the original, never hang
   }
 
-  const { width, height } = bitmap;
-  const scale = Math.min(1, IMG_MAX_DIM / Math.max(width, height));
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  if (!iw || !ih) {
+    URL.revokeObjectURL(url);
+    return file;
+  }
+  const scale = Math.min(1, IMG_MAX_DIM / Math.max(iw, ih));
   if (scale === 1 && file.size < SKIP_UNDER_BYTES) {
-    bitmap.close?.();
+    URL.revokeObjectURL(url);
     return file; // already small and modestly sized — not worth re-encoding
   }
-  const w = Math.max(1, Math.round(width * scale));
-  const h = Math.max(1, Math.round(height * scale));
+  const w = Math.max(1, Math.round(iw * scale));
+  const h = Math.max(1, Math.round(ih * scale));
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    bitmap.close?.();
+    URL.revokeObjectURL(url);
     return file;
   }
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close?.();
-  const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/jpeg", IMG_QUALITY));
+  try {
+    ctx.drawImage(img, 0, 0, w, h);
+  } catch {
+    URL.revokeObjectURL(url);
+    return file;
+  }
+  URL.revokeObjectURL(url);
+  img.src = ""; // let the phone reclaim the decoded image promptly
+
+  let blob: Blob | null = null;
+  try {
+    blob = await withTimeout(new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", IMG_QUALITY)), 10000);
+  } catch {
+    blob = null;
+  }
+  canvas.width = 0; // free the backing store
+  canvas.height = 0;
   if (!blob) return file;
   if (blob.size >= file.size && scale === 1) return file; // no gain
   return new File([blob], jpegName(file.name), { type: "image/jpeg", lastModified: file.lastModified });
