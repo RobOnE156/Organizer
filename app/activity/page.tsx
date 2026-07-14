@@ -6,6 +6,9 @@ import { translator, type MsgKey } from "@/lib/i18n";
 import { fmtDateTime } from "@/lib/timeline";
 import Avatar from "@/app/Avatar";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 const ACTION_LABEL: Record<string, MsgKey> = {
@@ -51,7 +54,9 @@ export default async function ActivityPage() {
   const fallback: MemberProfile = { name: t("activity.someone"), color: "#8a8a8a" };
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("activity.eyebrow")}</p>
       <h1 className="title">📜 {t("activity.title")}</h1>
       <p className="sub">{t("activity.sub")}</p>
@@ -80,10 +85,8 @@ export default async function ActivityPage() {
           })}
         </ul>
       )}
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/settings">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

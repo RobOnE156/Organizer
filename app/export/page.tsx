@@ -18,6 +18,9 @@ import { translator } from "@/lib/i18n";
 import ExportPanel from "./ExportPanel";
 import BackupStatus from "./BackupStatus";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function ExportPage() {
@@ -58,7 +61,9 @@ export default async function ExportPage() {
   }));
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("export.eyebrow")}</p>
       <h1 className="title">{t("export.title")}</h1>
       <p className="sub">{t("export.sub")}</p>
@@ -80,9 +85,8 @@ export default async function ExportPage() {
         highlightedIds={highlightedIds}
         />
       </div>
-      <p style={{ marginTop: 24 }}>
-        <a href="/settings">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

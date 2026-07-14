@@ -6,6 +6,9 @@ import { countryOfPoint, countryPaths, MAP_W, MAP_H } from "@/lib/geo/worldmap";
 import { translator } from "@/lib/i18n";
 import GeoBackfill from "./GeoBackfill";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 type GeoRow = { id: string; lat: number | null; lng: number | null };
@@ -53,7 +56,9 @@ export default async function MapPage() {
   const paths = countryPaths();
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("map.eyebrow")}</p>
       <h1 className="title">{t("map.title", { name: child.name })}</h1>
       <p className="sub">{t("map.sub")}</p>
@@ -102,10 +107,8 @@ export default async function MapPage() {
         <p className="muted" style={{ fontSize: ".88rem", marginTop: 0 }}>{t("map.backfill_sub")}</p>
         <GeoBackfill householdId={membership.household_id} userId={user.id} />
       </div>
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/">{t("back.diary")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

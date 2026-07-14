@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { signOut } from "@/app/auth-actions";
 import { useT } from "@/app/LanguageProvider";
 import NotificationBell from "@/app/NotificationBell";
+import ThemeModeToggle from "@/app/ThemeModeToggle";
 import type { AppNotification, MemberProfile } from "@/lib/data";
 
 export default function TopNav({
@@ -40,6 +41,7 @@ export default function TopNav({
           <small>{t("nav.timeline")}</small>
         </a>
         <div className="topactions">
+          <ThemeModeToggle />
           <NotificationBell notifications={notifications} authors={authors} />
           <button className="menubtn" onClick={() => setOpen(true)} aria-label={t("nav.menu")} aria-expanded={open}>
             ☰

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeLang, type Lang } from "@/lib/i18n";
 import { themeClass } from "@/lib/themes";
+import { modeClass, normalizeMode } from "@/lib/mode";
 
 // Data-access helpers for the authenticated app. Every query runs under the
 // user's session, so RLS (0002_rls.sql) already scopes results to their
@@ -695,14 +696,23 @@ export type MyProfile = {
   high_contrast: boolean;
   reduce_motion: boolean;
   theme: string;
+  color_mode: string;
 };
 
 export async function getMyProfile(supabase: SupabaseClient, userId: string): Promise<MyProfile> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("display_name, color, avatar_url, ui_language, text_size, high_contrast, reduce_motion, theme")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const base = "display_name, color, avatar_url, ui_language, text_size, high_contrast, reduce_motion, theme";
+  // color_mode is a newer column; if the migration hasn't run yet, fall back to
+  // the stable set so the profile page keeps working instead of erroring.
+  let data: unknown = null;
+  {
+    const withMode = await supabase.from("profiles").select(base + ", color_mode").eq("user_id", userId).maybeSingle();
+    if (withMode.error) {
+      const fallback = await supabase.from("profiles").select(base).eq("user_id", userId).maybeSingle();
+      data = fallback.data;
+    } else {
+      data = withMode.data;
+    }
+  }
   const p = data as Partial<{
     display_name: string;
     color: string;
@@ -712,6 +722,7 @@ export async function getMyProfile(supabase: SupabaseClient, userId: string): Pr
     high_contrast: boolean;
     reduce_motion: boolean;
     theme: string;
+    color_mode: string;
   }> | null;
   return {
     display_name: p?.display_name ?? "",
@@ -722,6 +733,7 @@ export async function getMyProfile(supabase: SupabaseClient, userId: string): Pr
     high_contrast: p?.high_contrast ?? false,
     reduce_motion: p?.reduce_motion ?? false,
     theme: p?.theme ?? "default",
+    color_mode: normalizeMode(p?.color_mode),
   };
 }
 
@@ -747,18 +759,27 @@ export async function getA11yClasses(supabase: SupabaseClient, userId: string): 
 export async function getShellPrefs(
   supabase: SupabaseClient,
   userId: string,
-): Promise<{ a11y: string; lang: Lang; theme: string }> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("text_size, high_contrast, reduce_motion, ui_language, theme")
-    .eq("user_id", userId)
-    .maybeSingle();
+): Promise<{ a11y: string; lang: Lang; theme: string; mode: string }> {
+  const base = "text_size, high_contrast, reduce_motion, ui_language, theme";
+  // color_mode is a newer column; tolerate its absence (migration not run yet)
+  // so themes + accessibility classes keep applying regardless.
+  let data: unknown = null;
+  {
+    const withMode = await supabase.from("profiles").select(base + ", color_mode").eq("user_id", userId).maybeSingle();
+    if (withMode.error) {
+      const fallback = await supabase.from("profiles").select(base).eq("user_id", userId).maybeSingle();
+      data = fallback.data;
+    } else {
+      data = withMode.data;
+    }
+  }
   const p = data as {
     text_size: string;
     high_contrast: boolean;
     reduce_motion: boolean;
     ui_language: string;
     theme: string;
+    color_mode?: string;
   } | null;
   const cls: string[] = [];
   if (p?.text_size === "large") cls.push("a11y-large");
@@ -766,5 +787,12 @@ export async function getShellPrefs(
   if (p?.reduce_motion) cls.push("a11y-motion");
   const tc = themeClass(p?.theme);
   if (tc) cls.push(tc);
-  return { a11y: cls.join(" "), lang: normalizeLang(p?.ui_language), theme: p?.theme ?? "default" };
+  const mc = modeClass(p?.color_mode);
+  if (mc) cls.push(mc);
+  return {
+    a11y: cls.join(" "),
+    lang: normalizeLang(p?.ui_language),
+    theme: p?.theme ?? "default",
+    mode: normalizeMode(p?.color_mode),
+  };
 }

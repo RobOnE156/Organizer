@@ -5,6 +5,9 @@ import { getChildren, getLetters, getMemberProfiles, getShellPrefs, letterUnlock
 import { translator } from "@/lib/i18n";
 import LettersPanel, { type ViewLetter } from "./LettersPanel";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function LettersPage() {
@@ -49,7 +52,9 @@ export default async function LettersPage() {
   });
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("letters.eyebrow")}</p>
       <h1 className="title">✉️ {t("letters.title")}</h1>
       <p className="sub">{t("letters.sub", { name: child.name })}</p>
@@ -62,10 +67,8 @@ export default async function LettersPage() {
         authors={authors}
         userId={user.id}
       />
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/">{t("back.diary")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

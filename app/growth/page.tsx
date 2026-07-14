@@ -6,6 +6,9 @@ import { translator } from "@/lib/i18n";
 import GrowthPanel from "./GrowthPanel";
 import SnapshotPanel from "./SnapshotPanel";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function GrowthPage() {
@@ -28,7 +31,9 @@ export default async function GrowthPage() {
   ]);
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("nav.about", { name: child.name })}</p>
       <h1 className="title">{t("growth.title")}</h1>
       <p className="sub">{t("growth.sub", { name: child.name })}</p>
@@ -58,10 +63,8 @@ export default async function GrowthPage() {
         </span>
         <span className="sarrow">›</span>
       </a>
-
-      <p style={{ marginTop: 28 }}>
-        <a href="/">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

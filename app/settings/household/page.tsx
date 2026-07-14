@@ -5,6 +5,9 @@ import { getShellPrefs } from "@/lib/data";
 import { translator } from "@/lib/i18n";
 import InvitePanel from "./InvitePanel";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function HouseholdPage() {
@@ -31,7 +34,9 @@ export default async function HouseholdPage() {
   const roleLabel = membership.role === "owner" ? t("role.owner") : t("role.parent");
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("nav.household")}</p>
       <h1 className="title">{name}</h1>
       <p className="sub">
@@ -39,9 +44,8 @@ export default async function HouseholdPage() {
         {t("hh.your_role", { role: roleLabel })}
       </p>
       <InvitePanel isOwner={membership.role === "owner"} />
-      <p style={{ marginTop: 24 }}>
-        <a href="/settings">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

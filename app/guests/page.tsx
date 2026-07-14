@@ -11,6 +11,9 @@ import {
 import { translator } from "@/lib/i18n";
 import GuestsPanel from "./GuestsPanel";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function GuestsPage() {
@@ -31,7 +34,9 @@ export default async function GuestsPage() {
   ]);
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("guests.eyebrow")}</p>
       <h1 className="title">🎁 {t("guests.title")}</h1>
       <p className="sub">{t("guests.sub")}</p>
@@ -43,10 +48,8 @@ export default async function GuestsPage() {
         authors={authors}
         defaultLang={prefs.lang}
       />
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/settings">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

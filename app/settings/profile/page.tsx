@@ -9,6 +9,9 @@ import AccessibilitySection from "./AccessibilitySection";
 import PasswordSection from "./PasswordSection";
 import EmailSection from "./EmailSection";
 import LanguageSection from "./LanguageSection";
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+import ThemeModeToggle from "@/app/ThemeModeToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +35,9 @@ export default async function ProfilePage() {
   const t = translator(normalizeLang(profile.ui_language));
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("profile.eyebrow")}</p>
       <h1 className="title">{t("profile.title")}</h1>
       <p className="sub">{t("profile.sub")}</p>
@@ -47,6 +52,12 @@ export default async function ProfilePage() {
 
       <div style={{ marginTop: 16 }}>
         <ThemeSection initialTheme={profile.theme} />
+      </div>
+
+      <div style={{ marginTop: 16 }} className="card stack">
+        <h2 style={{ fontSize: "1.05rem", margin: 0 }}>{t("mode.title")}</h2>
+        <p className="muted" style={{ margin: 0, fontSize: ".88rem" }}>{t("mode.sub")}</p>
+        <ThemeModeToggle initialMode={profile.color_mode} variant="full" />
       </div>
 
       <div style={{ marginTop: 16 }}>
@@ -69,9 +80,8 @@ export default async function ProfilePage() {
         <PasswordSection />
       </div>
 
-      <p style={{ marginTop: 24 }}>
-        <a href="/settings">{t("common.back")}</a>
-      </p>
-    </main>
+      </main>
+      <PageFooter />
+    </>
   );
 }

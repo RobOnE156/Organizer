@@ -8,8 +8,11 @@
   --danger: #c0392b;
   --faint: rgba(0, 0, 0, 0.09);
 }
+/* Dark neutral palette. Applies when the device is in dark mode (unless the
+   user forced light with .mode-light) OR when the user explicitly forced dark
+   with .mode-dark — so a manual light/dark choice always beats the OS. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.mode-light) {
     --bg: #15121a;
     --surface: #221e29;
     --surface-2: #2a2532;
@@ -20,49 +23,63 @@
     --faint: rgba(255, 255, 255, 0.11);
   }
 }
+:root.mode-dark {
+  --bg: #15121a;
+  --surface: #221e29;
+  --surface-2: #2a2532;
+  --ink: #f1ecf3;
+  --muted: #a79fad;
+  --gold: #e0b45f;
+  --danger: #e57373;
+  --faint: rgba(255, 255, 255, 0.11);
+}
 
-/* per-user colour schemes (a `theme-<key>` class on <html>): each theme sets
-   its --accent (light + dark); a shared rule then derives the accent,
-   background AND the tinted card surfaces + borders from it, so the whole
-   scheme shifts — not just the buttons. Neutral ink/muted stay for
-   readability. 'default' (no class) keeps the classic amber base. */
-html.theme-coral   { --accent: #db6b4d; }
-html.theme-cherry  { --accent: #cf4a52; }
-html.theme-rose    { --accent: #c8497f; }
-html.theme-magenta { --accent: #a94aa6; }
-html.theme-plum    { --accent: #8a63c9; }
-html.theme-indigo  { --accent: #5a63c9; }
-html.theme-ocean   { --accent: #2b7fb8; }
-html.theme-teal    { --accent: #1f9e97; }
-html.theme-forest  { --accent: #3f8f5b; }
-html.theme-lime    { --accent: #6f9b1f; }
-html.theme-slate   { --accent: #607089; }
+/* per-user colour schemes (a `theme-<key>` class on <html>): each theme holds
+   a light (--accent-l) and dark (--accent-d) accent; shared rules pick the
+   right one for the active appearance and derive the accent, background AND
+   the tinted card surfaces + borders from it, so the whole scheme shifts — not
+   just the buttons. Neutral ink/muted stay for readability. 'default' (no
+   class) keeps the classic amber base. */
+html.theme-coral   { --accent-l: #db6b4d; --accent-d: #f2916f; }
+html.theme-cherry  { --accent-l: #cf4a52; --accent-d: #ee7f85; }
+html.theme-rose    { --accent-l: #c8497f; --accent-d: #ec86b0; }
+html.theme-magenta { --accent-l: #a94aa6; --accent-d: #d382cf; }
+html.theme-plum    { --accent-l: #8a63c9; --accent-d: #b394e6; }
+html.theme-indigo  { --accent-l: #5a63c9; --accent-d: #8f97e6; }
+html.theme-ocean   { --accent-l: #2b7fb8; --accent-d: #5cb0e0; }
+html.theme-teal    { --accent-l: #1f9e97; --accent-d: #54cfc6; }
+html.theme-forest  { --accent-l: #3f8f5b; --accent-d: #6cc389; }
+html.theme-lime    { --accent-l: #6f9b1f; --accent-d: #a9c94f; }
+html.theme-slate   { --accent-l: #607089; --accent-d: #93a3bd; }
+
+/* light tint (base — used unless a dark appearance is active) */
 html[class*="theme-"] {
+  --accent: var(--accent-l);
   --gold: var(--accent);
   --bg: color-mix(in oklab, var(--accent) 10%, #f7f6f8);
   --surface: color-mix(in oklab, var(--accent) 6%, #ffffff);
   --surface-2: color-mix(in oklab, var(--accent) 15%, #f1f0f3);
   --faint: color-mix(in oklab, var(--accent) 22%, transparent);
 }
+/* dark tint — device dark (unless forced light) */
 @media (prefers-color-scheme: dark) {
-  html.theme-coral   { --accent: #f2916f; }
-  html.theme-cherry  { --accent: #ee7f85; }
-  html.theme-rose    { --accent: #ec86b0; }
-  html.theme-magenta { --accent: #d382cf; }
-  html.theme-plum    { --accent: #b394e6; }
-  html.theme-indigo  { --accent: #8f97e6; }
-  html.theme-ocean   { --accent: #5cb0e0; }
-  html.theme-teal    { --accent: #54cfc6; }
-  html.theme-forest  { --accent: #6cc389; }
-  html.theme-lime    { --accent: #a9c94f; }
-  html.theme-slate   { --accent: #93a3bd; }
-  html[class*="theme-"] {
+  html:not(.mode-light)[class*="theme-"] {
+    --accent: var(--accent-d);
     --gold: var(--accent);
     --bg: color-mix(in oklab, var(--accent) 15%, #101114);
     --surface: color-mix(in oklab, var(--accent) 17%, #1c1e22);
     --surface-2: color-mix(in oklab, var(--accent) 24%, #24272d);
     --faint: color-mix(in oklab, var(--accent) 28%, transparent);
   }
+}
+/* dark tint — user forced dark on any device */
+html.mode-dark[class*="theme-"] {
+  --accent: var(--accent-d);
+  --gold: var(--accent);
+  --bg: color-mix(in oklab, var(--accent) 15%, #101114);
+  --surface: color-mix(in oklab, var(--accent) 17%, #1c1e22);
+  --surface-2: color-mix(in oklab, var(--accent) 24%, #24272d);
+  --faint: color-mix(in oklab, var(--accent) 28%, transparent);
 }
 
 * { box-sizing: border-box; }
@@ -200,6 +217,18 @@ a.brand { text-decoration: none; color: inherit; }
 .themeswatch.on { border-color: var(--gold); background: color-mix(in oklab, var(--gold) 15%, var(--surface)); font-weight: 700; }
 .themeswatch:disabled { opacity: 0.6; }
 .themedot { width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
+/* light/dark appearance picker */
+.modeopts { display: flex; flex-wrap: wrap; gap: 10px; }
+.modebtn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--faint); background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; font-size: 0.9rem; }
+.modebtn:hover { border-color: var(--gold); }
+.modebtn.on { border-color: var(--gold); background: color-mix(in oklab, var(--gold) 15%, var(--surface)); font-weight: 700; }
+.modebtn:disabled { opacity: 0.6; }
+/* page footer: always-present links back to the diary + settings */
+.pagefoot { max-width: 720px; margin: 28px auto 0; padding: 20px 24px 40px; border-top: 1px solid var(--faint); display: flex; flex-wrap: wrap; gap: 10px; }
+.footlink { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px; border-radius: 12px; border: 1px solid var(--faint); background: var(--surface); color: var(--ink); font-size: 0.9rem; font-weight: 600; }
+.footlink:hover { border-color: var(--gold); text-decoration: none; }
+.footlink.primary { background: color-mix(in oklab, var(--gold) 16%, var(--surface)); border-color: color-mix(in oklab, var(--gold) 40%, var(--faint)); }
+.footspacer { flex: 1 1 auto; }
 /* link-styled button (e.g. "lost your authenticator?") */
 .linklike { background: none; border: 0; color: var(--gold); font: inherit; font-size: 0.86rem; cursor: pointer; padding: 4px 2px; text-align: left; align-self: flex-start; }
 .linklike:hover { text-decoration: underline; }

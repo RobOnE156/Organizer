@@ -175,6 +175,26 @@ const M = {
   "theme.lime": { de: "Limette", en: "Lime", es: "Lima" },
   "theme.slate": { de: "Schiefer", en: "Slate", es: "Pizarra" },
 
+  // light/dark appearance (per-user)
+  "mode.title": { de: "Darstellung", en: "Appearance", es: "Apariencia" },
+  "mode.sub": {
+    de: "Hell, dunkel oder automatisch nach deinem Gerät.",
+    en: "Light, dark, or automatic to match your device.",
+    es: "Claro, oscuro o automático según tu dispositivo.",
+  },
+  "mode.system": { de: "Automatisch", en: "Automatic", es: "Automático" },
+  "mode.light": { de: "Hell", en: "Light", es: "Claro" },
+  "mode.dark": { de: "Dunkel", en: "Dark", es: "Oscuro" },
+  "mode.toggle": {
+    de: "Darstellung: {mode} — tippen zum Wechseln",
+    en: "Appearance: {mode} — tap to switch",
+    es: "Apariencia: {mode} — toca para cambiar",
+  },
+
+  // page chrome (header/footer shared across sub-pages)
+  "chrome.home": { de: "Zum Tagebuch", en: "To the diary", es: "Al diario" },
+  "chrome.settings": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
+
   // change e-mail address
   "em.title": { de: "E-Mail-Adresse ändern", en: "Change e-mail address", es: "Cambiar correo electrónico" },
   "em.current": { de: "Aktuell: {email}", en: "Current: {email}", es: "Actual: {email}" },

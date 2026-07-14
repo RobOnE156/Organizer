@@ -12,6 +12,9 @@ import {
 import { ageLabel, fmtDate } from "@/lib/timeline";
 import { translator } from "@/lib/i18n";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function HighlightsPage() {
@@ -34,7 +37,9 @@ export default async function HighlightsPage() {
   const mediaByEntry = await signMediaByEntry(supabase, media);
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("hl.eyebrow")}</p>
       <h1 className="title">{t("hl.title", { name: child.name })}</h1>
       <p className="sub">{t("hl.sub")}</p>
@@ -69,10 +74,8 @@ export default async function HighlightsPage() {
           })}
         </section>
       )}
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/">{t("back.diary")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

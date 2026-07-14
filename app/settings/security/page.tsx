@@ -8,6 +8,9 @@ import { translator } from "@/lib/i18n";
 import SecuritySetup from "./SecuritySetup";
 import RecoveryCodes from "./RecoveryCodes";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function SecurityPage({
@@ -31,7 +34,9 @@ export default async function SecurityPage({
   }
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("sec.eyebrow")}</p>
       <h1 className="title">{t("sec.title")}</h1>
       <p className="sub">{t("sec.sub")}</p>
@@ -41,10 +46,8 @@ export default async function SecurityPage({
       <SecuritySetup hasTotp={hasTotp} />
 
       {hasTotp ? <RecoveryCodes remaining={remaining} configured={hasServiceRole()} /> : null}
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/settings">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

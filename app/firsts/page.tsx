@@ -5,6 +5,9 @@ import { getChildren, getEntriesForChild, getMilestones, getShellPrefs } from "@
 import { translator } from "@/lib/i18n";
 import FirstsCollector, { type PickEntry } from "./FirstsCollector";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function FirstsPage() {
@@ -31,7 +34,9 @@ export default async function FirstsPage() {
   }));
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("firsts.eyebrow")}</p>
       <h1 className="title">🎉 {t("firsts.title")}</h1>
       <p className="sub">{t("firsts.sub", { name: child.name })}</p>
@@ -43,10 +48,8 @@ export default async function FirstsPage() {
         entries={pickEntries}
         userId={user.id}
       />
-
-      <p style={{ marginTop: 28 }}>
-        <a href="/">{t("back.diary")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

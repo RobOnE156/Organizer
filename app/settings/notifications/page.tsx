@@ -5,6 +5,9 @@ import { getNotificationPrefs, getShellPrefs } from "@/lib/data";
 import { translator } from "@/lib/i18n";
 import NotificationSettings from "./NotificationSettings";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function NotificationSettingsPage() {
@@ -22,16 +25,16 @@ export default async function NotificationSettingsPage() {
   const t = translator(shell.lang);
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("notif.settings_eyebrow")}</p>
       <h1 className="title">🔔 {t("notif.settings_title")}</h1>
       <p className="sub">{t("notif.settings_sub")}</p>
 
       <NotificationSettings initial={prefs} />
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/settings">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }

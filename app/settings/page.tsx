@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getShellPrefs } from "@/lib/data";
 import { translator } from "@/lib/i18n";
 
+import PageHeader from "@/app/PageHeader";
+import PageFooter from "@/app/PageFooter";
+
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
@@ -28,7 +31,9 @@ export default async function SettingsPage() {
   ];
 
   return (
-    <main className="page">
+    <>
+      <PageHeader />
+      <main className="page">
       <p className="eyebrow">{t("settings.eyebrow")}</p>
       <h1 className="title">{t("settings.title")}</h1>
       <p className="sub">{t("settings.sub")}</p>
@@ -45,10 +50,8 @@ export default async function SettingsPage() {
           </a>
         ))}
       </div>
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/">{t("common.back")}</a>
-      </p>
     </main>
+      <PageFooter />
+    </>
   );
 }
