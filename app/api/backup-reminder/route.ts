@@ -40,8 +40,10 @@ export async function GET(request: Request) {
       .maybeSingle();
     const interval = (st as { interval_days: number } | null)?.interval_days ?? 30;
     if (interval <= 0) continue;
-    const baseISO = (st as { last_sent_at: string | null } | null)?.last_sent_at ?? h.created_at;
-    if (now < new Date(baseISO).getTime() + interval * DAY) continue;
+    // The first reminder fires immediately (establishes the baseline + delivers
+    // the first snapshot); after that a full interval is waited between mails.
+    const lastSent = (st as { last_sent_at: string | null } | null)?.last_sent_at ?? null;
+    if (lastSent && now < new Date(lastSent).getTime() + interval * DAY) continue;
 
     // days since the last full backup (in-app or external), for the nudge tone
     const { data: lastB } = await admin
