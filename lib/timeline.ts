@@ -10,8 +10,26 @@ export function monthLabel(iso: string): string {
 }
 
 export function fmtDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
+  if (!iso) return "";
+  // Accept both date-only ("2026-07-08") and full timestamps
+  // ("2026-07-08T09:14:23+00:00"); only date-only needs a time appended.
+  const d = new Date(iso.length > 10 ? iso : iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return "";
   return new Intl.DateTimeFormat("de-DE", { day: "numeric", month: "long", year: "numeric" }).format(d);
+}
+
+// Full timestamp -> date + time (for the activity log).
+export function fmtDateTime(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
 }
 
 // Age of the child at a given date, as a short human label (German).

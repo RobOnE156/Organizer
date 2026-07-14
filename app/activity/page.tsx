@@ -3,7 +3,7 @@ import { getUser, getMembership, enforceSecondFactor } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getActivityLog, getMemberProfiles, getShellPrefs, type AuditEntry, type MemberProfile } from "@/lib/data";
 import { translator, type MsgKey } from "@/lib/i18n";
-import { fmtDate } from "@/lib/timeline";
+import { fmtDateTime } from "@/lib/timeline";
 import Avatar from "@/app/Avatar";
 
 export const dynamic = "force-dynamic";
@@ -73,7 +73,7 @@ export default async function ActivityPage() {
                     <span className="acticon" aria-hidden>{ACTION_ICON[a.action] ?? "•"}</span> {label}
                   </span>
                   {ex ? <em className="actexcerpt">„{ex}“</em> : null}
-                  <small className="muted">{fmtDate(a.created_at)}</small>
+                  <small className="muted">{fmtDateTime(a.created_at)}</small>
                 </div>
               </li>
             );
