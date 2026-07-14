@@ -4,8 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureProfile, getMyProfile } from "@/lib/data";
 import { translator, normalizeLang } from "@/lib/i18n";
 import ProfileForm from "./ProfileForm";
+import ThemeSection from "./ThemeSection";
 import AccessibilitySection from "./AccessibilitySection";
 import PasswordSection from "./PasswordSection";
+import EmailSection from "./EmailSection";
 import LanguageSection from "./LanguageSection";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +46,10 @@ export default async function ProfilePage() {
       />
 
       <div style={{ marginTop: 16 }}>
+        <ThemeSection initialTheme={profile.theme} />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
         <AccessibilitySection
           initialTextSize={profile.text_size}
           initialHighContrast={profile.high_contrast}
@@ -53,6 +59,10 @@ export default async function ProfilePage() {
 
       <div style={{ marginTop: 16 }}>
         <LanguageSection initialLang={profile.ui_language} />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <EmailSection currentEmail={user.email ?? ""} />
       </div>
 
       <div style={{ marginTop: 16 }}>

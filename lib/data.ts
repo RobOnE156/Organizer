@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeLang, type Lang } from "@/lib/i18n";
+import { themeClass } from "@/lib/themes";
 
 // Data-access helpers for the authenticated app. Every query runs under the
 // user's session, so RLS (0002_rls.sql) already scopes results to their
@@ -693,12 +694,13 @@ export type MyProfile = {
   text_size: string;
   high_contrast: boolean;
   reduce_motion: boolean;
+  theme: string;
 };
 
 export async function getMyProfile(supabase: SupabaseClient, userId: string): Promise<MyProfile> {
   const { data } = await supabase
     .from("profiles")
-    .select("display_name, color, avatar_url, ui_language, text_size, high_contrast, reduce_motion")
+    .select("display_name, color, avatar_url, ui_language, text_size, high_contrast, reduce_motion, theme")
     .eq("user_id", userId)
     .maybeSingle();
   const p = data as Partial<{
@@ -709,6 +711,7 @@ export async function getMyProfile(supabase: SupabaseClient, userId: string): Pr
     text_size: string;
     high_contrast: boolean;
     reduce_motion: boolean;
+    theme: string;
   }> | null;
   return {
     display_name: p?.display_name ?? "",
@@ -718,6 +721,7 @@ export async function getMyProfile(supabase: SupabaseClient, userId: string): Pr
     text_size: p?.text_size ?? "normal",
     high_contrast: p?.high_contrast ?? false,
     reduce_motion: p?.reduce_motion ?? false,
+    theme: p?.theme ?? "default",
   };
 }
 
@@ -743,10 +747,10 @@ export async function getA11yClasses(supabase: SupabaseClient, userId: string): 
 export async function getShellPrefs(
   supabase: SupabaseClient,
   userId: string,
-): Promise<{ a11y: string; lang: Lang }> {
+): Promise<{ a11y: string; lang: Lang; theme: string }> {
   const { data } = await supabase
     .from("profiles")
-    .select("text_size, high_contrast, reduce_motion, ui_language")
+    .select("text_size, high_contrast, reduce_motion, ui_language, theme")
     .eq("user_id", userId)
     .maybeSingle();
   const p = data as {
@@ -754,10 +758,13 @@ export async function getShellPrefs(
     high_contrast: boolean;
     reduce_motion: boolean;
     ui_language: string;
+    theme: string;
   } | null;
   const cls: string[] = [];
   if (p?.text_size === "large") cls.push("a11y-large");
   if (p?.high_contrast) cls.push("a11y-contrast");
   if (p?.reduce_motion) cls.push("a11y-motion");
-  return { a11y: cls.join(" "), lang: normalizeLang(p?.ui_language) };
+  const tc = themeClass(p?.theme);
+  if (tc) cls.push(tc);
+  return { a11y: cls.join(" "), lang: normalizeLang(p?.ui_language), theme: p?.theme ?? "default" };
 }

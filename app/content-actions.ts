@@ -11,6 +11,7 @@ import { emailEnabled, sendEmail, appUrl } from "@/lib/email";
 import { buildBackupJson, buildBackupEmail } from "@/lib/backup";
 import { getShellPrefs, getBackupStatus } from "@/lib/data";
 import { translator } from "@/lib/i18n";
+import { normalizeTheme } from "@/lib/themes";
 import type { FormState } from "@/app/auth-types";
 import {
   AUTHOR_COLORS,
@@ -342,6 +343,22 @@ export async function updateA11y(input: {
     },
     { onConflict: "user_id" },
   );
+  if (error) return { error: error.message };
+  return {};
+}
+
+// Save the per-user colour scheme (own profile row).
+export async function updateTheme(theme: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const value = normalizeTheme(theme);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ user_id: user.id, theme: value }, { onConflict: "user_id" });
   if (error) return { error: error.message };
   return {};
 }

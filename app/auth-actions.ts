@@ -1,15 +1,50 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { createClient as createPlainClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
-import { hasSupabaseEnv } from "@/lib/env";
+import { hasSupabaseEnv, publicEnv } from "@/lib/env";
 import type { FormState, EnrollResult, InviteState, RecoveryCodesResult } from "@/app/auth-types";
 
 const NOT_CONFIGURED = "Supabase ist noch nicht konfiguriert — bitte .env.local anlegen (NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_ANON_KEY).";
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
+}
+
+// ---- change e-mail (re-confirm the password first) ------------------
+export async function changeEmail(
+  newEmail: string,
+  currentPassword: string,
+): Promise<{ error?: string; message?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const email = newEmail.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "Bitte eine gültige E-Mail-Adresse eingeben." };
+  if (!currentPassword) return { error: "Bitte gib dein aktuelles Passwort ein." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Nicht angemeldet." };
+  if (email === user.email.toLowerCase()) return { error: "Das ist bereits deine aktuelle Adresse." };
+
+  // Re-confirm the password on a throwaway client so the real (AAL2) session
+  // and its cookies stay untouched — this only checks the credential.
+  const verifier = createPlainClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error: pwErr } = await verifier.auth.signInWithPassword({ email: user.email, password: currentPassword });
+  if (pwErr) return { error: "Das aktuelle Passwort ist nicht korrekt." };
+
+  // Request the change — Supabase sends a confirmation link to the new address
+  // (and, with secure e-mail change, the old one); it takes effect once clicked.
+  const { error } = await supabase.auth.updateUser({ email });
+  if (error) return { error: error.message };
+  return {
+    message: "Wir haben einen Bestätigungslink an die neue Adresse geschickt. Die Änderung wird aktiv, sobald du ihn anklickst.",
+  };
 }
 
 // ---- change password (logged-in, settings page enforces AAL2) -------

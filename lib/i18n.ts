@@ -155,6 +155,33 @@ const M = {
   "profile.photo_change": { de: "Foto ändern", en: "Change photo", es: "Cambiar foto" },
   "profile.photo_remove": { de: "Entfernen", en: "Remove", es: "Quitar" },
 
+  // colour scheme (per-user theme)
+  "theme.title": { de: "Farbschema", en: "Colour scheme", es: "Esquema de color" },
+  "theme.sub": {
+    de: "Wähle deine Farben — gilt nur für deine Ansicht.",
+    en: "Pick your colours — applies only to your view.",
+    es: "Elige tus colores — solo para tu vista.",
+  },
+  "theme.default": { de: "Bernstein", en: "Amber", es: "Ámbar" },
+  "theme.rose": { de: "Rosé", en: "Rose", es: "Rosa" },
+  "theme.ocean": { de: "Ozean", en: "Ocean", es: "Océano" },
+  "theme.forest": { de: "Wald", en: "Forest", es: "Bosque" },
+  "theme.plum": { de: "Flieder", en: "Plum", es: "Ciruela" },
+
+  // change e-mail address
+  "em.title": { de: "E-Mail-Adresse ändern", en: "Change e-mail address", es: "Cambiar correo electrónico" },
+  "em.current": { de: "Aktuell: {email}", en: "Current: {email}", es: "Actual: {email}" },
+  "em.new": { de: "Neue E-Mail-Adresse", en: "New e-mail address", es: "Nuevo correo electrónico" },
+  "em.new_ph": { de: "name@beispiel.de", en: "name@example.com", es: "nombre@ejemplo.com" },
+  "em.pw": { de: "Aktuelles Passwort (zur Bestätigung)", en: "Current password (to confirm)", es: "Contraseña actual (para confirmar)" },
+  "em.pw_ph": { de: "dein Passwort", en: "your password", es: "tu contraseña" },
+  "em.submit": { de: "Adresse ändern", en: "Change address", es: "Cambiar dirección" },
+  "em.sent": {
+    de: "Wir haben einen Bestätigungslink an die neue Adresse geschickt. Die Änderung wird aktiv, sobald du ihn anklickst.",
+    en: "We've sent a confirmation link to the new address. The change takes effect once you click it.",
+    es: "Hemos enviado un enlace de confirmación a la nueva dirección. El cambio se aplica cuando lo pulses.",
+  },
+
   // accessibility
   "a11y.title": { de: "Barrierefreiheit", en: "Accessibility", es: "Accesibilidad" },
   "a11y.large": { de: "Größerer Text", en: "Larger text", es: "Texto más grande" },
