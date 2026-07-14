@@ -22,6 +22,8 @@ export default async function SettingsPage() {
     { href: "/guests", icon: "🎁", title: t("nav.guests"), desc: t("settings.guests_desc") },
     { href: "/settings/notifications", icon: "🔔", title: t("nav.notifications"), desc: t("settings.notifications_desc") },
     { href: "/settings/security", icon: "🔒", title: t("nav.security"), desc: t("settings.security_desc") },
+    { href: "/trash", icon: "🗑️", title: t("nav.trash"), desc: t("settings.trash_desc") },
+    { href: "/activity", icon: "📜", title: t("nav.activity"), desc: t("settings.activity_desc") },
     { href: "/export", icon: "⬇️", title: t("nav.export"), desc: t("settings.export_desc") },
   ];
 

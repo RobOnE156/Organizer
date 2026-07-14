@@ -1024,3 +1024,21 @@ export async function deleteEntry(entryId: string): Promise<{ error?: string }> 
   if (error) return { error: error.message };
   return {};
 }
+
+// Restore a soft-deleted entry from the Papierkorb (author-only via RLS). The
+// audit trigger logs this as 'entry.restore'.
+export async function restoreEntry(entryId: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { error } = await supabase
+    .from("entries")
+    .update({ deleted_at: null, updated_by: user.id })
+    .eq("id", entryId);
+  if (error) return { error: error.message };
+  return {};
+}

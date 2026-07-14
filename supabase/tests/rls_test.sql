@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(155);
+select plan(173);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -601,6 +601,66 @@ select is((select email from public.notification_email_targets('comment','a00000
 reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
 select is((select count(*) from public.notification_email_targets('reaction','a0000001-0000-0000-0000-000000000001'))::int, 0,
   'the entry author is never an e-mail target for their own entry');
+
+-- =====================================================================
+-- activity log + Papierkorb (trash): AFTER triggers record create / edit /
+-- delete / restore into audit_log (members-only read); a soft-deleted entry
+-- stays visible to its author (restorable) but is hidden from the co-parent.
+-- =====================================================================
+-- alice creates, edits, trashes, restores a fresh entry
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into entries (id, household_id, author_id, kind, title, is_private, created_by)
+  values ('b0000001-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','text','Original', false,'11111111-1111-1111-1111-111111111111') $$,
+  'alice creates an entry');
+select is((select count(*) from audit_log where target_id='b0000001-0000-0000-0000-000000000001' and action='entry.create')::int, 1,
+  'entry creation is logged');
+
+select lives_ok($$ update entries set title='Edited', updated_by='11111111-1111-1111-1111-111111111111' where id='b0000001-0000-0000-0000-000000000001' $$,
+  'alice edits the entry');
+select is((select count(*) from audit_log where target_id='b0000001-0000-0000-0000-000000000001' and action='entry.edit')::int, 1,
+  'entry edit is logged');
+
+select lives_ok($$ update entries set deleted_at=now(), updated_by='11111111-1111-1111-1111-111111111111' where id='b0000001-0000-0000-0000-000000000001' $$,
+  'alice moves the entry to the trash');
+select is((select count(*) from audit_log where target_id='b0000001-0000-0000-0000-000000000001' and action='entry.delete')::int, 1,
+  'soft-delete is logged as entry.delete');
+select is((select count(*) from entries where id='b0000001-0000-0000-0000-000000000001' and deleted_at is not null)::int, 1,
+  'the author still sees her own trashed entry (Papierkorb)');
+
+-- bob (co-parent) cannot see the trashed entry
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from entries where id='b0000001-0000-0000-0000-000000000001')::int, 0,
+  'a co-parent cannot see a trashed entry');
+
+-- alice restores it
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ update entries set deleted_at=null, updated_by='11111111-1111-1111-1111-111111111111' where id='b0000001-0000-0000-0000-000000000001' $$,
+  'alice restores the entry');
+select is((select count(*) from audit_log where target_id='b0000001-0000-0000-0000-000000000001' and action='entry.restore')::int, 1,
+  'restore is logged as entry.restore');
+
+-- bob now sees the restored (shared) entry and can comment on it
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from entries where id='b0000001-0000-0000-0000-000000000001')::int, 1,
+  'the restored entry is visible to the co-parent again');
+select lives_ok($$ insert into comments (id, household_id, entry_id, author_id, body)
+  values ('d0000001-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','b0000001-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222','Nice') $$,
+  'bob comments on the restored entry');
+select is((select count(*) from audit_log where target_id='d0000001-0000-0000-0000-000000000001' and action='comment.create')::int, 1,
+  'comment creation is logged');
+select lives_ok($$ delete from comments where id='d0000001-0000-0000-0000-000000000001' $$,
+  'bob deletes his own comment');
+select is((select count(*) from audit_log where target_id='d0000001-0000-0000-0000-000000000001' and action='comment.delete')::int, 1,
+  'comment deletion is logged');
+select is((select count(*) from audit_log where target_id='b0000001-0000-0000-0000-000000000001')::int, 4,
+  'a member sees the full audit trail (create/edit/delete/restore)');
+
+-- cross-household isolation + anon lockout on the activity log
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from audit_log where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')::int, 0,
+  'a cross-household user cannot read the activity log');
+reset role; select set_config('request.jwt.claims','',true); set local role anon;
+select throws_ok($$ select 1 from audit_log $$, '42501', null, 'anon cannot read the activity log');
 
 -- =====================================================================
 -- guest contributions (account-less, expiring links, moderated):

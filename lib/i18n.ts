@@ -56,6 +56,8 @@ const M = {
   "nav.settings": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
   "nav.security": { de: "Sicherheit & 2FA", en: "Security & 2FA", es: "Seguridad y 2FA" },
   "nav.notifications": { de: "Benachrichtigungen", en: "Notifications", es: "Notificaciones" },
+  "nav.trash": { de: "Papierkorb", en: "Trash", es: "Papelera" },
+  "nav.activity": { de: "Aktivität", en: "Activity", es: "Actividad" },
   "nav.letters": { de: "Briefe", en: "Letters", es: "Cartas" },
   "nav.guests": { de: "Gäste-Beiträge", en: "Guest posts", es: "Aportes de invitados" },
 
@@ -86,6 +88,16 @@ const M = {
     de: "Wobei und wie du benachrichtigt wirst",
     en: "What and how you get notified",
     es: "Sobre qué y cómo recibes avisos",
+  },
+  "settings.trash_desc": {
+    de: "Gelöschte Einträge ansehen und wiederherstellen",
+    en: "View and restore deleted entries",
+    es: "Ver y restaurar entradas eliminadas",
+  },
+  "settings.activity_desc": {
+    de: "Wer hat wann was erstellt, geändert oder gelöscht",
+    en: "Who created, changed or deleted what, and when",
+    es: "Quién creó, cambió o eliminó qué, y cuándo",
   },
   "settings.export_desc": {
     de: "Das komplette Tagebuch als ZIP sichern",
@@ -747,6 +759,44 @@ const M = {
   },
   "letters.del_title": { de: "Brief löschen?", en: "Delete letter?", es: "¿Eliminar carta?" },
   "letters.del_body": { de: "Dieser Brief wird entfernt.", en: "This letter will be removed.", es: "Se eliminará esta carta." },
+
+  // Papierkorb (trash) — restore soft-deleted entries
+  "trash.eyebrow": { de: "Sicher aufbewahrt", en: "Kept safe", es: "Guardado a salvo" },
+  "trash.title": { de: "Papierkorb", en: "Trash", es: "Papelera" },
+  "trash.sub": {
+    de: "Von dir gelöschte Einträge landen hier und lassen sich wiederherstellen. Nichts geht versehentlich verloren.",
+    en: "Entries you deleted land here and can be restored. Nothing is lost by accident.",
+    es: "Las entradas que eliminaste llegan aquí y se pueden restaurar. Nada se pierde por accidente.",
+  },
+  "trash.empty": {
+    de: "Der Papierkorb ist leer.",
+    en: "The trash is empty.",
+    es: "La papelera está vacía.",
+  },
+  "trash.from": { de: "vom {date}", en: "from {date}", es: "del {date}" },
+  "trash.deleted_on": { de: "gelöscht am {date}", en: "deleted on {date}", es: "eliminado el {date}" },
+  "trash.restore": { de: "Wiederherstellen", en: "Restore", es: "Restaurar" },
+
+  // activity log ("wer hat was getan")
+  "activity.eyebrow": { de: "Nachvollziehbar", en: "Transparent", es: "Transparente" },
+  "activity.title": { de: "Aktivitätsprotokoll", en: "Activity log", es: "Registro de actividad" },
+  "activity.sub": {
+    de: "Wer hat wann was erstellt, geändert, gelöscht oder wiederhergestellt — für Vertrauen zwischen euch beiden.",
+    en: "Who created, changed, deleted or restored what, and when — for trust between you two.",
+    es: "Quién creó, cambió, eliminó o restauró qué, y cuándo — para la confianza entre vosotros.",
+  },
+  "activity.empty": { de: "Noch keine Aktivität.", en: "No activity yet.", es: "Aún no hay actividad." },
+  "activity.someone": { de: "Jemand", en: "Someone", es: "Alguien" },
+  "activity.entry_create": { de: "{name} hat einen Eintrag erstellt", en: "{name} created an entry", es: "{name} creó una entrada" },
+  "activity.entry_edit": { de: "{name} hat einen Eintrag bearbeitet", en: "{name} edited an entry", es: "{name} editó una entrada" },
+  "activity.entry_delete": {
+    de: "{name} hat einen Eintrag in den Papierkorb gelegt",
+    en: "{name} moved an entry to the trash",
+    es: "{name} movió una entrada a la papelera",
+  },
+  "activity.entry_restore": { de: "{name} hat einen Eintrag wiederhergestellt", en: "{name} restored an entry", es: "{name} restauró una entrada" },
+  "activity.comment_create": { de: "{name} hat kommentiert", en: "{name} commented", es: "{name} comentó" },
+  "activity.comment_delete": { de: "{name} hat einen Kommentar gelöscht", en: "{name} deleted a comment", es: "{name} eliminó un comentario" },
 
   // notifications (in-app bell + preferences)
   "notif.title": { de: "Benachrichtigungen", en: "Notifications", es: "Notificaciones" },

@@ -149,6 +149,19 @@ a.brand { text-decoration: none; color: inherit; }
 .belltext small { font-size: 0.72rem; }
 .belldot { position: absolute; right: 12px; top: 15px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: 0 0 auto; }
 .bellfoot { display: block; text-align: center; padding: 11px; font-size: 0.82rem; border-top: 1px solid var(--faint); color: var(--gold); }
+/* Papierkorb (trash) */
+.trashcard { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--faint); border-radius: 12px; background: var(--surface); }
+.trashcard > div:first-child { flex: 1 1 auto; }
+.trashtitle { font-size: 0.92rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trashcard .btn { flex: 0 0 auto; }
+/* activity log */
+.actlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.actrow { display: flex; align-items: flex-start; gap: 10px; padding: 12px 2px; border-bottom: 1px solid var(--faint); }
+.actrow:last-child { border-bottom: 0; }
+.acttext { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.9rem; line-height: 1.45; }
+.acticon { margin-right: 2px; }
+.actexcerpt { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.acttext small { font-size: 0.74rem; }
 /* notification preferences matrix (event x channel) */
 .notifmatrix { display: flex; flex-direction: column; }
 .nmhead, .nmrow { display: grid; grid-template-columns: 1fr 64px 64px; align-items: center; gap: 8px; }

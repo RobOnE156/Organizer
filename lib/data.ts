@@ -175,6 +175,55 @@ export async function getEntriesForChild(
   return (data as unknown as Entry[] | null) ?? [];
 }
 
+// ---- Papierkorb (trash) + activity log ------------------------------
+export type TrashedEntry = {
+  id: string;
+  title: string | null;
+  body: string | null;
+  event_date: string;
+  deleted_at: string;
+};
+
+// Soft-deleted entries. RLS (0006) only lets an author see their OWN trashed
+// entries, so this returns exactly the caller's recoverable entries.
+export async function getTrashedEntries(
+  supabase: SupabaseClient,
+  householdId: string,
+): Promise<TrashedEntry[]> {
+  const { data } = await supabase
+    .from("entries")
+    .select("id, title, body, event_date, deleted_at")
+    .eq("household_id", householdId)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+  return (data as TrashedEntry[] | null) ?? [];
+}
+
+export type AuditEntry = {
+  id: number;
+  actor_id: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  detail: Record<string, unknown>;
+  created_at: string;
+};
+
+// The household's activity log, newest first (members-only via audit_select).
+export async function getActivityLog(
+  supabase: SupabaseClient,
+  householdId: string,
+  limit = 60,
+): Promise<AuditEntry[]> {
+  const { data } = await supabase
+    .from("audit_log")
+    .select("id, actor_id, action, target_type, target_id, detail, created_at")
+    .eq("household_id", householdId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data as AuditEntry[] | null) ?? [];
+}
+
 // Distinct places already used in the household, for the "Ort" autocomplete.
 // RLS scopes the underlying entries to what the user may see, so private
 // places of the other parent never leak into the suggestions.
