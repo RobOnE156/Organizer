@@ -6,21 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import { updateEntry, recordMedia, deleteMedia, attachLink } from "@/app/content-actions";
 import VoiceRecorder from "@/app/VoiceRecorder";
 import { firstPhotoGps } from "@/lib/exif-gps";
+import { kindOf, uploadEntryMedia, type UploadProgress } from "@/lib/upload";
 import { useConfirm } from "@/app/ConfirmProvider";
 import { useT } from "@/app/LanguageProvider";
-import type { MediaInput, MediaKind } from "@/app/content-types";
 
 export type ExistingMedia = { id: string; kind: string; url: string };
-
-function kindOf(type: string): MediaKind {
-  if (type.startsWith("video")) return "video";
-  if (type.startsWith("audio")) return "audio";
-  return "image";
-}
-
-function sanitize(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-60);
-}
 
 export default function EditEntryForm({
   entryId,
@@ -54,8 +44,10 @@ export default function EditEntryForm({
   const [existing, setExisting] = useState<ExistingMedia[]>(existingMedia);
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const previews = useMemo(
     () => files.map((f) => ({ name: f.name, kind: kindOf(f.type), url: URL.createObjectURL(f) })),
@@ -114,26 +106,32 @@ export default function EditEntryForm({
 
       if (files.length > 0) {
         const supabase = createClient();
-        const items: MediaInput[] = [];
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i]!;
-          const position = nextPosition + i;
-          const path = `${householdId}/${entryId}/${position}-${sanitize(file.name)}`;
-          const { error: upErr } = await supabase.storage
-            .from("media")
-            .upload(path, file, { contentType: file.type || undefined, upsert: false });
-          if (upErr) {
-            setError(t("common.upload_failed") + upErr.message);
+        const controller = new AbortController();
+        abortRef.current = controller;
+        const up = await uploadEntryMedia({
+          supabase,
+          householdId,
+          entryId,
+          files,
+          startPosition: nextPosition,
+          onProgress: setProgress,
+          signal: controller.signal,
+        });
+        abortRef.current = null;
+        if (up.error) {
+          setError(t("common.upload_failed") + up.error);
+          setBusy(false);
+          setProgress(null);
+          return;
+        }
+        if (up.items.length > 0) {
+          const rec = await recordMedia(entryId, householdId, up.items);
+          if (rec.error) {
+            setError(rec.error);
             setBusy(false);
+            setProgress(null);
             return;
           }
-          items.push({ storage_key: path, kind: kindOf(file.type), mime: file.type, bytes: file.size, position });
-        }
-        const rec = await recordMedia(entryId, householdId, items);
-        if (rec.error) {
-          setError(rec.error);
-          setBusy(false);
-          return;
         }
       }
 
@@ -200,6 +198,7 @@ export default function EditEntryForm({
         <div className="filedrop" style={{ marginTop: 10 }} onClick={() => inputRef.current?.click()}>
           {t("ee.add_media")}
         </div>
+        <small className="muted" style={{ fontSize: ".76rem" }}>{t("ef.media_hint")}</small>
         <input
           ref={inputRef}
           type="file"
@@ -278,6 +277,23 @@ export default function EditEntryForm({
       </label>
 
       {error ? <p className="err">{error}</p> : null}
+      {busy && progress && progress.total > 0 ? (
+        <div className="uploadbar">
+          <div className="uploadbar-track">
+            <div className="uploadbar-fill" style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
+          </div>
+          <small className="muted">
+            {t("ef.uploading", {
+              done: progress.done,
+              total: progress.total,
+              pct: Math.round(progress.fraction * 100),
+            })}
+          </small>
+          <button type="button" className="btn" onClick={() => abortRef.current?.abort()}>
+            {t("common.cancel")}
+          </button>
+        </div>
+      ) : null}
       <div className="row">
         <button className="btn btn-primary" disabled={busy}>{busy ? t("common.saving") : t("common.save")}</button>
         <a className="btn" href="/">{t("common.cancel")}</a>

@@ -812,6 +812,16 @@ const M = {
   "ef.title_ph": { de: "z. B. Erster Zahn", en: "e.g. First tooth", es: "p. ej. Primer diente" },
   "ef.media_label": { de: "Fotos / Videos / Audio (optional)", en: "Photos / videos / audio (optional)", es: "Fotos / vídeos / audio (opcional)" },
   "ef.pick_files": { de: "＋ Dateien wählen (mehrere möglich)", en: "＋ Choose files (multiple)", es: "＋ Elegir archivos (varios)" },
+  "ef.media_hint": {
+    de: "Fotos werden für einen schnelleren Upload automatisch verkleinert (Qualität für Handy & Laptop bleibt). Videos werden unverändert hochgeladen.",
+    en: "Photos are shrunk automatically for a faster upload (quality for phone & laptop stays). Videos upload unchanged.",
+    es: "Las fotos se reducen automáticamente para subir más rápido (la calidad para móvil y portátil se mantiene). Los vídeos se suben sin cambios.",
+  },
+  "ef.uploading": {
+    de: "Lade Medien hoch … {done}/{total} · {pct}%",
+    en: "Uploading media … {done}/{total} · {pct}%",
+    es: "Subiendo medios … {done}/{total} · {pct}%",
+  },
   "ef.text_label": { de: "Text", en: "Text", es: "Texto" },
   "ef.text_ph": { de: "Was ist passiert?", en: "What happened?", es: "¿Qué pasó?" },
   "ef.link_label": { de: "Link (optional)", en: "Link (optional)", es: "Enlace (opcional)" },

@@ -524,6 +524,11 @@ a.brand { text-decoration: none; color: inherit; }
 /* file picker + preview strip in the entry form */
 .filedrop { border: 1px dashed var(--faint); border-radius: 12px; padding: 12px; background: var(--surface-2); text-align: center; cursor: pointer; color: var(--muted); font-size: 0.88rem; }
 .filedrop:hover { border-color: var(--gold); color: var(--ink); }
+/* upload progress */
+.uploadbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.uploadbar-track { flex: 1 1 160px; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.uploadbar-fill { height: 100%; background: var(--gold); border-radius: 999px; transition: width 0.2s ease; min-width: 2%; }
+.uploadbar small { flex: 0 0 auto; }
 .recbtn { border-color: var(--danger); color: var(--danger); }
 .recbtn:hover { border-color: var(--danger); }
 .recdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); animation: recpulse 1s infinite; }
