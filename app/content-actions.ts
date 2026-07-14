@@ -432,6 +432,7 @@ export async function addMilestone(input: {
   title: string;
   achievedOn: string;
   key?: string;
+  entryId?: string | null;
 }): Promise<{ error?: string }> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
   if (!input.childId) return { error: "Kein Kind ausgewählt." };
@@ -451,6 +452,7 @@ export async function addMilestone(input: {
     key: input.key?.trim() || "custom",
     title: input.title.trim(),
     achieved_on: input.achievedOn || null,
+    entry_id: input.entryId || null,
     author_id: user.id,
   });
   if (error) return { error: error.message };

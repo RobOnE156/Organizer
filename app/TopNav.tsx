@@ -64,6 +64,9 @@ export default function TopNav({
             <a className="drawerlink" href="/growth">
               <span className="di">📈</span> {t("nav.about", { name: childName ?? t("nav.child_fallback") })}
             </a>
+            <a className="drawerlink" href="/firsts">
+              <span className="di">🎉</span> {t("nav.firsts")}
+            </a>
             <a className="drawerlink" href="/highlights">
               <span className="di">★</span> {t("nav.review")}
             </a>

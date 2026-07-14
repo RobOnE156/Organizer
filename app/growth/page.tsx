@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getChildren, getMeasurements, getMilestones, getSnapshots, getShellPrefs } from "@/lib/data";
 import { translator } from "@/lib/i18n";
 import GrowthPanel from "./GrowthPanel";
-import MilestonesPanel from "./MilestonesPanel";
 import SnapshotPanel from "./SnapshotPanel";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +46,18 @@ export default async function GrowthPage() {
       <GrowthPanel childId={child.id} childName={child.name} measurements={measurements} userId={user.id} />
 
       <h2 style={{ fontSize: "1.05rem", margin: "34px 0 8px" }}>{t("growth.head_milestones")}</h2>
-      <MilestonesPanel childId={child.id} milestones={milestones} userId={user.id} />
+      <a className="settingcard" href="/firsts">
+        <span className="si">🎉</span>
+        <span className="st">
+          <b>{t("firsts.title")}</b>
+          <small>
+            {milestones.length > 0
+              ? t("firsts.growth_count", { n: milestones.length })
+              : t("firsts.growth_empty")}
+          </small>
+        </span>
+        <span className="sarrow">›</span>
+      </a>
 
       <p style={{ marginTop: 28 }}>
         <a href="/">{t("common.back")}</a>

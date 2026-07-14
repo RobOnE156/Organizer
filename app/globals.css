@@ -476,6 +476,26 @@ a.brand { text-decoration: none; color: inherit; }
 .mrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 1px solid var(--faint); border-radius: 11px; padding: 9px 13px; }
 .mx { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 4px 6px; border-radius: 8px; flex: 0 0 auto; }
 .mx:hover { color: var(--danger); background: var(--surface-2); }
+/* "Erste Male" collector */
+.btn-sm { padding: 7px 13px; font-size: 0.84rem; }
+.selectinput { width: 100%; padding: 10px 12px; border-radius: 11px; border: 1px solid var(--faint); background: var(--surface-2); color: var(--ink); font-size: 0.9rem; font-family: inherit; }
+.selectinput:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.firstsprog { display: flex; flex-direction: column; gap: 6px; }
+.firstsbar { height: 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--faint); overflow: hidden; }
+.firstsbar span { display: block; height: 100%; background: var(--gold); border-radius: 999px; transition: width 0.3s ease; }
+.firstgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.firstcard { background: var(--surface); border: 1px solid var(--faint); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.firstcard.done { background: color-mix(in oklab, var(--gold) 8%, var(--surface)); border-color: color-mix(in oklab, var(--gold) 35%, var(--faint)); }
+.firstcard:not(.done) .firstemoji { filter: grayscale(1); opacity: 0.5; }
+.firsthead { display: flex; align-items: center; gap: 9px; }
+.firstemoji { font-size: 1.4rem; flex: 0 0 auto; }
+.firstlabel { min-width: 0; flex: 1 1 auto; font-size: 0.9rem; line-height: 1.25; }
+.firstmeta { display: flex; flex-direction: column; gap: 3px; }
+.firstmem { font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.firstadd { align-self: flex-start; background: none; border: 1px dashed var(--faint); border-radius: 999px; color: var(--muted); font: inherit; font-size: 0.8rem; padding: 5px 12px; cursor: pointer; }
+.firstadd:hover { border-color: var(--gold); color: var(--ink); }
+.firstform { display: flex; flex-direction: column; gap: 8px; }
+.firstform input[type="date"] { width: 100%; }
 
 /* snapshots ("who is <child> right now") */
 .snaptl { position: relative; padding-left: 26px; }
