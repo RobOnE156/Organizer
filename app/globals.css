@@ -149,6 +149,19 @@ a.brand { text-decoration: none; color: inherit; }
 .belltext small { font-size: 0.72rem; }
 .belldot { position: absolute; right: 12px; top: 15px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: 0 0 auto; }
 .bellfoot { display: block; text-align: center; padding: 11px; font-size: 0.82rem; border-top: 1px solid var(--faint); color: var(--gold); }
+/* notification preferences matrix (event x channel) */
+.notifmatrix { display: flex; flex-direction: column; }
+.nmhead, .nmrow { display: grid; grid-template-columns: 1fr 64px 64px; align-items: center; gap: 8px; }
+.nmhead { padding: 0 0 8px; border-bottom: 1px solid var(--faint); }
+.nmhead span { text-align: center; font-size: 0.74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.nmrow { padding: 12px 0; border-bottom: 1px solid var(--faint); }
+.nmrow:last-child { border-bottom: 0; }
+.nmlabel { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.nmlabel b { font-size: 0.9rem; font-weight: 600; }
+.nmlabel small { color: var(--muted); font-size: 0.78rem; }
+.nmcell { display: grid; place-items: center; cursor: pointer; }
+.nmcell input { width: 20px; height: 20px; cursor: pointer; accent-color: var(--gold); }
+.nmcell input:disabled { cursor: default; opacity: 0.5; }
 .drawer-wrap {
   position: fixed; inset: 0; z-index: 40;
   background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(3px);

@@ -783,6 +783,13 @@ const M = {
     es: "Elige sobre qué quieres recibir avisos en la app.",
   },
   "notif.opt_head": { de: "Benachrichtige mich, wenn …", en: "Notify me when …", es: "Avísame cuando …" },
+  "notif.ch_inapp": { de: "In-App", en: "In-app", es: "En app" },
+  "notif.ch_email": { de: "E-Mail", en: "E-mail", es: "Correo" },
+  "notif.email_privacy": {
+    de: "E-Mails enthalten keine privaten Inhalte — nur einen Hinweis und einen Link zum Tagebuch.",
+    en: "E-mails contain no private content — just a note and a link to the diary.",
+    es: "Los correos no incluyen contenido privado — solo un aviso y un enlace al diario.",
+  },
   "notif.opt_channel_note": {
     de: "Aktuell in der App (Glocke). E-Mail- und Push-Benachrichtigungen folgen.",
     en: "Currently in-app (the bell). E-mail and push notifications will follow.",
@@ -811,6 +818,36 @@ const M = {
     de: "Du bekommst vorübergehend gar keine Benachrichtigungen.",
     en: "You temporarily receive no notifications at all.",
     es: "No recibirás ninguna notificación temporalmente.",
+  },
+
+  // e-mail notifications (sent server-side, in the recipient's language)
+  "email.brand": { de: "Benni-Tagebuch", en: "Benni Diary", es: "Diario de Benni" },
+  "email.someone": { de: "Jemand", en: "Someone", es: "Alguien" },
+  "email.subject_entry": {
+    de: "{name} hat einen neuen Eintrag hinzugefügt",
+    en: "{name} added a new entry",
+    es: "{name} añadió una entrada nueva",
+  },
+  "email.subject_comment": {
+    de: "{name} hat deinen Eintrag kommentiert",
+    en: "{name} commented on your entry",
+    es: "{name} comentó tu entrada",
+  },
+  "email.subject_reaction": {
+    de: "{name} hat auf deinen Eintrag reagiert",
+    en: "{name} reacted to your entry",
+    es: "{name} reaccionó a tu entrada",
+  },
+  "email.cta": { de: "Im Tagebuch öffnen", en: "Open in the diary", es: "Abrir en el diario" },
+  "email.privacy": {
+    de: "Aus Datenschutzgründen zeigen wir hier keine Inhalte — öffne das Tagebuch, um alles zu sehen.",
+    en: "For privacy we show no content here — open the diary to see everything.",
+    es: "Por privacidad no mostramos contenido aquí — abre el diario para verlo todo.",
+  },
+  "email.footer": {
+    de: "Du erhältst diese E-Mail, weil du E-Mail-Benachrichtigungen aktiviert hast. Du kannst das jederzeit in den Einstellungen des Tagebuchs ändern.",
+    en: "You're getting this e-mail because you enabled e-mail notifications. You can change this any time in the diary's settings.",
+    es: "Recibes este correo porque activaste las notificaciones por correo. Puedes cambiarlo cuando quieras en los ajustes del diario.",
   },
 
   // guest write page (public, account-less, rendered in the invite's language)

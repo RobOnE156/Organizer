@@ -6,6 +6,7 @@ import { getMembership } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
 import { fetchLinkPreview, fetchImageBytes } from "@/lib/link-preview";
 import { escapeLike } from "@/lib/search-format";
+import { queueNotificationEmails } from "@/lib/notify-email";
 import type { FormState } from "@/app/auth-types";
 import {
   AUTHOR_COLORS,
@@ -149,6 +150,9 @@ export async function createEntryGetId(input: {
       .insert({ entry_id: entryId, child_id: input.childId });
     if (linkErr) return { error: linkErr.message };
   }
+  // In-app notifications fire from a DB trigger; e-mail is dispatched here
+  // (private entries are skipped inside the RPC).
+  await queueNotificationEmails(supabase, "entry", entryId);
   return { entryId, householdId: membership.household_id };
 }
 
@@ -528,11 +532,20 @@ export async function addReaction(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet." };
-  const { error } = await supabase.from("reactions").upsert(
-    { household_id: householdId, target_type: targetType, target_id: targetId, author_id: user.id, emoji },
-    { onConflict: "target_type,target_id,author_id,emoji", ignoreDuplicates: true },
-  );
+  const { data, error } = await supabase
+    .from("reactions")
+    .upsert(
+      { household_id: householdId, target_type: targetType, target_id: targetId, author_id: user.id, emoji },
+      { onConflict: "target_type,target_id,author_id,emoji", ignoreDuplicates: true },
+    )
+    .select("id");
   if (error) return { error: error.message };
+  // Only a genuinely new reaction fires a notification (a re-added duplicate is
+  // ignored, matching the in-app trigger). Comment reactions are out of scope.
+  const inserted = Array.isArray(data) && data.length > 0;
+  if (inserted && targetType === "entry") {
+    await queueNotificationEmails(supabase, "reaction", targetId);
+  }
   return {};
 }
 
@@ -819,6 +832,9 @@ export async function updateNotificationPrefs(prefs: {
   entry_inapp: boolean;
   comment_inapp: boolean;
   reaction_inapp: boolean;
+  entry_email: boolean;
+  comment_email: boolean;
+  reaction_email: boolean;
   muted: boolean;
 }): Promise<{ error?: string }> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
@@ -888,6 +904,7 @@ export async function addComment(
     .select("id, author_id, body, created_at")
     .single();
   if (error || !data) return { error: error?.message ?? "Speichern fehlgeschlagen." };
+  await queueNotificationEmails(supabase, "comment", entryId);
   return { comment: data as { id: string; author_id: string; body: string; created_at: string } };
 }
 

@@ -493,18 +493,21 @@ export type NotificationPrefs = {
   entry_inapp: boolean;
   comment_inapp: boolean;
   reaction_inapp: boolean;
+  entry_email: boolean;
+  comment_email: boolean;
+  reaction_email: boolean;
   muted: boolean;
 };
 
-// The user's opt-in matrix, falling back to the schema defaults (everything
-// on, not muted) when no row exists yet.
+// The user's opt-in matrix, falling back to the schema defaults when no row
+// exists yet: in-app on, e-mail off (explicit opt-in), not muted.
 export async function getNotificationPrefs(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<NotificationPrefs> {
   const { data } = await supabase
     .from("notification_prefs")
-    .select("entry_inapp, comment_inapp, reaction_inapp, muted")
+    .select("entry_inapp, comment_inapp, reaction_inapp, entry_email, comment_email, reaction_email, muted")
     .eq("user_id", userId)
     .maybeSingle();
   const r = data as Partial<NotificationPrefs> | null;
@@ -512,6 +515,9 @@ export async function getNotificationPrefs(
     entry_inapp: r?.entry_inapp ?? true,
     comment_inapp: r?.comment_inapp ?? true,
     reaction_inapp: r?.reaction_inapp ?? true,
+    entry_email: r?.entry_email ?? false,
+    comment_email: r?.comment_email ?? false,
+    reaction_email: r?.reaction_email ?? false,
     muted: r?.muted ?? false,
   };
 }

@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(146);
+select plan(155);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -555,6 +555,52 @@ select is((select count(*) from notification_prefs where user_id='22222222-2222-
   'alice cannot see bob''s notification preferences');
 select lives_ok($$ insert into notification_prefs (user_id, muted) values ('11111111-1111-1111-1111-111111111111', true) $$,
   'a user can set their own notification preferences');
+
+-- =====================================================================
+-- e-mail notification targets (definer RPC): e-mail is opt-in (default off),
+-- returns recipients + addresses server-side, gated by *_email + mute, skips
+-- the actor and private entries. (Reuses alice's shared entry a0000001.)
+-- =====================================================================
+-- anon cannot call it
+reset role; select set_config('request.jwt.claims','',true); set local role anon;
+select throws_ok($$ select public.notification_email_targets('entry','a0000001-0000-0000-0000-000000000001') $$,
+  '42501', null, 'anon cannot call notification_email_targets');
+
+-- with e-mail off by default, a new entry yields no targets
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from public.notification_email_targets('entry','a0000001-0000-0000-0000-000000000001'))::int, 0,
+  'no e-mail targets while e-mail is off by default');
+
+-- bob opts into entry e-mails -> alice's entry now targets bob's address
+reset role; update notification_prefs set entry_email=true, muted=false where user_id='22222222-2222-2222-2222-222222222222';
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from public.notification_email_targets('entry','a0000001-0000-0000-0000-000000000001'))::int, 1,
+  'an opted-in co-parent is an e-mail target for a new entry');
+select is((select email from public.notification_email_targets('entry','a0000001-0000-0000-0000-000000000001') limit 1), 'bob@example.com',
+  'the e-mail target carries the recipient address');
+
+-- a private entry never yields e-mail targets, even when opted in
+select is((select count(*) from public.notification_email_targets('entry','a0000002-0000-0000-0000-000000000002'))::int, 0,
+  'a private entry yields no e-mail targets');
+
+-- a muted recipient is skipped even when opted in
+reset role; update notification_prefs set muted=true where user_id='22222222-2222-2222-2222-222222222222';
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from public.notification_email_targets('entry','a0000001-0000-0000-0000-000000000001'))::int, 0,
+  'a muted recipient is not an e-mail target');
+
+-- comment e-mails target the entry author who opted in (bob is the actor)
+reset role; update notification_prefs set comment_email=true, muted=false where user_id='11111111-1111-1111-1111-111111111111';
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from public.notification_email_targets('comment','a0000001-0000-0000-0000-000000000001'))::int, 1,
+  'a comment e-mail targets the entry author who opted in');
+select is((select email from public.notification_email_targets('comment','a0000001-0000-0000-0000-000000000001') limit 1), 'alice@example.com',
+  'the comment e-mail target is the entry author');
+
+-- the author is never e-mailed about their own entry (actor == author)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from public.notification_email_targets('reaction','a0000001-0000-0000-0000-000000000001'))::int, 0,
+  'the entry author is never an e-mail target for their own entry');
 
 -- =====================================================================
 -- guest contributions (account-less, expiring links, moderated):
