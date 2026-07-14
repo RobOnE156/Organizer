@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(184);
+select plan(194);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -689,6 +689,37 @@ select is((select count(*) from recovery_codes where used_at is not null)::int, 
 reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
 select is((select count(*) from recovery_codes)::int, 0, 'a user cannot see another user''s recovery codes');
 select is(public.redeem_recovery_code(:'rc'), false, 'a user cannot redeem another user''s code');
+
+-- =====================================================================
+-- backups + backup_settings: household-shared log + reminder cadence.
+-- =====================================================================
+-- anon has no access to either
+reset role; select set_config('request.jwt.claims','',true); set local role anon;
+select throws_ok($$ select 1 from backups $$,         '42501', null, 'anon cannot read backups');
+select throws_ok($$ select 1 from backup_settings $$, '42501', null, 'anon cannot read backup_settings');
+
+-- alice logs a backup for her household
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select lives_ok($$ insert into backups (household_id, actor_id, kind) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','export') $$,
+  'a member can log a backup');
+select lives_ok($$ insert into backup_settings (household_id, interval_days) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 90) $$,
+  'a member can set the reminder cadence');
+
+-- bob (co-parent) sees the shared backup + settings
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from backups where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')::int, 1,
+  'a co-parent sees the household backup log');
+select is((select interval_days from backup_settings where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'), 90,
+  'a co-parent sees the reminder cadence');
+
+-- carol (other household) is fully isolated and cannot write into household 1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from backups)::int, 0, 'a cross-household user sees no backups');
+select is((select count(*) from backup_settings)::int, 0, 'a cross-household user sees no backup settings');
+select throws_ok($$ insert into backups (household_id, actor_id, kind) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','33333333-3333-3333-3333-333333333333','export') $$,
+  '42501', null, 'a cross-household user cannot log a backup for another household');
+select throws_ok($$ insert into backup_settings (household_id, interval_days) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 30) $$,
+  '42501', null, 'a cross-household user cannot set another household''s reminder');
 
 -- =====================================================================
 -- guest contributions (account-less, expiring links, moderated):

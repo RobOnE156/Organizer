@@ -12,9 +12,11 @@ import {
   getReactionsForEntries,
   getShellPrefs,
   getSnapshotsForExport,
+  getBackupStatus,
 } from "@/lib/data";
 import { translator } from "@/lib/i18n";
 import ExportPanel from "./ExportPanel";
+import BackupStatus from "./BackupStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,7 @@ export default async function ExportPage() {
     .eq("id", membership.household_id)
     .maybeSingle();
   const householdName = (hh as { name: string } | null)?.name ?? "Tagebuch";
+  const backup = await getBackupStatus(supabase, membership.household_id);
 
   const media = mediaRows.map((m) => ({
     entry_id: m.entry_id,
@@ -59,7 +62,12 @@ export default async function ExportPage() {
       <p className="eyebrow">{t("export.eyebrow")}</p>
       <h1 className="title">{t("export.title")}</h1>
       <p className="sub">{t("export.sub")}</p>
-      <ExportPanel
+
+      <h2 style={{ fontSize: "1.05rem", margin: "6px 0 10px" }}>{t("backup.head")}</h2>
+      <BackupStatus lastBackupAt={backup.lastBackupAt} intervalDays={backup.intervalDays} />
+
+      <div style={{ marginTop: 20 }}>
+        <ExportPanel
         householdName={householdName}
         childList={children}
         entries={entries}
@@ -70,7 +78,8 @@ export default async function ExportPage() {
         reactions={reactionRows}
         commentReactions={commentReactionRows}
         highlightedIds={highlightedIds}
-      />
+        />
+      </div>
       <p style={{ marginTop: 24 }}>
         <a href="/settings">{t("common.back")}</a>
       </p>

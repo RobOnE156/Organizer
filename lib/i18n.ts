@@ -349,6 +349,65 @@ const M = {
     es: "Con muchos vídeos o vídeos grandes, es mejor exportar desde un ordenador. El archivo se crea localmente en tu dispositivo — no se envían datos a terceros.",
   },
 
+  // backup status + reminder
+  "backup.head": { de: "Sicherungs-Status", en: "Backup status", es: "Estado de la copia" },
+  "backup.last": { de: "Letzte vollständige Sicherung", en: "Last full backup", es: "Última copia completa" },
+  "backup.never": { de: "Noch nie gesichert", en: "Never backed up", es: "Nunca respaldado" },
+  "backup.today": { de: "heute", en: "today", es: "hoy" },
+  "backup.yesterday": { de: "gestern", en: "yesterday", es: "ayer" },
+  "backup.days_ago": { de: "vor {n} Tagen", en: "{n} days ago", es: "hace {n} días" },
+  "backup.mark_external": { de: "Extern gesichert", en: "Backed up elsewhere", es: "Copiado en otro sitio" },
+  "backup.remind_label": { de: "Erinnerung per E-Mail", en: "E-mail reminder", es: "Recordatorio por correo" },
+  "backup.off": { de: "Aus", en: "Off", es: "No" },
+  "backup.every_days": { de: "alle {n} Tage", en: "every {n} days", es: "cada {n} días" },
+  "backup.remind_hint": {
+    de: "Wir erinnern euch per E-Mail und schicken automatisch einen Text-Schnappschuss des Tagebuchs mit (ohne Medien).",
+    en: "We'll e-mail you a reminder and automatically attach a text snapshot of the diary (without media).",
+    es: "Os enviaremos un recordatorio por correo y adjuntaremos automáticamente una instantánea de texto del diario (sin medios).",
+  },
+  // reminder e-mail
+  "backup.mail_subject": {
+    de: "Zeit für eine Sicherung von Bennis Tagebuch",
+    en: "Time to back up Benni's diary",
+    es: "Hora de respaldar el diario de Benni",
+  },
+  "backup.mail_headline": {
+    de: "Sichere euer Tagebuch",
+    en: "Back up your diary",
+    es: "Respaldad vuestro diario",
+  },
+  "backup.mail_body": {
+    de: "{status} Ein kurzer Klick genügt, um eine vollständige Sicherung (mit allen Fotos & Videos) auf deinem Gerät zu erstellen.",
+    en: "{status} A quick click creates a full backup (with all photos & videos) on your device.",
+    es: "{status} Un clic rápido crea una copia completa (con todas las fotos y vídeos) en tu dispositivo.",
+  },
+  "backup.mail_never": {
+    de: "Ihr habt noch keine vollständige Sicherung erstellt.",
+    en: "You haven't made a full backup yet.",
+    es: "Aún no habéis hecho una copia completa.",
+  },
+  "backup.mail_since": {
+    de: "Eure letzte vollständige Sicherung ist {n} Tage her.",
+    en: "Your last full backup was {n} days ago.",
+    es: "Vuestra última copia completa fue hace {n} días.",
+  },
+  "backup.mail_cta": { de: "Jetzt sichern", en: "Back up now", es: "Respaldar ahora" },
+  "backup.mail_attached": {
+    de: "Angehängt: ein aktueller Text-Schnappschuss (JSON) aller Einträge — als automatische Zweitsicherung. Die Fotos/Videos sind darin nicht enthalten.",
+    en: "Attached: a current text snapshot (JSON) of all entries — an automatic second copy. Photos/videos are not included in it.",
+    es: "Adjunto: una instantánea de texto (JSON) de todas las entradas — una segunda copia automática. Las fotos/vídeos no están incluidos.",
+  },
+  "backup.mail_tip": {
+    de: "Tipp: Stell zur Sicherheit ab und zu testweise eine Datei aus einer Sicherung wieder her — so weißt du, dass sie funktioniert.",
+    en: "Tip: now and then, test-restore a single file from a backup — so you know it actually works.",
+    es: "Consejo: de vez en cuando, restaura de prueba un solo archivo de una copia — así sabes que funciona.",
+  },
+  "backup.mail_footer": {
+    de: "Du erhältst diese E-Mail, weil die Backup-Erinnerung aktiv ist. Intervall ändern oder abschalten: in den Einstellungen unter Sicherung.",
+    en: "You're getting this because the backup reminder is on. Change the interval or turn it off in Settings under Backup.",
+    es: "Recibes esto porque el recordatorio de copia está activo. Cambia el intervalo o desactívalo en Ajustes, en Copia de seguridad.",
+  },
+
   // common form words
   "common.date": { de: "Datum", en: "Date", es: "Fecha" },
   "common.add": { de: "Hinzufügen", en: "Add", es: "Añadir" },

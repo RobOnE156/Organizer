@@ -807,6 +807,41 @@ export async function moderateContribution(
   return {};
 }
 
+// ---- backups (discipline: track + remind) --------------------------
+export async function recordBackup(
+  kind: "export" | "external" = "export",
+): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase
+    .from("backups")
+    .insert({ household_id: membership.household_id, actor_id: user.id, kind });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function updateBackupInterval(days: number): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const clean = [0, 30, 90, 180].includes(days) ? days : 30;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("backup_settings")
+    .upsert(
+      { household_id: membership.household_id, interval_days: clean, updated_at: new Date().toISOString() },
+      { onConflict: "household_id" },
+    );
+  if (error) return { error: error.message };
+  return {};
+}
+
 // ---- notifications (in-app "Glocke") -------------------------------
 export async function markNotificationRead(id: string): Promise<{ error?: string }> {
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };

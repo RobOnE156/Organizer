@@ -21,18 +21,27 @@ export async function sendEmail(msg: {
   subject: string;
   html: string;
   text: string;
+  attachments?: { filename: string; content: string }[]; // content = base64
 }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!key || !from) return false;
   try {
+    const payload: Record<string, unknown> = {
+      from,
+      to: [msg.to],
+      subject: msg.subject,
+      html: msg.html,
+      text: msg.text,
+    };
+    if (msg.attachments && msg.attachments.length > 0) payload.attachments = msg.attachments;
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from, to: [msg.to], subject: msg.subject, html: msg.html, text: msg.text }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       // Best-effort channel: log server-side, never throw into the request.

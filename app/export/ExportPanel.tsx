@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { useT } from "@/app/LanguageProvider";
+import { recordBackup } from "@/app/content-actions";
 import { createClient } from "@/lib/supabase/client";
 import { ageLabel } from "@/lib/timeline";
 import { snapshotPrompts } from "@/lib/snapshot-prompts";
@@ -58,6 +60,7 @@ export default function ExportPanel({
   highlightedIds: string[];
 }) {
   const { t, lang } = useT();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -245,6 +248,8 @@ export default function ExportPanel({
       if (failed > 0) {
         setWarn(t("export.warn", { failed, total: media.length }));
       }
+      // Record the successful backup so the reminder clock resets.
+      void recordBackup("export").then(() => router.refresh());
       setStatus(t("export.done"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("export.failed"));

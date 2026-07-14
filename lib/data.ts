@@ -175,6 +175,34 @@ export async function getEntriesForChild(
   return (data as unknown as Entry[] | null) ?? [];
 }
 
+export type BackupStatus = { lastBackupAt: string | null; intervalDays: number };
+
+// Last completed backup + the household's reminder cadence (both RLS-scoped to
+// the caller's household).
+export async function getBackupStatus(
+  supabase: SupabaseClient,
+  householdId: string,
+): Promise<BackupStatus> {
+  const [{ data: last }, { data: settings }] = await Promise.all([
+    supabase
+      .from("backups")
+      .select("created_at")
+      .eq("household_id", householdId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("backup_settings")
+      .select("interval_days")
+      .eq("household_id", householdId)
+      .maybeSingle(),
+  ]);
+  return {
+    lastBackupAt: (last as { created_at: string } | null)?.created_at ?? null,
+    intervalDays: (settings as { interval_days: number } | null)?.interval_days ?? 30,
+  };
+}
+
 // How many unused recovery codes the current user has left (RLS scopes the
 // table to the caller's own codes).
 export async function getRecoveryCodesRemaining(
