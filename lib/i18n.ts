@@ -365,6 +365,17 @@ const M = {
     en: "We'll e-mail you a reminder and automatically attach a text snapshot of the diary (without media).",
     es: "Os enviaremos un recordatorio por correo y adjuntaremos automáticamente una instantánea de texto del diario (sin medios).",
   },
+  "backup.test_send": { de: "Test-E-Mail senden", en: "Send test e-mail", es: "Enviar correo de prueba" },
+  "backup.test_hint": {
+    de: "Schickt dir die Erinnerungs-Mail mit Anhang sofort zu.",
+    en: "Sends you the reminder e-mail with attachment right now.",
+    es: "Te envía el correo recordatorio con adjunto ahora mismo.",
+  },
+  "backup.test_sent": {
+    de: "Test-E-Mail verschickt — schau in dein Postfach (auch Spam).",
+    en: "Test e-mail sent — check your inbox (and spam).",
+    es: "Correo de prueba enviado — revisa tu bandeja (y spam).",
+  },
   // reminder e-mail
   "backup.mail_subject": {
     de: "Zeit für eine Sicherung von Bennis Tagebuch",

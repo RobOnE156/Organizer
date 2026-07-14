@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { recordBackup, updateBackupInterval } from "@/app/content-actions";
+import { recordBackup, updateBackupInterval, sendTestBackupEmail } from "@/app/content-actions";
 import { useT } from "@/app/LanguageProvider";
 
 const INTERVALS = [30, 90, 180, 0] as const;
@@ -18,6 +18,17 @@ export default function BackupStatus({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [testMsg, setTestMsg] = useState<string | null>(null);
+
+  function sendTest() {
+    setError(null);
+    setTestMsg(null);
+    start(async () => {
+      const res = await sendTestBackupEmail();
+      if (res.error) setError(res.error);
+      else setTestMsg(t("backup.test_sent"));
+    });
+  }
 
   const daysSince = lastBackupAt
     ? Math.floor((Date.now() - new Date(lastBackupAt).getTime()) / 86_400_000)
@@ -87,6 +98,14 @@ export default function BackupStatus({
         <p className="muted" style={{ margin: "6px 0 0", fontSize: ".78rem" }}>{t("backup.remind_hint")}</p>
       </div>
 
+      <div className="row" style={{ gap: 10 }}>
+        <button type="button" className="btn btn-sm" onClick={sendTest} disabled={pending}>
+          {pending ? "…" : t("backup.test_send")}
+        </button>
+        <small className="muted">{t("backup.test_hint")}</small>
+      </div>
+
+      {testMsg ? <p className="msg">{testMsg}</p> : null}
       {error ? <p className="err">{error}</p> : null}
     </div>
   );

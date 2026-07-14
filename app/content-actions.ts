@@ -7,6 +7,10 @@ import { hasSupabaseEnv } from "@/lib/env";
 import { fetchLinkPreview, fetchImageBytes } from "@/lib/link-preview";
 import { escapeLike } from "@/lib/search-format";
 import { queueNotificationEmails } from "@/lib/notify-email";
+import { emailEnabled, sendEmail, appUrl } from "@/lib/email";
+import { buildBackupJson, buildBackupEmail } from "@/lib/backup";
+import { getShellPrefs, getBackupStatus } from "@/lib/data";
+import { translator } from "@/lib/i18n";
 import type { FormState } from "@/app/auth-types";
 import {
   AUTHOR_COLORS,
@@ -823,6 +827,53 @@ export async function recordBackup(
     .from("backups")
     .insert({ household_id: membership.household_id, actor_id: user.id, kind });
   if (error) return { error: error.message };
+  return {};
+}
+
+// Send the reminder e-mail (with the JSON snapshot) to the current user right
+// now — a one-tap way to verify the whole pipeline works without waiting for
+// the cron. Runs under the user's own session (their household data + their own
+// address), so it needs no service role.
+export async function sendTestBackupEmail(): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!emailEnabled()) return { error: "E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY / EMAIL_FROM in Vercel)." };
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  if (!user.email) return { error: "An deinem Konto ist keine E-Mail-Adresse hinterlegt." };
+
+  const { data: hh } = await supabase
+    .from("households")
+    .select("name")
+    .eq("id", membership.household_id)
+    .maybeSingle();
+  const householdName = (hh as { name: string } | null)?.name ?? "Tagebuch";
+  const prefs = await getShellPrefs(supabase, user.id);
+  const t = translator(prefs.lang);
+  const status = await getBackupStatus(supabase, membership.household_id);
+  const daysSince = status.lastBackupAt
+    ? Math.floor((Date.now() - new Date(status.lastBackupAt).getTime()) / 86_400_000)
+    : null;
+  const statusLine = daysSince === null ? t("backup.mail_never") : t("backup.mail_since", { n: daysSince });
+
+  let attachments: { filename: string; content: string }[] | undefined;
+  try {
+    const nowISO = new Date().toISOString();
+    const json = await buildBackupJson(supabase, membership.household_id, householdName, nowISO);
+    attachments = [
+      { filename: `benni-tagebuch-snapshot-${nowISO.slice(0, 10)}.json`, content: Buffer.from(json, "utf8").toString("base64") },
+    ];
+  } catch {
+    attachments = undefined;
+  }
+
+  const mail = buildBackupEmail(t, { link: appUrl("/export"), status: statusLine, attached: Boolean(attachments) });
+  const ok = await sendEmail({ to: user.email, ...mail, attachments });
+  if (!ok) return { error: "Der Versand über Resend ist fehlgeschlagen — bitte in Resend → Emails den Fehler prüfen." };
   return {};
 }
 

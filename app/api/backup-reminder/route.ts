@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { sendEmail, emailEnabled, appUrl } from "@/lib/email";
-import { buildBackupJson } from "@/lib/backup";
+import { buildBackupJson, buildBackupEmail } from "@/lib/backup";
 import { translator, normalizeLang } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const DAY = 86_400_000;
-
-function esc(s: string): string {
-  return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-}
 
 // Scheduled by Vercel Cron (see vercel.json). For each household whose reminder
 // interval is due, e-mails the members an automatic JSON snapshot of the diary
@@ -82,30 +78,8 @@ export async function GET(request: Request) {
     for (const r of recipients) {
       const t = translator(normalizeLang(r.lang));
       const status = daysSince === null ? t("backup.mail_never") : t("backup.mail_since", { n: daysSince });
-      const headline = t("backup.mail_headline");
-      const body = t("backup.mail_body", { status });
-      const cta = t("backup.mail_cta");
-      const tip = t("backup.mail_tip");
-      const attnote = attachments ? t("backup.mail_attached") : "";
-      const link = appUrl("/export");
-      const html =
-        `<!doctype html><html><body style="margin:0;background:#faf8fb;padding:24px;` +
-        `font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#241f29">` +
-        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">` +
-        `<table role="presentation" width="100%" style="max-width:480px;background:#ffffff;` +
-        `border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:28px"><tr><td>` +
-        `<p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#c99a3f">${esc(t("email.brand"))}</p>` +
-        `<h1 style="margin:0 0 14px;font-size:20px;line-height:1.35">${esc(headline)}</h1>` +
-        `<p style="margin:0 0 16px;font-size:14px;line-height:1.5">${esc(body)}</p>` +
-        `<a href="${esc(link)}" style="display:inline-block;background:#c99a3f;color:#20160a;` +
-        `text-decoration:none;font-weight:700;padding:11px 22px;border-radius:999px">${esc(cta)}</a>` +
-        (attnote ? `<p style="margin:18px 0 0;font-size:13px;color:#7d7684">${esc(attnote)}</p>` : "") +
-        `<p style="margin:14px 0 0;font-size:13px;color:#7d7684">${esc(tip)}</p>` +
-        `<hr style="border:none;border-top:1px solid rgba(0,0,0,.08);margin:20px 0">` +
-        `<p style="margin:0;font-size:12px;color:#7d7684">${esc(t("backup.mail_footer"))}</p>` +
-        `</td></tr></table></td></tr></table></body></html>`;
-      const text = `${headline}\n\n${body}\n${cta}: ${link}\n\n${attnote}\n${tip}`;
-      await sendEmail({ to: r.email, subject: t("backup.mail_subject"), html, text, attachments });
+      const mail = buildBackupEmail(t, { link: appUrl("/export"), status, attached: Boolean(attachments) });
+      await sendEmail({ to: r.email, ...mail, attachments });
     }
 
     await admin
