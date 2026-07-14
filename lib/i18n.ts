@@ -686,6 +686,74 @@ const M = {
     es: "Introduce el código de 6 dígitos de tu app de autenticación.",
   },
 
+  // account recovery codes
+  "rec.title": { de: "Wiederherstellungs-Codes", en: "Recovery codes", es: "Códigos de recuperación" },
+  "rec.sub": {
+    de: "Einmal-Codes für den Fall, dass du dein Handy bzw. deine Authenticator-App verlierst. Druck sie aus und bewahre sie sicher auf — jeder Code funktioniert genau einmal.",
+    en: "One-time codes in case you lose your phone or authenticator app. Print them and keep them safe — each code works exactly once.",
+    es: "Códigos de un solo uso por si pierdes el teléfono o la app de autenticación. Imprímelos y guárdalos a salvo — cada código funciona una sola vez.",
+  },
+  "rec.not_configured": {
+    de: "Hinweis: Die Server-seitige Wiederherstellung ist noch nicht eingerichtet — die Codes lassen sich erst einlösen, wenn der Service-Role-Schlüssel hinterlegt ist.",
+    en: "Note: server-side recovery isn't set up yet — codes can't be redeemed until the service-role key is configured.",
+    es: "Nota: la recuperación en el servidor aún no está configurada — los códigos no se pueden usar hasta configurar la clave service-role.",
+  },
+  "rec.remaining": {
+    de: "Du hast noch {n} ungenutzte Codes.",
+    en: "You have {n} unused codes left.",
+    es: "Te quedan {n} códigos sin usar.",
+  },
+  "rec.none": {
+    de: "Du hast noch keine Wiederherstellungs-Codes erzeugt.",
+    en: "You haven't generated any recovery codes yet.",
+    es: "Aún no has generado códigos de recuperación.",
+  },
+  "rec.generate": { de: "Codes erzeugen", en: "Generate codes", es: "Generar códigos" },
+  "rec.regenerate": { de: "Neue Codes erzeugen", en: "Generate new codes", es: "Generar nuevos códigos" },
+  "rec.regenerate_hint": {
+    de: "Neue Codes zu erzeugen macht alle bisherigen ungültig.",
+    en: "Generating new codes invalidates all previous ones.",
+    es: "Generar nuevos códigos anula todos los anteriores.",
+  },
+  "rec.save_now": {
+    de: "Speichere diese Codes jetzt — sie werden nur dieses eine Mal angezeigt.",
+    en: "Save these codes now — they're shown only this once.",
+    es: "Guarda estos códigos ahora — solo se muestran esta vez.",
+  },
+  "rec.copy": { de: "Kopieren", en: "Copy", es: "Copiar" },
+  "rec.copied": { de: "Kopiert ✓", en: "Copied ✓", es: "Copiado ✓" },
+  "rec.download": { de: "Als Datei speichern", en: "Save as file", es: "Guardar como archivo" },
+  "rec.print_hint": {
+    de: "Tipp: an zwei verschiedenen Orten aufbewahren (z. B. ausgedruckt + Passwort-Manager).",
+    en: "Tip: keep them in two different places (e.g. printed + password manager).",
+    es: "Consejo: guárdalos en dos lugares distintos (p. ej. impreso + gestor de contraseñas).",
+  },
+  "rec.file_header": {
+    de: "Benni-Tagebuch — Wiederherstellungs-Codes (jeder Code funktioniert einmal):",
+    en: "Benni Diary — recovery codes (each code works once):",
+    es: "Diario de Benni — códigos de recuperación (cada código funciona una vez):",
+  },
+  "rec.recovered_note": {
+    de: "Deine Zwei-Faktor-Authentifizierung wurde per Wiederherstellungs-Code zurückgesetzt. Bitte richte unten einen neuen Authenticator ein.",
+    en: "Your two-factor authentication was reset with a recovery code. Please set up a new authenticator below.",
+    es: "Tu autenticación de dos factores se restableció con un código de recuperación. Configura un nuevo autenticador abajo.",
+  },
+  // recovery on the MFA challenge screen
+  "rec.lost_device": {
+    de: "Kein Zugriff auf deine Authenticator-App?",
+    en: "No access to your authenticator app?",
+    es: "¿Sin acceso a tu app de autenticación?",
+  },
+  "rec.mfa_title": { de: "Wiederherstellungs-Code", en: "Recovery code", es: "Código de recuperación" },
+  "rec.mfa_sub": {
+    de: "Gib einen deiner Wiederherstellungs-Codes ein. Danach kannst du dich anmelden und einen neuen Authenticator einrichten.",
+    en: "Enter one of your recovery codes. You can then sign in and set up a new authenticator.",
+    es: "Introduce uno de tus códigos de recuperación. Luego podrás iniciar sesión y configurar un nuevo autenticador.",
+  },
+  "rec.code_label": { de: "Wiederherstellungs-Code", en: "Recovery code", es: "Código de recuperación" },
+  "rec.mfa_submit": { de: "Code einlösen", en: "Redeem code", es: "Usar código" },
+  "rec.back_to_totp": { de: "← Zurück zur Authenticator-App", en: "← Back to the authenticator app", es: "← Volver a la app de autenticación" },
+
   // onboarding
   "ob.eyebrow": { de: "Einrichten", en: "Setup", es: "Configuración" },
   "ob.title": { de: "Haushalt anlegen", en: "Create household", es: "Crear hogar" },

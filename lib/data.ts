@@ -175,6 +175,19 @@ export async function getEntriesForChild(
   return (data as unknown as Entry[] | null) ?? [];
 }
 
+// How many unused recovery codes the current user has left (RLS scopes the
+// table to the caller's own codes).
+export async function getRecoveryCodesRemaining(
+  supabase: SupabaseClient,
+  _userId: string,
+): Promise<number> {
+  const { count } = await supabase
+    .from("recovery_codes")
+    .select("id", { count: "exact", head: true })
+    .is("used_at", null);
+  return count ?? 0;
+}
+
 // ---- Papierkorb (trash) + activity log ------------------------------
 export type TrashedEntry = {
   id: string;

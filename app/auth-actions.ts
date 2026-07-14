@@ -2,8 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { hasSupabaseEnv } from "@/lib/env";
-import type { FormState, EnrollResult, InviteState } from "@/app/auth-types";
+import type { FormState, EnrollResult, InviteState, RecoveryCodesResult } from "@/app/auth-types";
 
 const NOT_CONFIGURED = "Supabase ist noch nicht konfiguriert — bitte .env.local anlegen (NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_ANON_KEY).";
 
@@ -99,6 +100,52 @@ export async function verifyEnroll(_prev: FormState, formData: FormData): Promis
   const { error } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
   if (error) return { error: error.message };
   redirect("/settings/security?enrolled=1");
+}
+
+// ---- account recovery codes ----------------------------------------
+// Generate a fresh printable set (replacing any old one). The raw codes are
+// returned once for the user to save; only their hashes are stored.
+export async function generateRecoveryCodes(): Promise<RecoveryCodesResult> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { data, error } = await supabase.rpc("generate_recovery_codes");
+  if (error) return { error: error.message };
+  return { codes: (data as string[] | null) ?? [] };
+}
+
+// Redeem a recovery code from the MFA challenge when the authenticator is
+// lost. A valid code removes the user's TOTP factor (via the admin API, since
+// a locked-out AAL1 session cannot unenrol a verified factor), dropping the
+// account to AAL1 so they can sign in and set up a fresh authenticator.
+export async function redeemRecoveryCode(_prev: FormState, formData: FormData): Promise<FormState> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  if (!hasServiceRole()) return { error: "Die Konto-Wiederherstellung ist auf dem Server nicht konfiguriert." };
+  const code = str(formData, "code");
+  const inviteCode = str(formData, "invite_code");
+  if (!code) return { error: "Bitte gib einen Wiederherstellungs-Code ein." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { data: ok, error } = await supabase.rpc("redeem_recovery_code", { p_code: code });
+  if (error) return { error: error.message };
+  if (!ok) return { error: "Ungültiger oder bereits benutzter Code." };
+
+  // The code was valid — remove the lost factor(s) so the account is no longer
+  // waiting on a second factor the user can't provide.
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const admin = createAdminClient();
+  for (const f of factors?.all ?? []) {
+    await admin.auth.admin.mfa.deleteFactor({ id: f.id, userId: user.id });
+  }
+  redirect(inviteCode ? `/join?code=${encodeURIComponent(inviteCode)}` : "/settings/security?recovered=1");
 }
 
 // ---- household bootstrap + invites ---------------------------------

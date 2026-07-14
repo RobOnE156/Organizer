@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(173);
+select plan(184);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -661,6 +661,34 @@ select is((select count(*) from audit_log where household_id='aaaaaaaa-aaaa-aaaa
   'a cross-household user cannot read the activity log');
 reset role; select set_config('request.jwt.claims','',true); set local role anon;
 select throws_ok($$ select 1 from audit_log $$, '42501', null, 'anon cannot read the activity log');
+
+-- =====================================================================
+-- account recovery codes: printable one-time backups. Generation + redemption
+-- are definer RPCs scoped to auth.uid(); only hashes are stored; a code works
+-- once and only for its owner.
+-- =====================================================================
+-- anon cannot touch any of it
+reset role; select set_config('request.jwt.claims','',true); set local role anon;
+select throws_ok($$ select 1 from recovery_codes $$, '42501', null, 'anon cannot read recovery_codes');
+select throws_ok($$ select public.generate_recovery_codes() $$, '42501', null, 'anon cannot generate recovery codes');
+select throws_ok($$ select public.redeem_recovery_code('x') $$, '42501', null, 'anon cannot redeem a recovery code');
+
+-- alice generates a set of 10
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is(array_length(public.generate_recovery_codes(), 1)::int, 10, 'generation returns 10 codes');
+select is((select count(*) from recovery_codes)::int, 10, 'ten codes are stored (hashed) for the user');
+
+-- regenerate and capture one code to redeem
+select (public.generate_recovery_codes())[1] as rc \gset
+select is((select count(*) from recovery_codes)::int, 10, 'regenerating replaces the previous set (still 10)');
+select is(public.redeem_recovery_code(:'rc'), true, 'a valid code redeems successfully');
+select is(public.redeem_recovery_code(:'rc'), false, 'a code cannot be redeemed twice (one-time)');
+select is((select count(*) from recovery_codes where used_at is not null)::int, 1, 'the redeemed code is marked used');
+
+-- isolation: bob sees none of alice's codes and cannot redeem hers
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from recovery_codes)::int, 0, 'a user cannot see another user''s recovery codes');
+select is(public.redeem_recovery_code(:'rc'), false, 'a user cannot redeem another user''s code');
 
 -- =====================================================================
 -- guest contributions (account-less, expiring links, moderated):
