@@ -170,6 +170,9 @@ input:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1p
 }
 .brand { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
 .brand small { display: block; font-size: 0.68rem; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+/* larger diary title — only on the timeline top bar (TopNav), not sub-pages */
+.brand-lg { font-size: 1.7rem; }
+.brand-lg small { font-size: 0.74rem; }
 .topnav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .iconlink { color: var(--muted); font-size: 0.82rem; }
 .iconlink:hover { color: var(--ink); text-decoration: none; }

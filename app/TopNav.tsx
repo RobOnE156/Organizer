@@ -36,7 +36,7 @@ export default function TopNav({
   return (
     <>
       <header className="topbar">
-        <a className="brand" href="/">
+        <a className="brand brand-lg" href="/">
           {brand}
           <small>{t("nav.timeline")}</small>
         </a>
