@@ -235,11 +235,13 @@ export default function EntryForm({
             <div className="uploadbar-fill" style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
           </div>
           <small className="muted">
-            {t("ef.uploading", {
-              done: progress.done,
-              total: progress.total,
-              pct: Math.round(progress.fraction * 100),
-            })}
+            {progress.phase === "prepare"
+              ? t("ef.preparing", { pct: Math.round(progress.fraction * 100) })
+              : t("ef.uploading", {
+                  done: progress.done,
+                  total: progress.total,
+                  pct: Math.round(progress.fraction * 100),
+                })}
           </small>
           <button type="button" className="btn" onClick={() => abortRef.current?.abort()}>
             {t("common.cancel")}

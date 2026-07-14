@@ -813,9 +813,14 @@ const M = {
   "ef.media_label": { de: "Fotos / Videos / Audio (optional)", en: "Photos / videos / audio (optional)", es: "Fotos / vídeos / audio (opcional)" },
   "ef.pick_files": { de: "＋ Dateien wählen (mehrere möglich)", en: "＋ Choose files (multiple)", es: "＋ Elegir archivos (varios)" },
   "ef.media_hint": {
-    de: "Fotos werden für einen schnelleren Upload automatisch verkleinert (Qualität für Handy & Laptop bleibt). Videos werden unverändert hochgeladen.",
-    en: "Photos are shrunk automatically for a faster upload (quality for phone & laptop stays). Videos upload unchanged.",
-    es: "Las fotos se reducen automáticamente para subir más rápido (la calidad para móvil y portátil se mantiene). Los vídeos se suben sin cambios.",
+    de: "Fotos und große Videos werden für einen schnelleren Upload automatisch verkleinert – die Qualität für Handy & Laptop bleibt. Das Original auf deinem Gerät bleibt unverändert.",
+    en: "Photos and large videos are shrunk automatically for a faster upload — quality for phone & laptop stays. The original on your device is untouched.",
+    es: "Las fotos y los vídeos grandes se reducen automáticamente para subir más rápido — la calidad para móvil y portátil se mantiene. El original en tu dispositivo no se toca.",
+  },
+  "ef.preparing": {
+    de: "Bereite Medien vor … {pct}%",
+    en: "Preparing media … {pct}%",
+    es: "Preparando medios … {pct}%",
   },
   "ef.uploading": {
     de: "Lade Medien hoch … {done}/{total} · {pct}%",
