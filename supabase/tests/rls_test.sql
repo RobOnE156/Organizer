@@ -4,7 +4,7 @@
 -- the anon / authenticated roles with a mocked JWT to assert real access.
 -- =====================================================================
 begin;
-select plan(194);
+select plan(206);
 
 -- ---- fixtures (as superuser) ---------------------------------------
 -- Users
@@ -792,6 +792,47 @@ select lives_ok($$ update guest_contributions set status='rejected' where househ
 reset role;
 select is((select status::text from guest_contributions where household_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' limit 1), 'approved',
   'the contribution stays approved after a non-member attempt');
+
+-- =====================================================================
+-- share_links: read-only family view links (0027)
+--   * members mint via the definer create_share_link (raw token hashed);
+--     anon never touches the table — the /share route uses the service role.
+--   * links are household-shared; members see + revoke.
+-- =====================================================================
+reset role;
+insert into share_links (id, household_id, created_by, token_hash, scope, child_id, label, language, expires_at) values
+  ('a1111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111', encode(extensions.digest('sharetoken-1','sha256'),'hex'), 'timeline','cccccccc-cccc-cccc-cccc-cccccccccccc','Oma','de', now() + interval '30 days');
+
+-- anon: no direct table access, cannot mint
+reset role; select set_config('request.jwt.claims','',true); set local role anon;
+select throws_ok($$ select 1 from share_links $$, '42501', null, 'anon cannot read share_links directly');
+select throws_ok($$ select public.create_share_link('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,'timeline',null,'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,'x','de',30) $$,
+  '42501', null, 'anon cannot mint a share link');
+
+-- alice (member): sees the household link, can mint (incl. a no-expiry handover)
+reset role; select set_config('request.jwt.claims', json_build_object('sub','11111111-1111-1111-1111-111111111111','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from share_links)::int, 1, 'alice (member) sees the household share link');
+select lives_ok($$ select public.create_share_link('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,'timeline',null,'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,'Familie','en',0) $$,
+  'alice can mint a no-expiry timeline share link');
+select is((select count(*) from share_links)::int, 2, 'the minted share link is visible to the member');
+select is((select expires_at from share_links where label='Familie'), null, 'a 0-day link has no expiry (handover)');
+select throws_ok($$ select public.create_share_link('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,'entry','99999999-9999-9999-9999-999999999999'::uuid,null,'x','de',7) $$,
+  null, null, 'cannot share an entry that is not in the household');
+
+-- carol (other household): isolation + cannot mint for household 1
+reset role; select set_config('request.jwt.claims', json_build_object('sub','33333333-3333-3333-3333-333333333333','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from share_links)::int, 0, 'carol sees no share links from household 1');
+select throws_ok($$ select public.create_share_link('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,'timeline',null,null,'x','de',7) $$,
+  null, null, 'a non-member cannot mint a share link for another household');
+
+-- bob (co-parent): sees household links and can revoke
+reset role; select set_config('request.jwt.claims', json_build_object('sub','22222222-2222-2222-2222-222222222222','role','authenticated')::text, true); set local role authenticated;
+select is((select count(*) from share_links)::int, 2, 'bob (co-parent) sees the household share links');
+select lives_ok($$ update share_links set revoked_at=now() where id='a1111111-1111-1111-1111-111111111111' $$,
+  'bob can revoke a share link');
+reset role;
+select isnt((select revoked_at from share_links where id='a1111111-1111-1111-1111-111111111111'), null,
+  'the share link is now revoked');
 
 reset role;
 select * from finish();

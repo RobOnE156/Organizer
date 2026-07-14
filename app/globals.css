@@ -311,6 +311,13 @@ a.brand { text-decoration: none; color: inherit; }
 
 /* timeline */
 .tl { max-width: 640px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 24px) 80px; }
+/* public read-only share view */
+.sharetl { padding-top: 6vh; }
+.sharehead { margin-bottom: 8px; }
+.sharehead .title { margin-top: 2px; }
+.sharenote { font-size: 0.85rem; color: var(--muted); background: var(--surface-2); border: 1px solid var(--faint); border-radius: 12px; padding: 10px 13px; margin: 12px 0 0; }
+.sharefoot { text-align: center; padding: 36px 0 10px; }
+.sharefoot .muted { font-size: 0.85rem; }
 .msep { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 12px; }
 .msep h2 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; margin: 0; }
 .msep span { font-size: 0.82rem; color: var(--muted); }

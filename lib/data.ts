@@ -456,6 +456,43 @@ export async function getGuestInvites(supabase: SupabaseClient, householdId: str
   }));
 }
 
+export type ShareLinkStatus = "active" | "expired" | "revoked";
+export type ShareLink = {
+  id: string;
+  scope: "timeline" | "entry";
+  entry_id: string | null;
+  label: string | null;
+  language: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+  last_viewed_at: string | null;
+  created_at: string;
+  status: ShareLinkStatus;
+};
+
+type ShareLinkRow = Omit<ShareLink, "status">;
+
+// A household's read-only view links, newest first, with a derived status.
+// The raw token exists only once (at creation) — we store just its hash — so
+// this list shows metadata + a revoke control, never the link itself. An
+// expires_at of null means the link never expires (handover / gift mode).
+export async function getShareLinks(supabase: SupabaseClient, householdId: string): Promise<ShareLink[]> {
+  const { data } = await supabase
+    .from("share_links")
+    .select("id, scope, entry_id, label, language, expires_at, revoked_at, last_viewed_at, created_at")
+    .eq("household_id", householdId)
+    .order("created_at", { ascending: false });
+  const now = Date.now();
+  return ((data as ShareLinkRow[] | null) ?? []).map((r) => ({
+    ...r,
+    status: r.revoked_at
+      ? "revoked"
+      : r.expires_at && new Date(r.expires_at).getTime() < now
+        ? "expired"
+        : "active",
+  }));
+}
+
 export type GuestContributionStatus = "pending" | "approved" | "rejected";
 export type GuestContribution = {
   id: string;

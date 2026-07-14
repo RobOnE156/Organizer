@@ -825,6 +825,46 @@ export async function revokeGuestInvite(id: string): Promise<{ error?: string }>
   return {};
 }
 
+// Mint a read-only share link (whole timeline, a single memory, or a no-expiry
+// handover link). Returns the raw token once; the DB stores only its hash.
+export async function createShareLink(input: {
+  scope: "timeline" | "entry";
+  entryId?: string | null;
+  childId?: string | null;
+  label?: string;
+  language: string;
+  days: number; // <= 0 means "no expiry" (handover / gift mode)
+}): Promise<{ token?: string; error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_share_link", {
+    p_household: membership.household_id,
+    p_scope: input.scope,
+    p_entry: input.scope === "entry" ? input.entryId ?? null : null,
+    p_child: input.childId ?? null,
+    p_label: input.label?.trim() || null,
+    p_language: input.language,
+    p_days: input.days,
+  });
+  if (error) return { error: error.message };
+  return { token: String(data) };
+}
+
+// Revoke a share link (soft, via the member UPDATE policy). The view route
+// re-checks revoked_at on every load, so access stops immediately.
+export async function revokeShareLink(id: string): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("share_links")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 // Approve or reject a pending guest contribution. Members moderate within
 // their household (guest_contrib_update RLS); we record who reviewed and when.
 export async function moderateContribution(

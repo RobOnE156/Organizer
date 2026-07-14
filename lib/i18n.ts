@@ -195,6 +195,107 @@ const M = {
   "chrome.home": { de: "Zum Tagebuch", en: "To the diary", es: "Al diario" },
   "chrome.settings": { de: "Einstellungen", en: "Settings", es: "Ajustes" },
 
+  // read-only family sharing — navigation + settings card
+  "nav.sharing": { de: "Teilen (nur lesen)", en: "Share (read-only)", es: "Compartir (solo lectura)" },
+  "settings.sharing_desc": {
+    de: "Großeltern & Familie einen schreibgeschützten Blick geben — per Ablauf-Link, ohne Account.",
+    en: "Give grandparents & family a read-only view — via an expiring link, no account.",
+    es: "Da a los abuelos y la familia una vista de solo lectura — por enlace temporal, sin cuenta.",
+  },
+
+  // the public read-only view (app/share/[token])
+  "share.eyebrow": { de: "Geteilter Einblick", en: "A shared glimpse", es: "Un vistazo compartido" },
+  "share.title_named": { de: "{name}s Tagebuch", en: "{name}'s diary", es: "El diario de {name}" },
+  "share.title_memory": { de: "Eine Erinnerung an {name}", en: "A memory of {name}", es: "Un recuerdo de {name}" },
+  "share.the_child": { de: "das Kind", en: "the child", es: "el niño" },
+  "share.a_parent": { de: "Elternteil", en: "A parent", es: "Madre o padre" },
+  "share.age": { de: "{age}", en: "{age}", es: "{age}" },
+  "share.readonly_note": {
+    de: "Nur zum Ansehen. Private Einträge und Ortsangaben sind ausgeblendet.",
+    en: "View only. Private entries and locations are hidden.",
+    es: "Solo para ver. Las entradas privadas y las ubicaciones están ocultas.",
+  },
+  "share.empty": { de: "Hier gibt es noch nichts zu sehen.", en: "There's nothing to see here yet.", es: "Aún no hay nada que ver aquí." },
+  "share.footer": {
+    de: "Mit Liebe geführt im Benni-Tagebuch.",
+    en: "Kept with love in the Benni diary.",
+    es: "Cuidado con cariño en el diario de Benni.",
+  },
+  "share.dead_title": { de: "Dieser Link ist nicht (mehr) gültig", en: "This link isn't available", es: "Este enlace no está disponible" },
+  "share.dead_invalid": {
+    de: "Der Link ist ungültig. Bitte frag die Eltern nach einem neuen.",
+    en: "The link is invalid. Please ask the parents for a new one.",
+    es: "El enlace no es válido. Pide uno nuevo a los padres.",
+  },
+  "share.dead_expired": {
+    de: "Der Link ist abgelaufen. Bitte frag die Eltern nach einem neuen.",
+    en: "The link has expired. Please ask the parents for a new one.",
+    es: "El enlace ha caducado. Pide uno nuevo a los padres.",
+  },
+  "share.dead_revoked": {
+    de: "Der Zugang zu diesem Link wurde beendet.",
+    en: "Access to this link has been turned off.",
+    es: "El acceso a este enlace se ha desactivado.",
+  },
+  "share.dead_unavailable": {
+    de: "Diese Erinnerung ist nicht mehr verfügbar.",
+    en: "This memory is no longer available.",
+    es: "Este recuerdo ya no está disponible.",
+  },
+  "share.dead_unconfigured": {
+    de: "Das Teilen ist gerade nicht verfügbar. Bitte später erneut versuchen.",
+    en: "Sharing is currently unavailable. Please try again later.",
+    es: "Compartir no está disponible ahora. Inténtalo más tarde.",
+  },
+
+  // sharing management (app/settings/sharing)
+  "sharing.eyebrow": { de: "Teilen", en: "Sharing", es: "Compartir" },
+  "sharing.title": { de: "Familien-Lesezugang", en: "Family read-only access", es: "Acceso de solo lectura" },
+  "sharing.sub": {
+    de: "Erstelle einen Link, mit dem Großeltern & Familie das Tagebuch nur ansehen können — ohne Account, jederzeit widerrufbar.",
+    en: "Create a link that lets grandparents & family only view the diary — no account, revocable anytime.",
+    es: "Crea un enlace para que abuelos y familia solo vean el diario — sin cuenta, revocable en cualquier momento.",
+  },
+  "sharing.create": { de: "Neuen Link erstellen", en: "Create a new link", es: "Crear un enlace nuevo" },
+  "sharing.create_hint": {
+    de: "Der Link zeigt die ganze Timeline — nur zum Ansehen.",
+    en: "The link shows the whole timeline — view only.",
+    es: "El enlace muestra toda la línea de tiempo — solo para ver.",
+  },
+  "sharing.label_label": { de: "Bezeichnung (nur für dich)", en: "Label (just for you)", es: "Etiqueta (solo para ti)" },
+  "sharing.label_ph": { de: "z. B. Oma & Opa", en: "e.g. Grandma & Grandpa", es: "p. ej. Abuela y abuelo" },
+  "sharing.child_label": { de: "Kind", en: "Child", es: "Niño" },
+  "sharing.lang_label": { de: "Sprache der Ansicht", en: "Language of the view", es: "Idioma de la vista" },
+  "sharing.expiry_label": { de: "Gültigkeit", en: "Validity", es: "Validez" },
+  "sharing.expiry_days": { de: "{n} Tage", en: "{n} days", es: "{n} días" },
+  "sharing.expiry_never": { de: "Kein Ablauf (Übergabe)", en: "No expiry (handover)", es: "Sin caducidad (entrega)" },
+  "sharing.privacy": {
+    de: "Private Einträge und genaue Ortsangaben (GPS) werden nie geteilt.",
+    en: "Private entries and precise location (GPS) are never shared.",
+    es: "Las entradas privadas y la ubicación precisa (GPS) nunca se comparten.",
+  },
+  "sharing.err_create": { de: "Der Link konnte nicht erstellt werden.", en: "The link couldn't be created.", es: "No se pudo crear el enlace." },
+  "sharing.create_btn": { de: "Link erstellen", en: "Create link", es: "Crear enlace" },
+  "sharing.link_ready": { de: "Dein Link ist bereit — teile ihn nur mit Menschen, denen du vertraust:", en: "Your link is ready — share it only with people you trust:", es: "Tu enlace está listo — compártelo solo con personas de confianza:" },
+  "sharing.share": { de: "Teilen", en: "Share", es: "Compartir" },
+  "sharing.share_text": { de: "Ein Einblick in Bennis Tagebuch", en: "A glimpse into Benni's diary", es: "Un vistazo al diario de Benni" },
+  "sharing.copy": { de: "Kopieren", en: "Copy", es: "Copiar" },
+  "sharing.copied": { de: "Kopiert ✓", en: "Copied ✓", es: "Copiado ✓" },
+  "sharing.active_links": { de: "Aktive Links", en: "Active links", es: "Enlaces activos" },
+  "sharing.unnamed_link": { de: "Link ohne Bezeichnung", en: "Unnamed link", es: "Enlace sin etiqueta" },
+  "sharing.expires_on": { de: "Läuft ab am {date}", en: "Expires on {date}", es: "Caduca el {date}" },
+  "sharing.no_expiry": { de: "Kein Ablauf (Übergabe)", en: "No expiry (handover)", es: "Sin caducidad (entrega)" },
+  "sharing.viewed": { de: "schon angesehen", en: "already viewed", es: "ya visto" },
+  "sharing.status_active": { de: "Aktiv", en: "Active", es: "Activo" },
+  "sharing.revoke": { de: "Beenden", en: "Revoke", es: "Revocar" },
+  "sharing.revoke_title": { de: "Zugang beenden?", en: "Revoke access?", es: "¿Revocar acceso?" },
+  "sharing.revoke_body": {
+    de: "Der Link funktioniert danach nicht mehr. Das lässt sich nicht rückgängig machen.",
+    en: "The link will stop working. This can't be undone.",
+    es: "El enlace dejará de funcionar. Esto no se puede deshacer.",
+  },
+  "sharing.empty": { de: "Noch keine aktiven Links.", en: "No active links yet.", es: "Aún no hay enlaces activos." },
+
   // change e-mail address
   "em.title": { de: "E-Mail-Adresse ändern", en: "Change e-mail address", es: "Cambiar correo electrónico" },
   "em.current": { de: "Aktuell: {email}", en: "Current: {email}", es: "Actual: {email}" },
