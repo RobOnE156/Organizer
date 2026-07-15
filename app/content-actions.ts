@@ -39,6 +39,8 @@ export async function createChild(_prev: FormState, formData: FormData): Promise
   if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
   const name = str(formData, "name");
   const birth = str(formData, "birth");
+  const sexRaw = str(formData, "sex");
+  const sex = sexRaw === "male" || sexRaw === "female" ? sexRaw : null;
   if (!name) return { error: "Bitte einen Namen angeben." };
 
   const membership = await getMembership();
@@ -54,10 +56,26 @@ export async function createChild(_prev: FormState, formData: FormData): Promise
     household_id: membership.household_id,
     name,
     birth_date: birth || null,
+    sex,
     created_by: user.id,
   });
   if (error) return { error: error.message };
   redirect("/");
+}
+
+// Set (or clear) a child's sex — needed to overlay the correct WHO growth
+// curves. RLS restricts updates to the child's household.
+export async function setChildSex(childId: string, sex: "male" | "female" | null): Promise<{ error?: string }> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const value = sex === "male" || sex === "female" ? sex : null;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("children").update({ sex: value }).eq("id", childId);
+  if (error) return { error: error.message };
+  return {};
 }
 
 export async function createEntry(_prev: FormState, formData: FormData): Promise<FormState> {

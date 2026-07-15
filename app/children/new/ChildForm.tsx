@@ -25,6 +25,15 @@ export default function ChildForm() {
         <label htmlFor="birth">{t("child.birth_label")}</label>
         <input id="birth" name="birth" type="date" />
       </div>
+      <div className="field">
+        <label htmlFor="sex">{t("child.sex_label")}</label>
+        <select id="sex" name="sex" defaultValue="">
+          <option value="">{t("child.sex_unknown")}</option>
+          <option value="male">{t("child.sex_boy")}</option>
+          <option value="female">{t("child.sex_girl")}</option>
+        </select>
+        <small className="muted">{t("child.sex_hint")}</small>
+      </div>
       {state.error ? <p className="err">{state.error}</p> : null}
       <button className="btn btn-primary" disabled={pending}>{pending ? "…" : t("common.save")}</button>
       <p className="sub" style={{ margin: 0 }}>

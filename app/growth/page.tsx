@@ -48,7 +48,14 @@ export default async function GrowthPage() {
       />
 
       <h2 style={{ fontSize: "1.05rem", margin: "34px 0 8px" }}>{t("growth.head_growth")}</h2>
-      <GrowthPanel childId={child.id} childName={child.name} measurements={measurements} userId={user.id} />
+      <GrowthPanel
+        childId={child.id}
+        childName={child.name}
+        birthDate={child.birth_date}
+        sex={child.sex === "male" || child.sex === "female" ? child.sex : null}
+        measurements={measurements}
+        userId={user.id}
+      />
 
       <h2 style={{ fontSize: "1.05rem", margin: "34px 0 8px" }}>{t("growth.head_milestones")}</h2>
       <a className="settingcard" href="/firsts">

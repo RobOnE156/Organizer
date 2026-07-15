@@ -2,10 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addMeasurement, deleteMeasurement } from "@/app/content-actions";
+import { addMeasurement, deleteMeasurement, setChildSex } from "@/app/content-actions";
 import { useConfirm } from "@/app/ConfirmProvider";
 import { useT } from "@/app/LanguageProvider";
 import type { Measurement, MetricKind } from "@/lib/data";
+import { whoCurves, zScoreFor, zToPercentile, type WhoMetric, type WhoSex } from "@/lib/who-growth";
 
 const METRICS: { key: MetricKind; unit: string }[] = [
   { key: "weight", unit: "kg" },
@@ -13,6 +14,8 @@ const METRICS: { key: MetricKind; unit: string }[] = [
   { key: "head", unit: "cm" },
 ];
 const METRIC_KEY = { weight: "metric.weight", height: "metric.height", head: "metric.head" } as const;
+// weight/height map onto WHO datasets; head circumference has no curve yet.
+const WHO_OF: Partial<Record<MetricKind, WhoMetric>> = { weight: "weight", height: "height" };
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -22,35 +25,96 @@ function fmtDate(d: string): string {
   return new Date(d + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function Chart({ points }: { points: { y: number }[] }) {
-  const { t } = useT();
-  if (points.length === 0) {
-    return <p className="muted" style={{ fontSize: ".85rem", margin: "6px 0 0" }}>{t("growth.no_measure")}</p>;
-  }
-  const W = 320;
-  const H = 150;
-  const padL = 30;
-  const padB = 16;
+// Age in (fractional) completed months between two ISO dates.
+function ageMonths(birth: string, on: string): number {
+  const b = new Date(birth + "T00:00:00").getTime();
+  const o = new Date(on + "T00:00:00").getTime();
+  return (o - b) / (1000 * 60 * 60 * 24 * 30.4375);
+}
+
+type Pt = { month: number; value: number };
+
+// A chart of age (x) vs value (y). When WHO data + sex + birth date are known,
+// the 3rd–97th percentile band is drawn behind the child's own measurements.
+function Chart({
+  points,
+  who,
+  ariaLabel,
+}: {
+  points: Pt[];
+  who: { p: number; points: Pt[] }[] | null;
+  ariaLabel: string;
+}) {
+  const W = 340;
+  const H = 190;
+  const padL = 34;
+  const padR = 10;
+  const padB = 22;
   const padT = 10;
-  const ys = points.map((p) => p.y);
-  let minY = Math.min(...ys);
-  let maxY = Math.max(...ys);
+
+  // x-domain: 0..(a bit past the newest point), capped at 60 months
+  const maxAgePt = points.length ? Math.max(...points.map((p) => p.month)) : 0;
+  const maxX = Math.min(60, Math.max(6, Math.ceil((maxAgePt + 2) / 3) * 3));
+
+  // y-domain: fit both the WHO band (within x range) and the child's points
+  const inRange = (arr: Pt[]) => arr.filter((p) => p.month <= maxX + 0.001);
+  const ys: number[] = [];
+  for (const p of points) ys.push(p.value);
+  if (who) for (const c of who) for (const p of inRange(c.points)) ys.push(p.value);
+  let minY = ys.length ? Math.min(...ys) : 0;
+  let maxY = ys.length ? Math.max(...ys) : 1;
   if (minY === maxY) {
     minY -= 1;
     maxY += 1;
   }
-  const spanY = maxY - minY;
-  const spanX = points.length > 1 ? points.length - 1 : 1;
-  const px = (i: number) => padL + (i / spanX) * (W - padL - 8);
-  const py = (y: number) => H - padB - ((y - minY) / spanY) * (H - padB - padT);
-  const poly = points.map((p, i) => px(i).toFixed(1) + "," + py(p.y).toFixed(1)).join(" ");
+  const padY = (maxY - minY) * 0.08;
+  minY -= padY;
+  maxY += padY;
+
+  const px = (m: number) => padL + (m / maxX) * (W - padL - padR);
+  const py = (y: number) => H - padB - ((y - minY) / (maxY - minY)) * (H - padB - padT);
+  const line = (arr: Pt[]) => inRange(arr).map((p) => px(p.month).toFixed(1) + "," + py(p.value).toFixed(1)).join(" ");
+
+  // shaded band between P3 and P97
+  let band = "";
+  if (who) {
+    const lo = who.find((c) => c.p === 3);
+    const hi = who.find((c) => c.p === 97);
+    if (lo && hi) {
+      const up = inRange(lo.points).map((p) => px(p.month).toFixed(1) + "," + py(p.value).toFixed(1));
+      const down = inRange(hi.points)
+        .map((p) => px(p.month).toFixed(1) + "," + py(p.value).toFixed(1))
+        .reverse();
+      band = up.concat(down).join(" ");
+    }
+  }
+
+  const xticks: number[] = [];
+  const step = maxX <= 12 ? 3 : maxX <= 24 ? 6 : 12;
+  for (let m = 0; m <= maxX; m += step) xticks.push(m);
+
   return (
-    <svg viewBox={"0 0 " + W + " " + H} className="chart" role="img" aria-label={t("growth.chart_aria")}>
-      <text x="2" y={py(maxY) + 4} className="cax">{maxY.toFixed(1)}</text>
-      <text x="2" y={py(minY) + 4} className="cax">{minY.toFixed(1)}</text>
-      {points.length > 1 ? <polyline points={poly} className="cline" fill="none" /> : null}
+    <svg viewBox={"0 0 " + W + " " + H} className="chart" role="img" aria-label={ariaLabel}>
+      {/* y-axis labels (min/max) */}
+      <text x="2" y={py(maxY) + 8} className="cax">{maxY.toFixed(0)}</text>
+      <text x="2" y={py(minY) - 2} className="cax">{minY.toFixed(0)}</text>
+      {/* x-axis ticks (months) */}
+      {xticks.map((m) => (
+        <text key={m} x={px(m)} y={H - 6} className="cax" textAnchor="middle">
+          {m}
+        </text>
+      ))}
+      {/* WHO percentile band + curves */}
+      {band ? <polygon points={band} className="whoband" /> : null}
+      {who
+        ? who.map((c) => (
+            <polyline key={c.p} points={line(c.points)} className={"whocurve" + (c.p === 50 ? " median" : "")} fill="none" />
+          ))
+        : null}
+      {/* child's own measurements */}
+      {points.length > 1 ? <polyline points={line(points)} className="cline" fill="none" /> : null}
       {points.map((p, i) => (
-        <circle key={i} cx={px(i)} cy={py(p.y)} r="3.2" className="cdot" />
+        <circle key={i} cx={px(p.month)} cy={py(p.value)} r="3.4" className="cdot" />
       ))}
     </svg>
   );
@@ -59,11 +123,15 @@ function Chart({ points }: { points: { y: number }[] }) {
 export default function GrowthPanel({
   childId,
   childName,
+  birthDate,
+  sex,
   measurements,
   userId,
 }: {
   childId: string;
   childName: string;
+  birthDate: string | null;
+  sex: WhoSex | null;
   measurements: Measurement[];
   userId: string;
 }) {
@@ -77,11 +145,32 @@ export default function GrowthPanel({
   const [pending, start] = useTransition();
 
   const active = METRICS.find((m) => m.key === metric) ?? METRICS[0]!;
-  const forMetric = useMemo(
-    () => measurements.filter((m) => m.metric === metric),
-    [measurements, metric],
+  const forMetric = useMemo(() => measurements.filter((m) => m.metric === metric), [measurements, metric]);
+
+  // Plot points as (age in months, value). Falls back to index if no birth date.
+  const points: Pt[] = useMemo(
+    () =>
+      forMetric.map((m, i) => ({
+        month: birthDate ? Math.max(0, ageMonths(birthDate, m.measured_on)) : i,
+        value: Number(m.value_num),
+      })),
+    [forMetric, birthDate],
   );
-  const points = forMetric.map((m) => ({ y: Number(m.value_num) }));
+
+  const whoMetric = WHO_OF[metric] ?? null;
+  const showWho = Boolean(whoMetric && sex && birthDate);
+  const who = useMemo(
+    () => (showWho && whoMetric && sex ? whoCurves(whoMetric, sex) : null),
+    [showWho, whoMetric, sex],
+  );
+
+  // Percentile of the most recent measurement (for a friendly one-liner).
+  const latestPct = useMemo(() => {
+    if (!showWho || !whoMetric || !sex || !birthDate || forMetric.length === 0) return null;
+    const last = forMetric[forMetric.length - 1]!;
+    const z = zScoreFor(whoMetric, sex, ageMonths(birthDate, last.measured_on), Number(last.value_num));
+    return z === null ? null : zToPercentile(z);
+  }, [showWho, whoMetric, sex, birthDate, forMetric]);
 
   function onAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -112,6 +201,16 @@ export default function GrowthPanel({
     });
   }
 
+  function pickSex(s: WhoSex) {
+    start(async () => {
+      const res = await setChildSex(childId, s);
+      if (res.error) setError(res.error);
+      else router.refresh();
+    });
+  }
+
+  const canHaveCurve = Boolean(whoMetric);
+
   return (
     <section className="stack" style={{ maxWidth: 560 }}>
       <div className="tabs">
@@ -127,7 +226,36 @@ export default function GrowthPanel({
         ))}
       </div>
 
-      <Chart points={points} />
+      {forMetric.length === 0 ? (
+        <p className="muted" style={{ fontSize: ".85rem", margin: "6px 0 0" }}>{t("growth.no_measure")}</p>
+      ) : (
+        <>
+          <Chart points={points} who={who} ariaLabel={t("growth.chart_aria")} />
+          {who ? (
+            <div className="wholegend">
+              <span className="wholeg-band" /> {t("growth.who_legend")} <b>3 · 15 · 50 · 85 · 97</b>
+              {latestPct !== null ? <span className="wholeg-pct">{t("growth.at_percentile", { p: String(latestPct) })}</span> : null}
+            </div>
+          ) : null}
+        </>
+      )}
+
+      {/* Prompt to enable WHO curves for weight/height when we lack sex/birth. */}
+      {canHaveCurve && !showWho && forMetric.length > 0 ? (
+        !birthDate ? (
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{t("growth.no_birth", { name: childName })}</p>
+        ) : !sex ? (
+          <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span className="muted" style={{ fontSize: ".82rem" }}>{t("growth.pick_sex")}</span>
+            <button type="button" className="btn btn-sm" disabled={pending} onClick={() => pickSex("male")}>
+              {t("child.sex_boy")}
+            </button>
+            <button type="button" className="btn btn-sm" disabled={pending} onClick={() => pickSex("female")}>
+              {t("child.sex_girl")}
+            </button>
+          </div>
+        ) : null
+      ) : null}
 
       <form className="row" onSubmit={onAdd} style={{ alignItems: "flex-end", gap: 10 }}>
         <div className="field" style={{ flex: "1 1 110px" }}>
@@ -171,7 +299,9 @@ export default function GrowthPanel({
             ))}
         </ul>
       ) : null}
-      <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{t("growth.who_hint", { name: childName })}</p>
+      <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+        {metric === "head" ? t("growth.head_no_curve") : t("growth.who_hint", { name: childName })}
+      </p>
     </section>
   );
 }

@@ -584,6 +584,14 @@ a.viewtoggle:hover { text-decoration: none; border-color: var(--gold); }
 .cline { stroke: var(--gold); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
 .cdot { fill: var(--gold); }
 .cax { fill: var(--muted); font-size: 9px; font-family: system-ui, sans-serif; }
+/* WHO percentile band + curves behind the child's own line */
+.whoband { fill: color-mix(in oklab, var(--accent) 22%, transparent); stroke: none; }
+.whocurve { stroke: color-mix(in oklab, var(--accent) 55%, var(--muted)); stroke-width: 1; fill: none; opacity: 0.7; }
+.whocurve.median { stroke: color-mix(in oklab, var(--accent) 80%, var(--fg)); stroke-width: 1.4; stroke-dasharray: 4 3; opacity: 0.9; }
+.wholegend { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); margin: 2px 0 0; }
+.wholegend b { color: var(--fg); font-weight: 600; letter-spacing: 0.02em; }
+.wholeg-band { display: inline-block; width: 22px; height: 11px; border-radius: 3px; background: color-mix(in oklab, var(--accent) 22%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 45%, transparent); }
+.wholeg-pct { margin-left: auto; color: var(--gold); font-weight: 600; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { padding: 6px 11px; border-radius: 999px; border: 1px dashed var(--faint); background: var(--surface-2); color: var(--muted); font-size: 0.82rem; cursor: pointer; }
 .chip:hover { border-color: var(--gold); color: var(--ink); }

@@ -670,9 +670,27 @@ const M = {
   "growth.ph_weight": { de: "z. B. 7,4", en: "e.g. 7.4", es: "p. ej. 7,4" },
   "growth.ph_other": { de: "z. B. 68", en: "e.g. 68", es: "p. ej. 68" },
   "growth.who_hint": {
-    de: "Nur {name}s eigene Werte — WHO-Perzentilkurven kommen später.",
-    en: "Only {name}’s own values — WHO percentile curves coming later.",
-    es: "Solo los valores de {name} — las curvas de percentiles de la OMS llegarán más adelante.",
+    de: "Kurven: WHO-Wachstumsstandards (Perzentile 3–97), abgeglichen auf {name}s Alter.",
+    en: "Curves: WHO Child Growth Standards (3rd–97th percentile), aligned to {name}’s age.",
+    es: "Curvas: estándares de crecimiento de la OMS (percentiles 3–97), según la edad de {name}.",
+  },
+  "growth.age_months": { de: "Alter (Monate)", en: "Age (months)", es: "Edad (meses)" },
+  "growth.who_legend": { de: "WHO-Perzentile", en: "WHO percentiles", es: "Percentiles OMS" },
+  "growth.pick_sex": {
+    de: "Für die WHO-Kurven bitte das Geschlecht wählen:",
+    en: "Choose the sex to show the WHO curves:",
+    es: "Elige el sexo para mostrar las curvas de la OMS:",
+  },
+  "growth.at_percentile": { de: "≈ {p}. Perzentile", en: "≈ {p}th percentile", es: "≈ percentil {p}" },
+  "growth.no_birth": {
+    de: "Für die WHO-Kurven wird {name}s Geburtsdatum benötigt (in den Einstellungen ergänzen).",
+    en: "The WHO curves need {name}’s date of birth (add it in settings).",
+    es: "Las curvas de la OMS necesitan la fecha de nacimiento de {name}.",
+  },
+  "growth.head_no_curve": {
+    de: "Für den Kopfumfang zeigen wir aktuell nur die eigenen Werte (WHO-Kurve folgt).",
+    en: "For head circumference we currently show only the entered values (WHO curve to follow).",
+    es: "Para el perímetro cefálico mostramos solo los valores introducidos por ahora.",
   },
 
   // milestones
@@ -1119,6 +1137,15 @@ const M = {
   "child.name_label": { de: "Name", en: "Name", es: "Nombre" },
   "child.name_ph": { de: "z. B. Benni", en: "e.g. Benni", es: "p. ej. Benni" },
   "child.birth_label": { de: "Geburtsdatum (optional)", en: "Date of birth (optional)", es: "Fecha de nacimiento (opcional)" },
+  "child.sex_label": { de: "Geschlecht (optional)", en: "Sex (optional)", es: "Sexo (opcional)" },
+  "child.sex_unknown": { de: "Keine Angabe", en: "Prefer not to say", es: "Sin especificar" },
+  "child.sex_boy": { de: "Junge", en: "Boy", es: "Niño" },
+  "child.sex_girl": { de: "Mädchen", en: "Girl", es: "Niña" },
+  "child.sex_hint": {
+    de: "Nur für die WHO-Perzentilkurven im Wachstum.",
+    en: "Only used for the WHO percentile curves in growth.",
+    es: "Solo para las curvas de percentiles de la OMS.",
+  },
 
   // join dead-end
   "join.eyebrow": { de: "Einladung", en: "Invitation", es: "Invitación" },
