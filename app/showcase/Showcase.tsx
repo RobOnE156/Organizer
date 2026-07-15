@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, Billboard, Html } from "@react-three/drei";
 import * as THREE from "three";
+import NavDrawer from "@/app/NavDrawer";
 
 export type ShowcaseNode = {
   id: string;
@@ -245,6 +246,7 @@ function Fallback({ labels, reduced }: { labels: Labels; reduced: boolean }) {
 
 export default function Showcase({
   nodes,
+  childName,
   reduceMotion,
   labels,
 }: {
@@ -278,6 +280,7 @@ export default function Showcase({
           <b>{labels.title}</b>
           <small className="muted">{labels.hint}</small>
         </div>
+        <NavDrawer childName={childName} triggerClassName="menubtn showcase-menu" />
       </div>
       {nodes.length === 0 ? (
         <div className="showcase-empty">{labels.empty}</div>

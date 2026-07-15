@@ -772,10 +772,14 @@ a.brand { text-decoration: none; color: inherit; }
 .showcase-wrap canvas { display: block; touch-action: none; }
 .showcase-bar { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 4vw, 28px); background: linear-gradient(to bottom, rgba(14, 11, 19, 0.9), transparent); color: #fff; pointer-events: none; }
 .showcase-bar > * { pointer-events: auto; }
-.showcase-bar .footlink { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.18); color: #fff; }
+.showcase-bar .footlink { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.18); color: #fff; flex: 0 0 auto; }
 .showcase-bar .footlink:hover { border-color: rgba(255, 255, 255, 0.5); }
-.showcase-titlewrap b { display: block; font-size: 1.05rem; letter-spacing: -0.01em; }
+.showcase-titlewrap { flex: 1 1 auto; min-width: 0; }
+.showcase-titlewrap b { display: block; font-size: 1.05rem; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .showcase-titlewrap small { color: rgba(255, 255, 255, 0.62); font-size: 0.76rem; }
+.showcase-menu { flex: 0 0 auto; background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+.showcase-menu:hover { border-color: rgba(255, 255, 255, 0.5); }
+@media (max-width: 520px) { .showcase-titlewrap small { display: none; } }
 .showcase-empty { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255, 255, 255, 0.75); padding: 24px; text-align: center; }
 /* date axis tick labels (rendered in 3D via <Html>) */
 .showcase-tick { display: inline-flex; align-items: baseline; gap: 6px; color: rgba(255, 255, 255, 0.62); font-size: 0.82rem; font-weight: 600; white-space: nowrap; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); pointer-events: none; text-transform: capitalize; }
