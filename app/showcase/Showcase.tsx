@@ -37,6 +37,10 @@ const SPINE_X = -8.5;
 // How far each date guide line reaches from the spine toward (and a little
 // into) the helix, so one can read at a glance where a memory sits in time.
 const GRID_LEN = 11;
+// Every photo/poster preview is downscaled to this square size before it is
+// uploaded as a GPU texture, so full-resolution photos can't exhaust the iOS
+// texture-memory budget (which shows up as blank white discs).
+const PREVIEW_PX = 384;
 
 const MONTH_FMT = typeof Intl !== "undefined" ? new Intl.DateTimeFormat("de-DE", { month: "short" }) : null;
 function monthShort(iso: string): string {
@@ -149,31 +153,29 @@ function PhotoCard({
   useEffect(() => {
     if (!node.url) return;
     let alive = true;
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    loader.load(
-      node.url,
-      (texture) => {
-        if (!alive) {
-          texture.dispose();
-          return;
-        }
+    // Decode the (possibly huge, full-resolution) photo, then draw a centred
+    // square crop into a small fixed canvas *before* handing it to the GPU.
+    // Full-res iPhone photos are ~48 MB of VRAM each; a handful blow the iOS
+    // texture budget and the upload silently fails, leaving a blank white
+    // disc. Bounding every preview to PREVIEW_PX² keeps the budget sane and
+    // does the round-crop in one step. Full quality is loaded on tap.
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (!alive) return;
+      try {
+        const iw = img.naturalWidth || img.width;
+        const ih = img.naturalHeight || img.height;
+        if (!iw || !ih) return;
+        const cv = document.createElement("canvas");
+        cv.width = PREVIEW_PX;
+        cv.height = PREVIEW_PX;
+        const g = cv.getContext("2d");
+        if (!g) return;
+        const side = Math.min(iw, ih);
+        g.drawImage(img, (iw - side) / 2, (ih - side) / 2, side, side, 0, 0, PREVIEW_PX, PREVIEW_PX);
+        const texture = new THREE.CanvasTexture(cv);
         texture.colorSpace = THREE.SRGBColorSpace;
-        // Cover-crop the (usually non-square) photo into the round preview:
-        // show a centred square section instead of squashing the whole frame
-        // into the circle. Faces/subjects stay recognisable.
-        const img = texture.image as { width?: number; height?: number } | undefined;
-        if (img && img.width && img.height) {
-          const a = img.width / img.height;
-          if (a > 1) {
-            texture.repeat.set(1 / a, 1);
-            texture.offset.set((1 - 1 / a) / 2, 0);
-          } else if (a < 1) {
-            texture.repeat.set(1, a);
-            texture.offset.set(0, (1 - a) / 2);
-          }
-        }
-        // Crisp textures even for the small, receding cards.
         texture.anisotropy = gl.capabilities.getMaxAnisotropy();
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
@@ -181,14 +183,18 @@ function PhotoCard({
         texture.needsUpdate = true;
         setTex(texture);
         invalidate();
-      },
-      undefined,
-      () => {
-        /* keep the placeholder colour on error */
-      },
-    );
+      } catch {
+        /* keep the placeholder colour on any decode/upload failure */
+      }
+    };
+    img.onerror = () => {
+      /* keep the placeholder colour on error */
+    };
+    img.src = node.url;
     return () => {
       alive = false;
+      img.onload = null;
+      img.onerror = null;
     };
   }, [node.url, invalidate, gl]);
 
@@ -229,9 +235,9 @@ type Marker = { y: number; month: string; year: string; yearStart: boolean };
 type GuideLine = { y: number; level: "year" | "month" | "day" };
 
 const LINE_STYLE = {
-  year: { color: "#e0b45f", opacity: 0.4, thickness: 0.03 },
-  month: { color: "#8f88a6", opacity: 0.22, thickness: 0.018 },
-  day: { color: "#847f96", opacity: 0.17, thickness: 0.013 },
+  year: { color: "#edc472", opacity: 0.85, thickness: 0.06 },
+  month: { color: "#c3bcd6", opacity: 0.6, thickness: 0.042 },
+  day: { color: "#8f8aa2", opacity: 0.26, thickness: 0.016 },
 } as const;
 
 // A thin date axis to the left of the helix: a vertical line, a horizontal
