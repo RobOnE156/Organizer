@@ -6,6 +6,7 @@ import { getUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// v2 — re-trigger deploy
 
 // TEMPORARY diagnostic for the image-transcode service. Auth-gated; returns
 // JSON describing each step (auth → RLS select → storage download → sharp
