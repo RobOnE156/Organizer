@@ -5,6 +5,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, Billboard, Html } from "@react-three/drei";
 import * as THREE from "three";
 import NavDrawer from "@/app/NavDrawer";
+import ViewToggle from "@/app/ViewToggle";
 
 export type ShowcaseNode = {
   id: string;
@@ -273,9 +274,7 @@ export default function Showcase({
   return (
     <div className="showcase-wrap">
       <div className="showcase-bar">
-        <a className="footlink" href="/">
-          ← {labels.to2d}
-        </a>
+        <ViewToggle current="3d" className="menubtn showcase-menu viewtoggle" />
         <div className="showcase-titlewrap">
           <b>{labels.title}</b>
           <small className="muted">{labels.hint}</small>

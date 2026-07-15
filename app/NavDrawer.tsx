@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { signOut } from "@/app/auth-actions";
 import { useT } from "@/app/LanguageProvider";
 
@@ -37,7 +38,11 @@ export default function NavDrawer({
         ☰
       </button>
 
-      {open ? (
+      {/* Portal to <body>: the drawer is position:fixed, but a top bar with
+          backdrop-filter would otherwise become its containing block and trap
+          it inside the bar. */}
+      {open && typeof document !== "undefined"
+        ? createPortal(
         <div className="drawer-wrap" onClick={() => setOpen(false)}>
           <nav className="drawer" onClick={(e) => e.stopPropagation()} aria-label={t("nav.menu")}>
             <div className="drawerhead">
@@ -89,8 +94,10 @@ export default function NavDrawer({
               </button>
             </form>
           </nav>
-        </div>
-      ) : null}
+        </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

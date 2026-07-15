@@ -3,6 +3,7 @@
 import { useT } from "@/app/LanguageProvider";
 import NotificationBell from "@/app/NotificationBell";
 import ThemeModeToggle from "@/app/ThemeModeToggle";
+import ViewToggle from "@/app/ViewToggle";
 import NavDrawer from "@/app/NavDrawer";
 import type { AppNotification, MemberProfile } from "@/lib/data";
 
@@ -25,6 +26,7 @@ export default function TopNav({
         <small>{t("nav.timeline")}</small>
       </a>
       <div className="topactions">
+        <ViewToggle current="2d" />
         <ThemeModeToggle />
         <NotificationBell notifications={notifications} authors={authors} />
         <NavDrawer childName={childName} />
