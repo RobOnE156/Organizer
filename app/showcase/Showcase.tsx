@@ -31,9 +31,16 @@ const ANGLE_STEP = (Math.PI * 2) / NODES_PER_TURN;
 const Y_STEP = 2.0;
 const RADIUS = 6;
 const CARD = 1.85;
+const SPINE_X = -8.5;
 
-// One textured card, billboarded to face the viewer. Its texture is loaded
-// lazily and disposed on unmount so the GPU budget stays bounded.
+const MONTH_FMT = typeof Intl !== "undefined" ? new Intl.DateTimeFormat("de-DE", { month: "short" }) : null;
+function monthShort(iso: string): string {
+  const d = new Date(iso.slice(0, 10) + "T00:00:00");
+  return MONTH_FMT && !Number.isNaN(d.getTime()) ? MONTH_FMT.format(d) : iso.slice(5, 7);
+}
+
+// One round, billboarded photo. Texture is loaded lazily and disposed on
+// unmount so the GPU budget stays bounded.
 function PhotoCard({
   node,
   position,
@@ -64,7 +71,7 @@ function PhotoCard({
       },
       undefined,
       () => {
-        /* leave the placeholder colour on error */
+        /* keep the placeholder colour on error */
       },
     );
     return () => {
@@ -77,7 +84,7 @@ function PhotoCard({
   return (
     <Billboard position={position}>
       <mesh position={[0, 0, -0.02]}>
-        <planeGeometry args={[CARD + 0.14, CARD + 0.14]} />
+        <circleGeometry args={[CARD / 2 + 0.08, 56]} />
         <meshBasicMaterial color="#f4eee9" toneMapped={false} />
       </mesh>
       <mesh
@@ -92,10 +99,39 @@ function PhotoCard({
           if (typeof document !== "undefined") document.body.style.cursor = "auto";
         }}
       >
-        <planeGeometry args={[CARD, CARD]} />
+        <circleGeometry args={[CARD / 2, 56]} />
         <meshBasicMaterial map={tex ?? null} color={tex ? "#ffffff" : "#c99a3f"} toneMapped={false} />
       </mesh>
     </Billboard>
+  );
+}
+
+type Marker = { y: number; month: string; year: string; yearStart: boolean };
+
+// A thin date axis to the left of the helix: a vertical line with a tick +
+// month (and year) label at each period, aligned with the memories' heights.
+function DateSpine({ height, markers }: { height: number; markers: Marker[] }) {
+  return (
+    <group position={[SPINE_X, 0, 0]}>
+      <mesh position={[0, height / 2, 0]}>
+        <boxGeometry args={[0.04, height + 1.4, 0.04]} />
+        <meshBasicMaterial color="#4c4658" toneMapped={false} />
+      </mesh>
+      {markers.map((m) => (
+        <group key={m.month + m.y} position={[0, m.y, 0]}>
+          <mesh position={[0.28, 0, 0]}>
+            <boxGeometry args={[0.56, m.yearStart ? 0.08 : 0.035, 0.035]} />
+            <meshBasicMaterial color={m.yearStart ? "#e0b45f" : "#8a8398"} toneMapped={false} />
+          </mesh>
+          <Html position={[0.85, 0, 0]} center distanceFactor={26} zIndexRange={[0, 0]}>
+            <span className={"showcase-tick" + (m.yearStart ? " year" : "")}>
+              {m.yearStart ? <b>{m.year}</b> : null}
+              {m.month}
+            </span>
+          </Html>
+        </group>
+      ))}
+    </group>
   );
 }
 
@@ -111,17 +147,19 @@ function Scene({ nodes, onSelect }: { nodes: ShowcaseNode[]; onSelect: (n: Showc
       return new THREE.Vector3(Math.cos(a) * RADIUS, i * Y_STEP, Math.sin(a) * RADIUS);
     });
     const height = Math.max(1, (sorted.length - 1) * Y_STEP);
-    const yearLabels: { year: string; pos: THREE.Vector3 }[] = [];
+    const markers: Marker[] = [];
+    let prevMonth = "";
     let prevYear = "";
     sorted.forEach((n, i) => {
+      const ym = n.eventDate.slice(0, 7);
       const year = n.eventDate.slice(0, 4);
-      if (year !== prevYear) {
-        const p = positions[i]!;
-        yearLabels.push({ year, pos: new THREE.Vector3(p.x * 1.55, p.y, p.z * 1.55) });
+      if (ym !== prevMonth) {
+        markers.push({ y: i * Y_STEP, month: monthShort(n.eventDate), year, yearStart: year !== prevYear });
+        prevMonth = ym;
         prevYear = year;
       }
     });
-    return { positions, height, yearLabels };
+    return { positions, height, markers };
   }, [sorted]);
 
   const h = layout.height;
@@ -143,11 +181,7 @@ function Scene({ nodes, onSelect }: { nodes: ShowcaseNode[]; onSelect: (n: Showc
       {sorted.map((n, i) => (
         <PhotoCard key={n.id} node={n} position={layout.positions[i]!} onSelect={onSelect} />
       ))}
-      {layout.yearLabels.map((yl) => (
-        <Html key={yl.year} position={yl.pos} center distanceFactor={20} zIndexRange={[0, 0]}>
-          <span className="showcase-year">{yl.year}</span>
-        </Html>
-      ))}
+      <DateSpine height={h} markers={layout.markers} />
       <OrbitControls
         makeDefault
         target={[0, camY, 0]}
@@ -162,20 +196,27 @@ function Scene({ nodes, onSelect }: { nodes: ShowcaseNode[]; onSelect: (n: Showc
   );
 }
 
+// An atmospheric detail view: the photo sits on a soft glow made from a
+// blurred copy of itself, and pops in gently.
 function DetailOverlay({ node, labels, onClose }: { node: ShowcaseNode; labels: Labels; onClose: () => void }) {
   return (
     <div className="showcase-detail" onClick={onClose}>
-      <div className="showcase-detailcard" onClick={(e) => e.stopPropagation()}>
+      <div className="showcase-stage" onClick={(e) => e.stopPropagation()}>
+        {node.url ? <img className="showcase-glow" src={node.url} alt="" aria-hidden /> : null}
         <button className="showcase-close" onClick={onClose} aria-label={labels.close}>
           ✕
         </button>
-        {node.url ? <img src={node.url} alt="" /> : <div className="showcase-noimg">🎬</div>}
-        <div className="showcase-detailmeta">
+        {node.url ? (
+          <img className="showcase-photo" src={node.url} alt="" />
+        ) : (
+          <div className="showcase-noimg">🎬</div>
+        )}
+        <div className="showcase-caption">
           {node.title ? <b>{node.title}</b> : null}
-          <small>
+          <span>
             {node.dateLabel}
             {node.age ? ` · ${node.age}` : ""}
-          </small>
+          </span>
           <a className="btn btn-primary" href={`/#entry-${node.id}`}>
             {labels.open}
           </a>
