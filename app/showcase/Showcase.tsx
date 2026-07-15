@@ -161,8 +161,10 @@ function PhotoCard({
     // does the round-crop in one step. Full quality is loaded on tap.
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (!alive) return;
+    img.decoding = "async";
+    let done = false;
+    const draw = () => {
+      if (!alive || done) return;
       try {
         const iw = img.naturalWidth || img.width;
         const ih = img.naturalHeight || img.height;
@@ -181,16 +183,26 @@ function PhotoCard({
         texture.magFilter = THREE.LinearFilter;
         texture.generateMipmaps = true;
         texture.needsUpdate = true;
+        done = true;
         setTex(texture);
         invalidate();
       } catch {
         /* keep the placeholder colour on any decode/upload failure */
       }
     };
+    // On iOS Safari `onload` can fire before a large photo is actually
+    // decoded, so drawImage paints a blank (white) canvas. decode() waits for
+    // the real bitmap; onload stays as a fallback for browsers without it.
+    img.onload = draw;
     img.onerror = () => {
       /* keep the placeholder colour on error */
     };
     img.src = node.url;
+    if (typeof img.decode === "function") {
+      img.decode().then(draw).catch(() => {
+        /* decode may reject (e.g. some formats) — onload fallback covers it */
+      });
+    }
     return () => {
       alive = false;
       img.onload = null;
@@ -235,9 +247,9 @@ type Marker = { y: number; month: string; year: string; yearStart: boolean };
 type GuideLine = { y: number; level: "year" | "month" | "day" };
 
 const LINE_STYLE = {
-  year: { color: "#edc472", opacity: 0.85, thickness: 0.06 },
-  month: { color: "#c3bcd6", opacity: 0.6, thickness: 0.042 },
-  day: { color: "#8f8aa2", opacity: 0.26, thickness: 0.016 },
+  year: { color: "#edc472", opacity: 0.9, thickness: 0.06 },
+  month: { color: "#d2cbe4", opacity: 0.82, thickness: 0.05 },
+  day: { color: "#b7b1c8", opacity: 0.58, thickness: 0.034 },
 } as const;
 
 // A thin date axis to the left of the helix: a vertical line, a horizontal
