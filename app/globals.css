@@ -318,6 +318,7 @@ a.brand { text-decoration: none; color: inherit; }
 .sharenote { font-size: 0.85rem; color: var(--muted); background: var(--surface-2); border: 1px solid var(--faint); border-radius: 12px; padding: 10px 13px; margin: 12px 0 0; }
 .sharefoot { text-align: center; padding: 36px 0 10px; }
 .sharefoot .muted { font-size: 0.85rem; }
+.sharemedia-note { font-size: 0.85rem; color: var(--muted); background: var(--surface-2); border: 1px solid var(--faint); border-radius: 10px; padding: 8px 11px; margin: 8px 0 0; }
 .msep { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 12px; }
 .msep h2 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; margin: 0; }
 .msep span { font-size: 0.82rem; color: var(--muted); }

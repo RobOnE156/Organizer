@@ -18,11 +18,13 @@ function ShareEntry({
   entry,
   author,
   media,
+  otherCount,
   t,
 }: {
   entry: Entry;
   author: MemberProfile;
   media: SignedMedia[];
+  otherCount: number;
   t: ReturnType<typeof translator>;
 }) {
   return (
@@ -34,6 +36,7 @@ function ShareEntry({
       </div>
       {entry.title ? <h3>{entry.title}</h3> : null}
       {media.length > 0 ? <EntryMedia media={media} /> : null}
+      {otherCount > 0 ? <p className="sharemedia-note">🎬 {t("share.media_in_diary", { n: otherCount })}</p> : null}
       {entry.body ? <p className="body">{entry.body}</p> : null}
       {entry.link ? (
         <a className="linkcard" href={entry.link.url} target="_blank" rel="noreferrer noopener nofollow">
@@ -127,6 +130,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                 entry={e}
                 author={view.authors[e.author_id] ?? fallback}
                 media={view.mediaByEntry[e.id] ?? []}
+                otherCount={view.otherCountByEntry[e.id] ?? 0}
                 t={t}
               />
             ))}

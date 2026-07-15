@@ -216,6 +216,11 @@ const M = {
     es: "Solo para ver. Las entradas privadas y las ubicaciones están ocultas.",
   },
   "share.empty": { de: "Hier gibt es noch nichts zu sehen.", en: "There's nothing to see here yet.", es: "Aún no hay nada que ver aquí." },
+  "share.media_in_diary": {
+    de: "{n} Video/Audio — nur im Tagebuch selbst ansehbar",
+    en: "{n} video/audio — viewable in the diary itself",
+    es: "{n} vídeo/audio — visible solo en el diario",
+  },
   "share.footer": {
     de: "Mit Liebe geführt im Benni-Tagebuch.",
     en: "Kept with love in the Benni diary.",

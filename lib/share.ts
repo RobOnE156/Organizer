@@ -1,3 +1,4 @@
+import "server-only";
 import crypto from "node:crypto";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { stripJpegExif } from "@/lib/jpeg-strip";
@@ -29,6 +30,10 @@ export type ShareView = {
   birthDate: string | null;
   entries: Entry[];
   mediaByEntry: Record<string, SignedMedia[]>;
+  // Count of non-image media (video/audio) per entry. These are NOT served
+  // through a share (their container can embed GPS we can't strip here), so the
+  // view shows a "view in the diary" placeholder instead.
+  otherCountByEntry: Record<string, number>;
   authors: Record<string, MemberProfile>;
 };
 
@@ -47,6 +52,7 @@ function empty(reason: ShareViewReason, over: Partial<ShareView> = {}): ShareVie
     birthDate: null,
     entries: [],
     mediaByEntry: {},
+    otherCountByEntry: {},
     authors: {},
     ...over,
   };
@@ -126,25 +132,23 @@ export async function getShareView(token: string | undefined | null): Promise<Sh
 
   const ids = entries.map((e) => e.id);
   const media = await getMediaForEntries(admin, ids);
-  // Photos are served through a proxy that strips EXIF (older uploads still
-  // carry GPS in the file itself); videos/audio keep direct signed URLs.
-  const nonImages = media.filter((m) => m.kind !== "image");
-  const urlByKey = new Map<string, string>();
-  if (nonImages.length > 0) {
-    const { data: signed } = await admin.storage.from("media").createSignedUrls(
-      nonImages.map((m) => m.storage_key),
-      3600,
-    );
-    for (const s of signed ?? []) if (s.signedUrl && s.path) urlByKey.set(s.path, s.signedUrl);
-  }
+  // Photos are served through a proxy that strips EXIF. Videos/audio are NOT
+  // served through a share — their container can embed GPS we can't strip on
+  // the server — so we only count them and show a placeholder. `key` is left
+  // empty on purpose: it would otherwise disclose the household/entry UUIDs and
+  // original filename to an anonymous viewer via the client component.
   const mediaByEntry: Record<string, SignedMedia[]> = {};
+  const otherCountByEntry: Record<string, number> = {};
   for (const m of media) {
-    const url =
-      m.kind === "image"
-        ? `/share/${encodeURIComponent(token)}/m?id=${m.id}`
-        : urlByKey.get(m.storage_key);
-    if (!url) continue;
-    (mediaByEntry[m.entry_id] ??= []).push({ kind: m.kind, url, key: m.storage_key });
+    if (m.kind === "image") {
+      (mediaByEntry[m.entry_id] ??= []).push({
+        kind: "image",
+        url: `/share/${encodeURIComponent(token)}/m?id=${m.id}`,
+        key: "",
+      });
+    } else {
+      otherCountByEntry[m.entry_id] = (otherCountByEntry[m.entry_id] ?? 0) + 1;
+    }
   }
   const authors = await getMemberProfiles(admin, link.household_id);
 
@@ -165,6 +169,7 @@ export async function getShareView(token: string | undefined | null): Promise<Sh
     birthDate,
     entries,
     mediaByEntry,
+    otherCountByEntry,
     authors,
   };
 }
@@ -219,10 +224,15 @@ export async function getShareMedia(
   const e = eRow as { household_id: string; is_private: boolean; deleted_at: string | null } | null;
   if (!e || e.household_id !== link.household_id || e.is_private || e.deleted_at) return null;
 
+  // Only serve images we can positively scrub. JPEGs get EXIF stripped; if the
+  // stripper can't fully parse the file, or it's a non-JPEG we can't strip
+  // (HEIC/PNG/WebP may still carry GPS), we refuse (404) rather than leak.
+  const mime = (m.mime || "").toLowerCase();
+  if (!/jpe?g/.test(mime)) return null;
   const { data: blob, error } = await admin.storage.from("media").download(m.storage_key);
   if (error || !blob) return null;
   const raw = new Uint8Array(await blob.arrayBuffer());
-  const mime = m.mime || "image/jpeg";
-  const bytes = /jpe?g/i.test(mime) ? stripJpegExif(raw) : raw;
-  return { bytes, mime };
+  const bytes = stripJpegExif(raw);
+  if (!bytes) return null;
+  return { bytes, mime: "image/jpeg" };
 }

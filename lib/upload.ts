@@ -372,16 +372,45 @@ export async function uploadWithProgress(
     xhr.setRequestHeader("x-upsert", "false");
     xhr.setRequestHeader("cache-control", "max-age=3600");
     if (file.type) xhr.setRequestHeader("content-type", file.type);
+
+    // Idle watchdog: abort only if the upload makes NO progress for 60s (a
+    // stalled connection that never fires load/error), not merely because a big
+    // file is slow — resetting on each progress tick keeps slow-but-moving
+    // uploads alive.
+    let timedOut = false;
+    let idle: ReturnType<typeof setTimeout>;
+    const armIdle = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => {
+        timedOut = true;
+        try {
+          xhr.abort();
+        } catch {
+          /* ignore */
+        }
+      }, 60000);
+    };
+
     xhr.upload.onprogress = (e) => {
+      armIdle();
       if (e.lengthComputable) onProgress(e.loaded);
     };
-    xhr.onload = () =>
+    xhr.onload = () => {
+      clearTimeout(idle);
       xhr.status >= 200 && xhr.status < 300
         ? resolve({})
         : resolve({ error: `HTTP ${xhr.status}${xhr.responseText ? ": " + xhr.responseText.slice(0, 160) : ""}` });
-    xhr.onerror = () => resolve({ error: "network" });
-    xhr.onabort = () => resolve({ error: "aborted" });
+    };
+    xhr.onerror = () => {
+      clearTimeout(idle);
+      resolve({ error: "network" });
+    };
+    xhr.onabort = () => {
+      clearTimeout(idle);
+      resolve({ error: timedOut ? "timeout" : "aborted" });
+    };
     signal?.addEventListener("abort", () => xhr.abort());
+    armIdle();
     xhr.send(file);
   });
 }
