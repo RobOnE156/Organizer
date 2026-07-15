@@ -22,7 +22,7 @@ import {
   type Reaction,
   type SignedMedia,
 } from "@/lib/data";
-import { ageLabel, fmtDate, monthKey, monthLabel } from "@/lib/timeline";
+import { ageLabel, fmtDate, monthKey, monthLabel, monthName } from "@/lib/timeline";
 import { translator, type T } from "@/lib/i18n";
 import TopNav from "@/app/TopNav";
 import EntryMenu from "@/app/EntryMenu";
@@ -196,12 +196,19 @@ export default async function Home() {
   }
 
   // Group entries by calendar month (already sorted newest-first).
-  const groups: { key: string; label: string; sub: string; entries: Entry[] }[] = [];
+  const groups: { key: string; label: string; month: string; year: string; sub: string; entries: Entry[] }[] = [];
   for (const e of entries) {
     const key = monthKey(e.event_date);
     let group = groups.find((g) => g.key === key);
     if (!group) {
-      group = { key, label: monthLabel(e.event_date), sub: ageLabel(child.birth_date, e.event_date), entries: [] };
+      group = {
+        key,
+        label: monthLabel(e.event_date),
+        month: monthName(e.event_date),
+        year: e.event_date.slice(0, 4),
+        sub: ageLabel(child.birth_date, e.event_date),
+        entries: [],
+      };
       groups.push(group);
     }
     group.entries.push(e);
@@ -259,32 +266,37 @@ export default async function Home() {
             <p className="muted">{t("home.no_entries_hint")}</p>
           </div>
         ) : (
-          groups.map((group) => (
-            <section key={group.key}>
-              <div className="msep">
-                <h2>{group.label}</h2>
-                <span>· {child.name}{group.sub ? ` · ${group.sub}` : ""}</span>
-              </div>
-              {group.entries.map((e) => (
-                <EntryCard
-                  key={e.id}
-                  entry={e}
-                  author={authors[e.author_id] ?? fallbackAuthor}
-                  media={mediaByEntry[e.id] ?? []}
-                  isOwn={e.author_id === user.id}
-                  comments={commentsByEntry[e.id] ?? []}
-                  authors={authors}
-                  userId={user.id}
-                  householdId={membership.household_id}
-                  linkThumb={linkThumbByEntry[e.id]}
-                  reactions={reactionsByEntry[e.id] ?? []}
-                  commentReactions={commentReactionsByEntry[e.id] ?? []}
-                  isHighlight={highlightedIds.has(e.id)}
-                  t={t}
-                />
-              ))}
-            </section>
-          ))
+          <div className="tlrail">
+            {groups.map((group) => (
+              <section className="tlgroup" key={group.key}>
+                <div className="tlmark">
+                  <b>{group.month}</b>
+                  <small>{group.year}</small>
+                  {group.sub ? <small className="tlage">{group.sub}</small> : null}
+                </div>
+                <div className="tlgroupbody">
+                  {group.entries.map((e) => (
+                    <EntryCard
+                      key={e.id}
+                      entry={e}
+                      author={authors[e.author_id] ?? fallbackAuthor}
+                      media={mediaByEntry[e.id] ?? []}
+                      isOwn={e.author_id === user.id}
+                      comments={commentsByEntry[e.id] ?? []}
+                      authors={authors}
+                      userId={user.id}
+                      householdId={membership.household_id}
+                      linkThumb={linkThumbByEntry[e.id]}
+                      reactions={reactionsByEntry[e.id] ?? []}
+                      commentReactions={commentReactionsByEntry[e.id] ?? []}
+                      isHighlight={highlightedIds.has(e.id)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
       </main>
       <a className="fab" href="/new">{t("home.fab_add")}</a>

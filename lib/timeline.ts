@@ -9,6 +9,13 @@ export function monthLabel(iso: string): string {
   return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(d);
 }
 
+// Short month name (for the timeline's left date rail, where the year is shown
+// separately and the column is narrow — "Jan.", "Dez.", …).
+export function monthName(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  return new Intl.DateTimeFormat("de-DE", { month: "short" }).format(d);
+}
+
 export function fmtDate(iso: string): string {
   if (!iso) return "";
   // Accept both date-only ("2026-07-08") and full timestamps

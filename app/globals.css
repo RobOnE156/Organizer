@@ -311,6 +311,22 @@ a.brand { text-decoration: none; color: inherit; }
 
 /* timeline */
 .tl { max-width: 640px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 24px) 80px; }
+/* left date rail: a thin vertical timeline with month + year down the left */
+.tlrail { position: relative; }
+.tlrail::before { content: ""; position: absolute; left: 55px; top: 6px; bottom: 40px; width: 2px; border-radius: 2px; background: linear-gradient(to bottom, color-mix(in oklab, var(--gold) 35%, var(--faint)), var(--faint)); }
+.tlgroup { display: grid; grid-template-columns: 56px 1fr; margin-top: 26px; }
+.tlmark { position: relative; text-align: right; padding: 4px 20px 0 0; }
+.tlmark b { display: block; font-size: 0.9rem; font-weight: 800; letter-spacing: -0.01em; text-transform: capitalize; }
+.tlmark small { display: block; font-size: 0.72rem; color: var(--muted); }
+.tlmark .tlage { margin-top: 2px; opacity: 0.85; }
+.tlmark::after { content: ""; position: absolute; right: -6px; top: 8px; width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px var(--bg); }
+.tlgroupbody { min-width: 0; padding-left: 20px; }
+@media (max-width: 460px) {
+  .tlrail::before { left: 47px; }
+  .tlgroup { grid-template-columns: 48px 1fr; }
+  .tlmark { padding-right: 16px; }
+  .tlgroupbody { padding-left: 16px; }
+}
 /* public read-only share view */
 .sharetl { padding-top: 6vh; }
 .sharehead { margin-bottom: 8px; }
