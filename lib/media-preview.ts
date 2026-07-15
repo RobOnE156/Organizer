@@ -55,16 +55,18 @@ export async function getMediaPreview(
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
-    .from("media")
-    .select("storage_key, poster_key, kind")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle();
-  const m = data as { storage_key: string | null; poster_key: string | null; kind: string } | null;
+  // poster_key (migration 0029) may not exist yet on every database; tolerate
+  // its absence with a cascading fallback, exactly like getMediaForEntries.
+  // Without this, selecting a missing column errors → null → 404 for EVERY
+  // preview (which shows up as blank/white discs).
+  const runSel = (cols: string) =>
+    supabase.from("media").select(cols).eq("id", id).is("deleted_at", null).maybeSingle();
+  let res = await runSel("storage_key, poster_key, kind");
+  if (res.error) res = await runSel("storage_key, kind");
+  const m = res.data as { storage_key: string | null; poster_key?: string | null; kind: string } | null;
   if (!m) return null;
 
-  const key = opts.poster ? m.poster_key : m.storage_key;
+  const key = opts.poster ? m.poster_key ?? null : m.storage_key;
   if (!key) return null;
 
   // The download itself uses the service-role client (the SSR client can't
