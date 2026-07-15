@@ -75,6 +75,9 @@ export default function TopNav({
             <a className="drawerlink" href="/book">
               <span className="di">📖</span> {t("nav.book")}
             </a>
+            <a className="drawerlink" href="/showcase">
+              <span className="di">✨</span> {t("nav.showcase")}
+            </a>
             <a className="drawerlink" href="/map">
               <span className="di">🗺️</span> {t("nav.map")}
             </a>

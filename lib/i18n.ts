@@ -328,6 +328,33 @@ const M = {
   "book.closing": { de: "Für {name} — mit all unserer Liebe.", en: "For {name} — with all our love.", es: "Para {name} — con todo nuestro cariño." },
   "book.a_parent": { de: "Elternteil", en: "A parent", es: "Madre o padre" },
 
+  // 3D showcase timeline
+  "common.close": { de: "Schließen", en: "Close", es: "Cerrar" },
+  "nav.showcase": { de: "3D-Ansicht", en: "3D view", es: "Vista 3D" },
+  "showcase.title": { de: "{name}s Erinnerungen in 3D", en: "{name}'s memories in 3D", es: "Los recuerdos de {name} en 3D" },
+  "showcase.hint": {
+    de: "Ziehen zum Drehen · Scrollen zum Zoomen · Tippen zum Öffnen",
+    en: "Drag to rotate · scroll to zoom · tap to open",
+    es: "Arrastra para girar · desplaza para acercar · toca para abrir",
+  },
+  "showcase.to_2d": { de: "Zur Timeline", en: "To the timeline", es: "A la línea de tiempo" },
+  "showcase.open": { de: "Im Tagebuch öffnen", en: "Open in the diary", es: "Abrir en el diario" },
+  "showcase.empty": {
+    de: "Noch keine Erinnerungen für die 3D-Ansicht.",
+    en: "No memories for the 3D view yet.",
+    es: "Aún no hay recuerdos para la vista 3D.",
+  },
+  "showcase.reduced": {
+    de: "Die 3D-Ansicht ist bei „reduzierter Bewegung“ deaktiviert. Du kannst sie in den Barrierefreiheits-Einstellungen wieder aktivieren.",
+    en: "The 3D view is off while “reduce motion” is on. You can re-enable it in the accessibility settings.",
+    es: "La vista 3D está desactivada con “reducir movimiento”. Puedes reactivarla en los ajustes de accesibilidad.",
+  },
+  "showcase.unsupported": {
+    de: "Dein Browser oder Gerät unterstützt die 3D-Ansicht leider nicht.",
+    en: "Your browser or device doesn't support the 3D view.",
+    es: "Tu navegador o dispositivo no admite la vista 3D.",
+  },
+
   // change e-mail address
   "em.title": { de: "E-Mail-Adresse ändern", en: "Change e-mail address", es: "Cambiar correo electrónico" },
   "em.current": { de: "Aktuell: {email}", en: "Current: {email}", es: "Actual: {email}" },
