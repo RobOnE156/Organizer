@@ -1,45 +1,47 @@
 import "server-only";
 import sharp from "sharp";
+import decodeHeic from "heic-decode";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-// v2 — re-trigger deploy
+// v3 — HEIC test
 
-// TEMPORARY diagnostic for the image-transcode service. Auth-gated; returns
-// JSON describing each step (auth → RLS select → storage download → sharp
-// transcode) so we can see which one fails on the deployment. Remove once the
-// preview route is confirmed working.
+// TEMPORARY diagnostic. Auth-gated; reports whether the HEIC decode path works
+// on the deployment. Remove once previews are confirmed working.
 export async function GET() {
   const diag: Record<string, unknown> = {};
   try {
     diag.hasServiceRole = hasServiceRole();
-
     const user = await getUser();
     diag.authed = Boolean(user);
     if (!user) return json(diag);
 
     const supabase = await createClient();
-    const { data: mrow, error: selErr } = await supabase
+    // List images + their mime types so we can see how many are HEIC.
+    const { data: rows } = await supabase
       .from("media")
-      .select("id, storage_key, mime, kind")
+      .select("id, storage_key, mime")
       .eq("kind", "image")
       .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
-    diag.selectError = selErr?.message ?? null;
-    const m = mrow as { id: string; storage_key: string; mime: string | null; kind: string } | null;
-    diag.foundImageMedia = Boolean(m);
-    if (!m) return json(diag);
-    diag.mime = m.mime;
-    diag.storageKeyLen = (m.storage_key ?? "").length;
-    // Open THIS URL directly in the browser to test the real route response:
-    diag.openThisPreviewUrl = `/media/${m.id}/preview?w=512`;
+      .limit(200);
+    const imgs = (rows as { id: string; storage_key: string; mime: string | null }[] | null) ?? [];
+    diag.imageCount = imgs.length;
+    const byMime: Record<string, number> = {};
+    for (const r of imgs) byMime[(r.mime || "unknown").toLowerCase()] = (byMime[(r.mime || "unknown").toLowerCase()] ?? 0) + 1;
+    diag.mimeCounts = byMime;
+
+    // Pick a NON-jpeg image (most likely HEIC) to exercise the hard path.
+    const heic = imgs.find((r) => !/jpe?g/i.test(r.mime || "")) ?? null;
+    diag.foundNonJpeg = Boolean(heic);
+    if (!heic) return json(diag);
+    diag.testMime = heic.mime;
+    diag.testPreviewUrl = `/media/${heic.id}/preview?w=512`;
 
     const admin = createAdminClient();
-    const { data: blob, error: dlErr } = await admin.storage.from("media").download(m.storage_key);
+    const { data: blob, error: dlErr } = await admin.storage.from("media").download(heic.storage_key);
     diag.downloadError = dlErr?.message ?? null;
     if (!blob) return json(diag);
     const buf = Buffer.from(await blob.arrayBuffer());
@@ -47,18 +49,26 @@ export async function GET() {
     diag.magicHex = buf.subarray(0, 4).toString("hex");
     diag.ftypBrand = buf.length >= 12 ? buf.subarray(4, 12).toString("latin1") : "";
 
+    // Path A: sharp directly (does this libvips read HEIC?).
     try {
-      const meta = await sharp(buf).metadata();
-      diag.sharpMeta = { format: meta.format, width: meta.width, height: meta.height, hasAlpha: meta.hasAlpha, space: meta.space };
-      const out = await sharp(buf).rotate().resize(512, 512, { fit: "cover", position: "attention" }).jpeg({ quality: 82 }).toBuffer();
-      diag.transcodeBytes = out.length;
+      const out = await sharp(buf).rotate().resize(512, 512, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
       const st = await sharp(out).stats();
-      diag.outStdev = st.channels.map((c) => Math.round(c.stdev));
-      diag.outMean = st.channels.map((c) => Math.round(c.mean));
-      diag.looksBlank = st.channels.every((c) => c.stdev < 5);
+      diag.sharpDirect = { ok: true, bytes: out.length, stdev: st.channels.map((c) => Math.round(c.stdev)) };
     } catch (e) {
-      diag.sharpError = e instanceof Error ? e.message : String(e);
+      diag.sharpDirect = { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
+
+    // Path B: libheif (WASM) → raw RGBA → sharp (the fallback our route uses).
+    try {
+      const { width, height, data } = await decodeHeic({ buffer: buf });
+      const raw = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+      const out = await sharp(raw, { raw: { width, height, channels: 4 } }).resize(512, 512, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
+      const st = await sharp(out).stats();
+      diag.heicDecode = { ok: true, srcWH: `${width}x${height}`, bytes: out.length, stdev: st.channels.map((c) => Math.round(c.stdev)) };
+    } catch (e) {
+      diag.heicDecode = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+
     return json(diag);
   } catch (e) {
     diag.fatal = e instanceof Error ? e.message : String(e);
