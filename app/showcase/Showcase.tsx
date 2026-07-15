@@ -32,8 +32,11 @@ const NODES_PER_TURN = 7;
 const ANGLE_STEP = (Math.PI * 2) / NODES_PER_TURN;
 const Y_STEP = 2.0;
 const RADIUS = 6;
-const CARD = 1.85;
+const CARD = 2.2;
 const SPINE_X = -8.5;
+// How far each date guide line reaches from the spine toward (and a little
+// into) the helix, so one can read at a glance where a memory sits in time.
+const GRID_LEN = 11;
 
 const MONTH_FMT = typeof Intl !== "undefined" ? new Intl.DateTimeFormat("de-DE", { month: "short" }) : null;
 function monthShort(iso: string): string {
@@ -53,7 +56,7 @@ function PhotoCard({
   onSelect: (n: ShowcaseNode) => void;
 }) {
   const [tex, setTex] = useState<THREE.Texture | null>(null);
-  const { invalidate } = useThree();
+  const { invalidate, gl } = useThree();
 
   useEffect(() => {
     if (!node.url) return;
@@ -68,6 +71,26 @@ function PhotoCard({
           return;
         }
         texture.colorSpace = THREE.SRGBColorSpace;
+        // Cover-crop the (usually non-square) photo into the round preview:
+        // show a centred square section instead of squashing the whole frame
+        // into the circle. Faces/subjects stay recognisable.
+        const img = texture.image as { width?: number; height?: number } | undefined;
+        if (img && img.width && img.height) {
+          const a = img.width / img.height;
+          if (a > 1) {
+            texture.repeat.set(1 / a, 1);
+            texture.offset.set((1 - 1 / a) / 2, 0);
+          } else if (a < 1) {
+            texture.repeat.set(1, a);
+            texture.offset.set(0, (1 - a) / 2);
+          }
+        }
+        // Crisp textures even for the small, receding cards.
+        texture.anisotropy = gl.capabilities.getMaxAnisotropy();
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = true;
+        texture.needsUpdate = true;
         setTex(texture);
         invalidate();
       },
@@ -79,7 +102,7 @@ function PhotoCard({
     return () => {
       alive = false;
     };
-  }, [node.url, invalidate]);
+  }, [node.url, invalidate, gl]);
 
   useEffect(() => () => tex?.dispose(), [tex]);
 
@@ -102,8 +125,18 @@ function PhotoCard({
         }}
       >
         <circleGeometry args={[CARD / 2, 56]} />
-        <meshBasicMaterial map={tex ?? null} color={tex ? "#ffffff" : "#c99a3f"} toneMapped={false} />
+        <meshBasicMaterial
+          map={tex ?? null}
+          color={tex ? "#ffffff" : node.isVideo ? "#5b5170" : "#c99a3f"}
+          toneMapped={false}
+        />
       </mesh>
+      {/* type hint for cards that have no photo/poster to preview */}
+      {!tex && !node.url ? (
+        <Html center distanceFactor={9} zIndexRange={[0, 0]} pointerEvents="none">
+          <span className="showcase-glyph">{node.isVideo ? "🎬" : "✎"}</span>
+        </Html>
+      ) : null}
     </Billboard>
   );
 }
@@ -121,6 +154,18 @@ function DateSpine({ height, markers }: { height: number; markers: Marker[] }) {
       </mesh>
       {markers.map((m) => (
         <group key={m.month + m.y} position={[0, m.y, 0]}>
+          {/* horizontal guide reaching from the axis toward the helix, so the
+              height of a memory maps onto a date at a glance */}
+          <mesh position={[GRID_LEN / 2, 0, 0]}>
+            <boxGeometry args={[GRID_LEN, m.yearStart ? 0.03 : 0.015, 0.012]} />
+            <meshBasicMaterial
+              color={m.yearStart ? "#e0b45f" : "#8f88a6"}
+              transparent
+              opacity={m.yearStart ? 0.36 : 0.18}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
           <mesh position={[0.28, 0, 0]}>
             <boxGeometry args={[0.56, m.yearStart ? 0.08 : 0.035, 0.035]} />
             <meshBasicMaterial color={m.yearStart ? "#e0b45f" : "#8a8398"} toneMapped={false} />
