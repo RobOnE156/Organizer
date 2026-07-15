@@ -35,6 +35,8 @@ export async function GET() {
     if (!m) return json(diag);
     diag.mime = m.mime;
     diag.storageKeyLen = (m.storage_key ?? "").length;
+    // Open THIS URL directly in the browser to test the real route response:
+    diag.openThisPreviewUrl = `/media/${m.id}/preview?w=512`;
 
     const admin = createAdminClient();
     const { data: blob, error: dlErr } = await admin.storage.from("media").download(m.storage_key);
