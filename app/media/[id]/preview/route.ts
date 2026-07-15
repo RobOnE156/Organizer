@@ -21,9 +21,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     status: 200,
     headers: {
       "content-type": "image/jpeg",
-      // Content is immutable per (id, w, poster, fit); cache hard in the
-      // browser. Private: it is authorised per request, never shared/CDN.
-      "cache-control": "private, max-age=31536000, immutable",
+      // Browser-cache for a day (private: authorised per request, never
+      // shared/CDN). Deliberately NOT immutable, so a bad early response can't
+      // be pinned; must-revalidate lets a refresh re-fetch.
+      "cache-control": "private, max-age=86400, must-revalidate",
       "referrer-policy": "no-referrer",
       "x-content-type-options": "nosniff",
     },

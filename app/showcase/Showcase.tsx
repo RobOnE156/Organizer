@@ -13,7 +13,9 @@ export type ShowcaseNode = {
   eventDate: string;
   dateLabel: string;
   age: string;
-  url: string | null;
+  previewUrl: string | null; // small transcoded JPEG for the 3D disc (primary)
+  fallbackUrl: string | null; // direct signed URL if the transcode preview fails
+  url: string | null; // larger image for the detail overlay
   isVideo: boolean;
 };
 
@@ -63,7 +65,7 @@ function makeLabelTexture(node: ShowcaseNode): THREE.CanvasTexture | null {
 
   // mode: a real note/link (no media), a video (no usable frame), or a photo
   // whose bitmap we couldn't turn into a texture (e.g. an iOS HEIC).
-  const mode = node.isVideo ? "video" : node.url ? "photo" : "note";
+  const mode = node.isVideo ? "video" : node.previewUrl || node.url ? "photo" : "note";
   const base = mode === "video" ? "#4a4160" : mode === "photo" ? "#3c414d" : "#b98a34";
   g.fillStyle = base;
   g.fillRect(0, 0, S, S);
@@ -163,94 +165,107 @@ function PhotoCard({
   // For memories without a photo/poster, paint the title onto the disc so it
   // previews real content instead of showing a flat colour.
   const labelTex = useMemo(
-    () => (node.url ? null : makeLabelTexture(node)),
+    () => (node.previewUrl ? null : makeLabelTexture(node)),
     // node identity is stable per card; title/date/type drive the label
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [node.url, node.title, node.isVideo, node.dateLabel],
+    [node.previewUrl, node.title, node.isVideo, node.dateLabel],
   );
   useEffect(() => () => labelTex?.dispose(), [labelTex]);
 
   useEffect(() => {
-    if (!node.url) return;
+    // Try the server-transcoded preview first (works for HEIC too); if it
+    // fails or comes back blank for ANY reason, fall back to the direct signed
+    // URL (the known-good path for JPEGs); only then a title card. This makes a
+    // blank/white disc impossible — worst case is the previous behaviour.
+    const sources = [node.previewUrl, node.fallbackUrl].filter((s): s is string => Boolean(s));
+    if (sources.length === 0) return;
     let alive = true;
-    // Decode the (possibly huge, full-resolution) photo, then draw a centred
-    // square crop into a small fixed canvas *before* handing it to the GPU.
-    // Full-res iPhone photos are ~48 MB of VRAM each; a handful blow the iOS
-    // texture budget and the upload silently fails, leaving a blank white
-    // disc. Bounding every preview to PREVIEW_PX² keeps the budget sane and
-    // does the round-crop in one step. Full quality is loaded on tap.
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.decoding = "async";
     let done = false;
-    const draw = () => {
+
+    const apply = (texture: THREE.Texture | null) => {
+      if (!alive || done || !texture) return;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = gl.capabilities.getMaxAnisotropy();
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = true;
+      texture.needsUpdate = true;
+      done = true;
+      setTex(texture);
+      invalidate();
+    };
+
+    // Redraw into a fixed-size canvas so the GPU texture stays small (bounded
+    // VRAM on iOS) and centred-square-cropped for the round disc.
+    const tryLoad = (index: number) => {
       if (!alive || done) return;
-      try {
-        const iw = img.naturalWidth || img.width;
-        const ih = img.naturalHeight || img.height;
-        if (!iw || !ih) return;
-        const cv = document.createElement("canvas");
-        cv.width = PREVIEW_PX;
-        cv.height = PREVIEW_PX;
-        const g = cv.getContext("2d");
-        if (!g) return;
-        const side = Math.min(iw, ih);
-        g.drawImage(img, (iw - side) / 2, (ih - side) / 2, side, side, 0, 0, PREVIEW_PX, PREVIEW_PX);
-        // Some sources draw an (almost) uniform disc into a texture even though
-        // the browser happily shows them in an <img>: an iOS HEIC photo, a
-        // video poster that captured a black frame, or a cross-origin image
-        // without CORS (whose canvas is tainted). Detect that and fall back to
-        // the title card, so a memory never renders as an empty black/white
-        // circle. The full image still opens on tap.
-        let hasContent = false;
+      const src = sources[index];
+      if (!src) {
+        apply(makeLabelTexture(node)); // every source exhausted → title card
+        return;
+      }
+      const next = () => tryLoad(index + 1);
+      const img = new Image();
+      // Only cross-origin URLs need CORS mode. For our same-origin transcode
+      // route, setting crossOrigin forces a CORS request that can drop the auth
+      // cookie / taint the canvas on iOS Safari — which then renders the tile
+      // as the material's white base colour. Same-origin images are never
+      // tainted, so we leave it off for them.
+      if (!src.startsWith("/")) img.crossOrigin = "anonymous";
+      img.decoding = "async";
+      const draw = () => {
+        if (!alive || done) return;
         try {
-          const d = g.getImageData(0, 0, PREVIEW_PX, PREVIEW_PX).data;
-          let min = 255;
-          let max = 0;
-          for (let p = 0; p < d.length; p += 356) {
-            const alpha = d[p + 3] ?? 0;
-            const lum = alpha === 0 ? 0 : 0.299 * (d[p] ?? 0) + 0.587 * (d[p + 1] ?? 0) + 0.114 * (d[p + 2] ?? 0);
-            if (lum < min) min = lum;
-            if (lum > max) max = lum;
+          const iw = img.naturalWidth || img.width;
+          const ih = img.naturalHeight || img.height;
+          if (!iw || !ih) return;
+          const cv = document.createElement("canvas");
+          cv.width = PREVIEW_PX;
+          cv.height = PREVIEW_PX;
+          const g = cv.getContext("2d");
+          if (!g) return;
+          const side = Math.min(iw, ih);
+          g.drawImage(img, (iw - side) / 2, (ih - side) / 2, side, side, 0, 0, PREVIEW_PX, PREVIEW_PX);
+          let hasContent = false;
+          try {
+            const d = g.getImageData(0, 0, PREVIEW_PX, PREVIEW_PX).data;
+            let min = 255;
+            let max = 0;
+            for (let p = 0; p < d.length; p += 356) {
+              const alpha = d[p + 3] ?? 0;
+              const lum = alpha === 0 ? 0 : 0.299 * (d[p] ?? 0) + 0.587 * (d[p + 1] ?? 0) + 0.114 * (d[p + 2] ?? 0);
+              if (lum < min) min = lum;
+              if (lum > max) max = lum;
+            }
+            hasContent = max - min >= 12;
+          } catch {
+            hasContent = false; // tainted canvas (missing CORS) — treat as blank
           }
-          hasContent = max - min >= 12;
+          if (hasContent) apply(new THREE.CanvasTexture(cv));
+          else next(); // blank (e.g. HEIC in WebGL, black frame) → next source
         } catch {
-          hasContent = false; // tainted canvas (missing CORS) — treat as blank
+          next();
         }
-        const texture = hasContent ? new THREE.CanvasTexture(cv) : makeLabelTexture(node);
-        if (!texture) return;
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.anisotropy = gl.capabilities.getMaxAnisotropy();
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.generateMipmaps = true;
-        texture.needsUpdate = true;
-        done = true;
-        setTex(texture);
-        invalidate();
-      } catch {
-        /* keep the placeholder colour on any decode/upload failure */
+      };
+      // On iOS Safari `onload` can fire before a large photo is actually
+      // decoded, so drawImage paints a blank canvas. decode() waits for the
+      // real bitmap; onload stays as a fallback for browsers without it.
+      img.onload = draw;
+      img.onerror = next;
+      img.src = src;
+      if (typeof img.decode === "function") {
+        img.decode().then(draw).catch(() => {
+          /* decode may reject (e.g. some formats) — onload fallback covers it */
+        });
       }
     };
-    // On iOS Safari `onload` can fire before a large photo is actually
-    // decoded, so drawImage paints a blank (white) canvas. decode() waits for
-    // the real bitmap; onload stays as a fallback for browsers without it.
-    img.onload = draw;
-    img.onerror = () => {
-      /* keep the placeholder colour on error */
-    };
-    img.src = node.url;
-    if (typeof img.decode === "function") {
-      img.decode().then(draw).catch(() => {
-        /* decode may reject (e.g. some formats) — onload fallback covers it */
-      });
-    }
+    tryLoad(0);
+
     return () => {
       alive = false;
-      img.onload = null;
-      img.onerror = null;
     };
-  }, [node.url, invalidate, gl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.previewUrl, node.fallbackUrl, invalidate, gl]);
 
   useEffect(() => () => tex?.dispose(), [tex]);
 
