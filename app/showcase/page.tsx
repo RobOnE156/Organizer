@@ -8,6 +8,7 @@ import {
   getMemberProfiles,
   getMyProfile,
   getNotifications,
+  signMediaByEntry,
 } from "@/lib/data";
 import { ageLabel, fmtDate } from "@/lib/timeline";
 import { translator, normalizeLang } from "@/lib/i18n";
@@ -36,40 +37,21 @@ export default async function ShowcasePage() {
   const entries = await getEntriesForChild(supabase, membership.household_id, child.id); // newest-first
   const capped = entries.slice(0, MAX_NODES);
   const media = await getMediaForEntries(supabase, capped.map((e) => e.id));
+  const mediaByEntry = await signMediaByEntry(supabase, media, 3600);
   const authors = await getMemberProfiles(supabase, membership.household_id);
   const notifications = await getNotifications(supabase, user.id);
 
-  // Group media by entry. Previews go through the transcoding proxy so every
-  // photo (HEIC included) becomes a small JPEG that renders in a WebGL texture
-  // on any browser; the private storage key is never exposed.
-  const mediaByEntry = new Map<string, typeof media>();
-  for (const m of media) {
-    const arr = mediaByEntry.get(m.entry_id);
-    if (arr) arr.push(m);
-    else mediaByEntry.set(m.entry_id, [m]);
-  }
-
   const nodes: ShowcaseNode[] = capped.map((e) => {
-    const ms = mediaByEntry.get(e.id) ?? [];
+    const ms = mediaByEntry[e.id] ?? [];
     const img = ms.find((m) => m.kind === "image");
     const vid = ms.find((m) => m.kind === "video");
-    let previewUrl: string | null = null;
-    let url: string | null = null;
-    if (img) {
-      previewUrl = `/media/${img.id}/preview?w=512`;
-      url = `/media/${img.id}/preview?w=1280&fit=inside`;
-    } else if (vid?.poster_key) {
-      previewUrl = `/media/${vid.id}/preview?w=512&poster=1`;
-      url = `/media/${vid.id}/preview?w=1280&fit=inside&poster=1`;
-    }
     return {
       id: e.id,
       title: e.title ?? "",
       eventDate: e.event_date,
       dateLabel: fmtDate(e.event_date),
       age: ageLabel(child.birth_date, e.event_date),
-      previewUrl,
-      url,
+      url: img?.url ?? vid?.poster ?? null,
       isVideo: !img && !!vid,
     };
   });
