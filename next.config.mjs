@@ -13,6 +13,8 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Keep native/WASM image libs out of the bundle so they load at runtime.
+  serverExternalPackages: ["sharp", "heic-decode", "libheif-js"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
