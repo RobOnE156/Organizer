@@ -5,7 +5,9 @@ import {
   getChildren,
   getEntriesForChild,
   getMediaForEntries,
+  getMemberProfiles,
   getMyProfile,
+  getNotifications,
   signMediaByEntry,
 } from "@/lib/data";
 import { ageLabel, fmtDate } from "@/lib/timeline";
@@ -36,6 +38,8 @@ export default async function ShowcasePage() {
   const capped = entries.slice(0, MAX_NODES);
   const media = await getMediaForEntries(supabase, capped.map((e) => e.id));
   const mediaByEntry = await signMediaByEntry(supabase, media, 3600);
+  const authors = await getMemberProfiles(supabase, membership.household_id);
+  const notifications = await getNotifications(supabase, user.id);
 
   const nodes: ShowcaseNode[] = capped.map((e) => {
     const ms = mediaByEntry[e.id] ?? [];
@@ -69,6 +73,8 @@ export default async function ShowcasePage() {
       childName={child.name}
       reduceMotion={profile.reduce_motion}
       labels={labels}
+      notifications={notifications}
+      authors={authors}
     />
   );
 }

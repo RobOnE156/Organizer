@@ -11,10 +11,12 @@ export default function TopNav({
   childName,
   notifications = [],
   authors = {},
+  view = "2d",
 }: {
   childName?: string;
   notifications?: AppNotification[];
   authors?: Record<string, MemberProfile>;
+  view?: "2d" | "3d";
 }) {
   const { t } = useT();
   const brand = childName ?? "Benni-Tagebuch";
@@ -26,7 +28,7 @@ export default function TopNav({
         <small>{t("nav.timeline")}</small>
       </a>
       <div className="topactions">
-        <ViewToggle current="2d" />
+        <ViewToggle current={view} />
         <ThemeModeToggle />
         <NotificationBell notifications={notifications} authors={authors} />
         <NavDrawer childName={childName} />

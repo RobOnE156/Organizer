@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, Billboard, Html } from "@react-three/drei";
 import * as THREE from "three";
-import NavDrawer from "@/app/NavDrawer";
-import ViewToggle from "@/app/ViewToggle";
+import TopNav from "@/app/TopNav";
+import type { AppNotification, MemberProfile } from "@/lib/data";
 
 export type ShowcaseNode = {
   id: string;
@@ -250,11 +250,15 @@ export default function Showcase({
   childName,
   reduceMotion,
   labels,
+  notifications = [],
+  authors = {},
 }: {
   nodes: ShowcaseNode[];
   childName: string;
   reduceMotion: boolean;
   labels: Labels;
+  notifications?: AppNotification[];
+  authors?: Record<string, MemberProfile>;
 }) {
   const [webgl, setWebgl] = useState<boolean | null>(null);
   const [selected, setSelected] = useState<ShowcaseNode | null>(null);
@@ -273,14 +277,8 @@ export default function Showcase({
 
   return (
     <div className="showcase-wrap">
-      <div className="showcase-bar">
-        <ViewToggle current="3d" className="menubtn showcase-menu viewtoggle" />
-        <div className="showcase-titlewrap">
-          <b>{labels.title}</b>
-          <small className="muted">{labels.hint}</small>
-        </div>
-        <NavDrawer childName={childName} triggerClassName="menubtn showcase-menu" />
-      </div>
+      {/* Exactly the same top bar as the 2D timeline (its toggle shows "2D"). */}
+      <TopNav childName={childName} notifications={notifications} authors={authors} view="3d" />
       {nodes.length === 0 ? (
         <div className="showcase-empty">{labels.empty}</div>
       ) : (
