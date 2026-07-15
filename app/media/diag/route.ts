@@ -1,6 +1,5 @@
 import "server-only";
 import sharp from "sharp";
-import decodeHeic from "heic-decode";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
@@ -29,45 +28,37 @@ export async function GET() {
       .limit(200);
     const imgs = (rows as { id: string; storage_key: string; mime: string | null }[] | null) ?? [];
     diag.imageCount = imgs.length;
-    const byMime: Record<string, number> = {};
-    for (const r of imgs) byMime[(r.mime || "unknown").toLowerCase()] = (byMime[(r.mime || "unknown").toLowerCase()] ?? 0) + 1;
-    diag.mimeCounts = byMime;
-
-    // Pick a NON-jpeg image (most likely HEIC) to exercise the hard path.
-    const heic = imgs.find((r) => !/jpe?g/i.test(r.mime || "")) ?? null;
-    diag.foundNonJpeg = Boolean(heic);
-    if (!heic) return json(diag);
-    diag.testMime = heic.mime;
-    diag.testPreviewUrl = `/media/${heic.id}/preview?w=512`;
 
     const admin = createAdminClient();
-    const { data: blob, error: dlErr } = await admin.storage.from("media").download(heic.storage_key);
-    diag.downloadError = dlErr?.message ?? null;
-    if (!blob) return json(diag);
-    const buf = Buffer.from(await blob.arrayBuffer());
-    diag.downloadBytes = buf.length;
-    diag.magicHex = buf.subarray(0, 4).toString("hex");
-    diag.ftypBrand = buf.length >= 12 ? buf.subarray(4, 12).toString("latin1") : "";
-
-    // Path A: sharp directly (does this libvips read HEIC?).
-    try {
-      const out = await sharp(buf).rotate().resize(512, 512, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
-      const st = await sharp(out).stats();
-      diag.sharpDirect = { ok: true, bytes: out.length, stdev: st.channels.map((c) => Math.round(c.stdev)) };
-    } catch (e) {
-      diag.sharpDirect = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    // Transcode EVERY image (cover 512) and report each output's variance, so
+    // we can see which ones come out blank/uniform (the white discs).
+    const results = [];
+    for (const r of imgs) {
+      const row: Record<string, unknown> = { id: r.id.slice(0, 8), mime: r.mime };
+      try {
+        const { data: blob, error: dlErr } = await admin.storage.from("media").download(r.storage_key);
+        if (dlErr || !blob) {
+          row.error = "download:" + (dlErr?.message ?? "none");
+          results.push(row);
+          continue;
+        }
+        const buf = Buffer.from(await blob.arrayBuffer());
+        row.bytes = buf.length;
+        row.magic = buf.subarray(0, 4).toString("hex");
+        const meta = await sharp(buf).metadata();
+        row.wh = `${meta.width}x${meta.height}`;
+        const out = await sharp(buf).rotate().resize(512, 512, { fit: "cover", position: "attention" }).jpeg({ quality: 82 }).toBuffer();
+        const st = await sharp(out).stats();
+        row.stdev = st.channels.map((c) => Math.round(c.stdev));
+        row.blank = st.channels.every((c) => c.stdev < 5);
+      } catch (e) {
+        row.transcodeError = e instanceof Error ? e.message : String(e);
+      }
+      results.push(row);
     }
-
-    // Path B: libheif (WASM) → raw RGBA → sharp (the fallback our route uses).
-    try {
-      const { width, height, data } = await decodeHeic({ buffer: buf });
-      const raw = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
-      const out = await sharp(raw, { raw: { width, height, channels: 4 } }).resize(512, 512, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
-      const st = await sharp(out).stats();
-      diag.heicDecode = { ok: true, srcWH: `${width}x${height}`, bytes: out.length, stdev: st.channels.map((c) => Math.round(c.stdev)) };
-    } catch (e) {
-      diag.heicDecode = { ok: false, error: e instanceof Error ? e.message : String(e) };
-    }
+    diag.perImage = results;
+    diag.blankCount = results.filter((r) => r.blank).length;
+    diag.errorCount = results.filter((r) => r.error || r.transcodeError).length;
 
     return json(diag);
   } catch (e) {
