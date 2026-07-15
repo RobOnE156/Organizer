@@ -61,7 +61,10 @@ function makeLabelTexture(node: ShowcaseNode): THREE.CanvasTexture | null {
   const g = cv.getContext("2d");
   if (!g) return null;
 
-  const base = node.isVideo ? "#4a4160" : "#b98a34";
+  // mode: a real note/link (no media), a video (no usable frame), or a photo
+  // whose bitmap we couldn't turn into a texture (e.g. an iOS HEIC).
+  const mode = node.isVideo ? "video" : node.url ? "photo" : "note";
+  const base = mode === "video" ? "#4a4160" : mode === "photo" ? "#3c414d" : "#b98a34";
   g.fillStyle = base;
   g.fillRect(0, 0, S, S);
   // soft top-light so the disc has depth
@@ -74,13 +77,30 @@ function makeLabelTexture(node: ShowcaseNode): THREE.CanvasTexture | null {
   g.textAlign = "center";
   g.textBaseline = "middle";
 
-  if (node.isVideo) {
+  if (mode === "video") {
     // play triangle
     g.fillStyle = "rgba(255,255,255,0.92)";
     g.beginPath();
     g.moveTo(S * 0.44, S * 0.24);
     g.lineTo(S * 0.44, S * 0.42);
     g.lineTo(S * 0.62, S * 0.33);
+    g.closePath();
+    g.fill();
+  } else if (mode === "photo") {
+    // small framed-image glyph
+    g.strokeStyle = "rgba(255,255,255,0.85)";
+    g.lineWidth = 3;
+    g.strokeRect(S * 0.4, S * 0.21, S * 0.2, S * 0.15);
+    g.fillStyle = "rgba(255,255,255,0.85)";
+    g.beginPath();
+    g.arc(S * 0.45, S * 0.26, S * 0.014, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.moveTo(S * 0.41, S * 0.355);
+    g.lineTo(S * 0.47, S * 0.3);
+    g.lineTo(S * 0.52, S * 0.33);
+    g.lineTo(S * 0.57, S * 0.29);
+    g.lineTo(S * 0.59, S * 0.355);
     g.closePath();
     g.fill();
   } else {
@@ -176,7 +196,29 @@ function PhotoCard({
         if (!g) return;
         const side = Math.min(iw, ih);
         g.drawImage(img, (iw - side) / 2, (ih - side) / 2, side, side, 0, 0, PREVIEW_PX, PREVIEW_PX);
-        const texture = new THREE.CanvasTexture(cv);
+        // Some sources draw an (almost) uniform disc into a texture even though
+        // the browser happily shows them in an <img>: an iOS HEIC photo, a
+        // video poster that captured a black frame, or a cross-origin image
+        // without CORS (whose canvas is tainted). Detect that and fall back to
+        // the title card, so a memory never renders as an empty black/white
+        // circle. The full image still opens on tap.
+        let hasContent = false;
+        try {
+          const d = g.getImageData(0, 0, PREVIEW_PX, PREVIEW_PX).data;
+          let min = 255;
+          let max = 0;
+          for (let p = 0; p < d.length; p += 356) {
+            const alpha = d[p + 3] ?? 0;
+            const lum = alpha === 0 ? 0 : 0.299 * (d[p] ?? 0) + 0.587 * (d[p + 1] ?? 0) + 0.114 * (d[p + 2] ?? 0);
+            if (lum < min) min = lum;
+            if (lum > max) max = lum;
+          }
+          hasContent = max - min >= 12;
+        } catch {
+          hasContent = false; // tainted canvas (missing CORS) — treat as blank
+        }
+        const texture = hasContent ? new THREE.CanvasTexture(cv) : makeLabelTexture(node);
+        if (!texture) return;
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = gl.capabilities.getMaxAnisotropy();
         texture.minFilter = THREE.LinearMipmapLinearFilter;

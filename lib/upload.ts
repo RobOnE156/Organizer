@@ -47,6 +47,12 @@ export async function compressImage(file: File): Promise<File> {
   if (/gif|svg/i.test(file.type)) return file; // keep animation / vectors
   if (typeof document === "undefined") return file;
 
+  // HEIC/HEIF must always be re-encoded to JPEG: iOS shows it in an <img>, but
+  // it cannot be drawn into a <canvas>/WebGL texture (blank discs in the 3D
+  // view) and most non-Apple browsers can't open it at all. So don't take the
+  // "already small, skip re-encoding" shortcut for these.
+  const isHeic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+
   // Decode via <img>, not createImageBitmap: iOS Safari renders HEIC in <img>
   // but can hang/fail on createImageBitmap, which was stalling multi-photo
   // saves. <img> also applies EXIF orientation when drawn to a canvas.
@@ -74,7 +80,7 @@ export async function compressImage(file: File): Promise<File> {
     return file;
   }
   const scale = Math.min(1, IMG_MAX_DIM / Math.max(iw, ih));
-  if (scale === 1 && file.size < SKIP_UNDER_BYTES) {
+  if (scale === 1 && file.size < SKIP_UNDER_BYTES && !isHeic) {
     URL.revokeObjectURL(url);
     return file; // already small and modestly sized — not worth re-encoding
   }
@@ -106,7 +112,8 @@ export async function compressImage(file: File): Promise<File> {
   canvas.width = 0; // free the backing store
   canvas.height = 0;
   if (!blob) return file;
-  if (blob.size >= file.size && scale === 1) return file; // no gain
+  // Keep the JPEG for HEIC even if it's not smaller — compatibility is the win.
+  if (blob.size >= file.size && scale === 1 && !isHeic) return file; // no gain
   return new File([blob], jpegName(file.name), { type: "image/jpeg", lastModified: file.lastModified });
 }
 
