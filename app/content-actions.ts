@@ -188,12 +188,14 @@ export async function recordMedia(
     bytes: it.bytes,
     position: it.position,
     location_clean: it.location_clean,
+    poster_key: it.poster_key ?? null,
   }));
   let { error } = await supabase.from("media").insert(rows);
-  // Tolerate the window before migration 0028 has run: retry without the newer
-  // column so uploads keep working (videos then default to not-shareable).
-  if (error && /location_clean/.test(error.message)) {
-    const bare = rows.map(({ location_clean, ...rest }) => rest);
+  // Tolerate the window before migrations 0028/0029 have run: drop the newer
+  // columns and retry so uploads keep working (videos then default to
+  // not-shareable and without a stored poster).
+  if (error && /location_clean|poster_key/.test(error.message)) {
+    const bare = rows.map(({ location_clean, poster_key, ...rest }) => rest);
     ({ error } = await supabase.from("media").insert(bare));
   }
   if (error) return { error: error.message };

@@ -345,6 +345,64 @@ export async function compressVideo(
   }
 }
 
+// Grab a still frame from a video for use as a timeline poster (so a video
+// tile shows a preview instead of a black box). Best-effort: returns null on
+// any failure, in which case the tile falls back to a #t media-fragment poster.
+async function makeVideoPoster(file: File): Promise<Blob | null> {
+  if (typeof document === "undefined") return null;
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.muted = true;
+  (video as unknown as { playsInline: boolean }).playsInline = true;
+  video.preload = "auto";
+  video.src = url;
+  try {
+    await withTimeout(
+      new Promise<void>((resolve, reject) => {
+        video.onloadeddata = () => resolve();
+        video.onerror = () => reject(new Error("load"));
+      }),
+      12000,
+    );
+    // Seek slightly in to avoid an all-black first frame; ignore seek failures.
+    const target = Math.min(0.1, (Number.isFinite(video.duration) ? video.duration : 1) / 2);
+    await withTimeout(
+      new Promise<void>((resolve) => {
+        video.onseeked = () => resolve();
+        try {
+          video.currentTime = target;
+        } catch {
+          resolve();
+        }
+      }),
+      6000,
+    ).catch(() => {});
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) {
+      URL.revokeObjectURL(url);
+      return null;
+    }
+    const scale = Math.min(1, 1280 / Math.max(w, h));
+    const cw = Math.max(1, Math.round(w * scale));
+    const ch = Math.max(1, Math.round(h * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      URL.revokeObjectURL(url);
+      return null;
+    }
+    ctx.drawImage(video, 0, 0, cw, ch);
+    URL.revokeObjectURL(url);
+    return await withTimeout(new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.8)), 8000).catch(() => null);
+  } catch {
+    URL.revokeObjectURL(url);
+    return null;
+  }
+}
+
 // Strip a video's embedded GPS location before upload so the stored file — and
 // anything a share serves from it — carries no location. Returns the cleaned
 // file + whether it is now verifiably location-free; on any doubt keeps the
@@ -460,6 +518,7 @@ export async function uploadEntryMedia(opts: {
   // Reported as a "prepare" phase so the UI shows activity meanwhile.
   const prepared: File[] = [];
   const locationClean: boolean[] = [];
+  const posters: (Blob | null)[] = [];
   for (let i = 0; i < files.length; i++) {
     if (signal?.aborted) return { items: [], aborted: true };
     const f = files[i]!;
@@ -477,6 +536,7 @@ export async function uploadEntryMedia(opts: {
     // Images are served through the EXIF-stripping share proxy, and audio has
     // no realistic location vector — both are "location clean" for sharing.
     let clean = true;
+    let poster: Blob | null = null;
     if (f.type.startsWith("image/")) {
       out = await compressImage(f);
     } else if (f.type.startsWith("video/")) {
@@ -484,9 +544,11 @@ export async function uploadEntryMedia(opts: {
       const scrubbed = await scrubVideoLocation(out);
       out = scrubbed.file;
       clean = scrubbed.clean;
+      poster = await makeVideoPoster(out);
     }
     prepared.push(out);
     locationClean.push(clean);
+    posters.push(poster);
   }
 
   const totalBytes = prepared.reduce((s, f) => s + f.size, 0) || 1;
@@ -537,6 +599,16 @@ export async function uploadEntryMedia(opts: {
       loaded[i] = file.size;
       done++;
       report();
+      // Upload the video poster (best-effort — a failure just means no preview).
+      let posterKey: string | null = null;
+      const poster = posters[i];
+      if (poster) {
+        const pPath = `${householdId}/${entryId}/poster-${startPosition + i}.jpg`;
+        const { error: pErr } = await supabase.storage
+          .from("media")
+          .upload(pPath, poster, { contentType: "image/jpeg", upsert: false });
+        if (!pErr) posterKey = pPath;
+      }
       items[i] = {
         storage_key: path,
         kind: kindOf(orig.type),
@@ -544,6 +616,7 @@ export async function uploadEntryMedia(opts: {
         bytes: file.size,
         position: startPosition + i,
         location_clean: locationClean[i] ?? true,
+        poster_key: posterKey,
       };
     }
   }

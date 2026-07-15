@@ -141,10 +141,14 @@ export async function getShareView(token: string | undefined | null): Promise<Sh
   const servableNonImages = media.filter((m) => m.kind !== "image" && m.location_clean);
   const signedByKey = new Map<string, string>();
   if (servableNonImages.length > 0) {
-    const { data: signed } = await admin.storage.from("media").createSignedUrls(
-      servableNonImages.map((m) => m.storage_key),
-      3600,
-    );
+    // Sign the video/audio files and their posters (posters are canvas-made
+    // JPEGs with no EXIF, so they are safe to serve directly).
+    const keys: string[] = [];
+    for (const m of servableNonImages) {
+      keys.push(m.storage_key);
+      if (m.poster_key) keys.push(m.poster_key);
+    }
+    const { data: signed } = await admin.storage.from("media").createSignedUrls(keys, 3600);
     for (const s of signed ?? []) if (s.signedUrl && s.path) signedByKey.set(s.path, s.signedUrl);
   }
   const mediaByEntry: Record<string, SignedMedia[]> = {};
@@ -157,7 +161,8 @@ export async function getShareView(token: string | undefined | null): Promise<Sh
         key: "",
       });
     } else if (m.location_clean && signedByKey.has(m.storage_key)) {
-      (mediaByEntry[m.entry_id] ??= []).push({ kind: m.kind, url: signedByKey.get(m.storage_key)!, key: "" });
+      const poster = m.poster_key ? signedByKey.get(m.poster_key) : undefined;
+      (mediaByEntry[m.entry_id] ??= []).push({ kind: m.kind, url: signedByKey.get(m.storage_key)!, key: "", poster });
     } else {
       otherCountByEntry[m.entry_id] = (otherCountByEntry[m.entry_id] ?? 0) + 1;
     }

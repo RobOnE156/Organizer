@@ -75,7 +75,13 @@ export default function EntryMedia({ media }: { media: SignedMedia[] }) {
             >
               {m.kind === "video" ? (
                 <>
-                  <video src={m.url} muted playsInline preload="metadata" />
+                  <video
+                    src={m.poster ? m.url : m.url + "#t=0.1"}
+                    poster={m.poster || undefined}
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
                   <span className="playbadge" aria-hidden>▶</span>
                 </>
               ) : (

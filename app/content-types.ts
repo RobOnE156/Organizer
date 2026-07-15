@@ -9,6 +9,7 @@ export type MediaInput = {
   bytes: number;
   position: number;
   location_clean: boolean;
+  poster_key?: string | null;
 };
 
 export type CreateEntryResult = { error?: string; entryId?: string; householdId?: string };

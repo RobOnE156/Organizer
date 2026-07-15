@@ -135,9 +135,10 @@ export type Media = {
   mime: string;
   position: number;
   location_clean: boolean;
+  poster_key: string | null;
 };
 
-export type SignedMedia = { kind: string; url: string; key: string };
+export type SignedMedia = { kind: string; url: string; key: string; poster?: string };
 
 // Make sure the signed-in user has a profile row (for author display names),
 // without ever clobbering a name they set themselves.
@@ -313,28 +314,15 @@ export async function getEntriesForExport(
 export async function getMediaForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Media[]> {
   if (entryIds.length === 0) return [];
   const base = "id, entry_id, storage_key, kind, mime, position";
-  // location_clean is a newer column (0028); tolerate its absence so media
-  // keeps loading everywhere before the migration has run.
-  let rows: Partial<Media>[] | null = null;
-  {
-    const withCol = await supabase
-      .from("media")
-      .select(base + ", location_clean")
-      .in("entry_id", entryIds)
-      .is("deleted_at", null)
-      .order("position", { ascending: true });
-    if (withCol.error) {
-      const fallback = await supabase
-        .from("media")
-        .select(base)
-        .in("entry_id", entryIds)
-        .is("deleted_at", null)
-        .order("position", { ascending: true });
-      rows = (fallback.data as Partial<Media>[] | null) ?? [];
-    } else {
-      rows = (withCol.data as Partial<Media>[] | null) ?? [];
-    }
-  }
+  // location_clean (0028) and poster_key (0029) are newer columns; tolerate
+  // their absence (cascading fallback) so media keeps loading everywhere before
+  // each migration has run, without regressing a column that already exists.
+  const run = (cols: string) =>
+    supabase.from("media").select(cols).in("entry_id", entryIds).is("deleted_at", null).order("position", { ascending: true });
+  let res = await run(base + ", location_clean, poster_key");
+  if (res.error) res = await run(base + ", location_clean");
+  if (res.error) res = await run(base);
+  const rows = (res.data as Partial<Media>[] | null) ?? [];
   return rows.map((r) => ({
     id: r.id!,
     entry_id: r.entry_id!,
@@ -343,6 +331,7 @@ export async function getMediaForEntries(supabase: SupabaseClient, entryIds: str
     mime: r.mime!,
     position: r.position!,
     location_clean: r.location_clean ?? false,
+    poster_key: r.poster_key ?? null,
   }));
 }
 
@@ -356,6 +345,7 @@ export async function signMediaByEntry(
   if (media.length === 0) return byEntry;
 
   const keys = media.map((m) => m.storage_key);
+  for (const m of media) if (m.poster_key) keys.push(m.poster_key);
   const { data } = await supabase.storage.from("media").createSignedUrls(keys, expiresIn);
   const urlByKey = new Map<string, string>();
   for (const item of data ?? []) {
@@ -364,7 +354,8 @@ export async function signMediaByEntry(
   for (const m of media) {
     const url = urlByKey.get(m.storage_key);
     if (!url) continue;
-    (byEntry[m.entry_id] ??= []).push({ kind: m.kind, url, key: m.storage_key });
+    const poster = m.poster_key ? urlByKey.get(m.poster_key) : undefined;
+    (byEntry[m.entry_id] ??= []).push({ kind: m.kind, url, key: m.storage_key, poster });
   }
   return byEntry;
 }
