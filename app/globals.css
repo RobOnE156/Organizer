@@ -781,8 +781,6 @@ a.viewtoggle:hover { text-decoration: none; border-color: var(--gold); }
 .showcase-tick { display: inline-flex; align-items: baseline; gap: 6px; color: rgba(255, 255, 255, 0.62); font-size: 0.82rem; font-weight: 600; white-space: nowrap; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); pointer-events: none; text-transform: capitalize; }
 .showcase-tick.year { color: rgba(255, 255, 255, 0.95); }
 .showcase-tick b { color: var(--gold); font-size: 1.05rem; font-weight: 800; letter-spacing: 0.02em; }
-/* type glyph for round previews without a photo (rendered in 3D via <Html>) */
-.showcase-glyph { font-size: 1.5rem; line-height: 1; opacity: 0.85; pointer-events: none; user-select: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6)); }
 /* atmospheric detail view */
 .showcase-detail { position: fixed; inset: 0; z-index: 20; background: rgba(6, 4, 10, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .showcase-stage { position: relative; width: min(640px, 100%); display: flex; flex-direction: column; align-items: center; animation: showcasePop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1); }

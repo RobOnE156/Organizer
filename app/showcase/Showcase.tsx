@@ -44,6 +44,84 @@ function monthShort(iso: string): string {
   return MONTH_FMT && !Number.isNaN(d.getTime()) ? MONTH_FMT.format(d) : iso.slice(5, 7);
 }
 
+// Build a small in-scene preview for a memory that has no photo/poster (a
+// written note, or a video without a captured frame). Instead of a blank
+// coloured disc we paint the title (and a type glyph) onto a canvas so the
+// content is actually previewable. Kept square; the circle geometry crops it.
+function makeLabelTexture(node: ShowcaseNode): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const S = 320;
+  const cv = document.createElement("canvas");
+  cv.width = S;
+  cv.height = S;
+  const g = cv.getContext("2d");
+  if (!g) return null;
+
+  const base = node.isVideo ? "#4a4160" : "#b98a34";
+  g.fillStyle = base;
+  g.fillRect(0, 0, S, S);
+  // soft top-light so the disc has depth
+  const grad = g.createRadialGradient(S / 2, S * 0.36, S * 0.08, S / 2, S / 2, S * 0.72);
+  grad.addColorStop(0, "rgba(255,255,255,0.16)");
+  grad.addColorStop(1, "rgba(0,0,0,0.22)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, S, S);
+
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+
+  if (node.isVideo) {
+    // play triangle
+    g.fillStyle = "rgba(255,255,255,0.92)";
+    g.beginPath();
+    g.moveTo(S * 0.44, S * 0.24);
+    g.lineTo(S * 0.44, S * 0.42);
+    g.lineTo(S * 0.62, S * 0.33);
+    g.closePath();
+    g.fill();
+  } else {
+    g.fillStyle = "rgba(255,255,255,0.85)";
+    g.font = "600 46px system-ui, -apple-system, sans-serif";
+    g.fillText("✎", S / 2, S * 0.28);
+  }
+
+  // wrapped title (or the date, if untitled), centred within the circle
+  const title = (node.title || "").trim();
+  const words = (title || node.dateLabel).split(/\s+/).filter(Boolean);
+  g.font = "700 34px system-ui, -apple-system, sans-serif";
+  g.fillStyle = "rgba(255,255,255,0.96)";
+  const maxW = S * 0.72;
+  const MAX_LINES = 4;
+  const lines: string[] = [];
+  let line = "";
+  let truncated = false;
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (g.measureText(test).width > maxW && line) {
+      if (lines.length + 1 >= MAX_LINES) {
+        truncated = true;
+        break;
+      }
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  const last = lines.length - 1;
+  if (truncated && last >= 0) lines[last] = (lines[last] ?? "") + "…";
+  const lh = 40;
+  const startY = S * 0.56 - ((lines.length - 1) * lh) / 2;
+  lines.forEach((ln, i) => g.fillText(ln, S / 2, startY + i * lh));
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 // One round, billboarded photo. Texture is loaded lazily and disposed on
 // unmount so the GPU budget stays bounded.
 function PhotoCard({
@@ -57,6 +135,16 @@ function PhotoCard({
 }) {
   const [tex, setTex] = useState<THREE.Texture | null>(null);
   const { invalidate, gl } = useThree();
+
+  // For memories without a photo/poster, paint the title onto the disc so it
+  // previews real content instead of showing a flat colour.
+  const labelTex = useMemo(
+    () => (node.url ? null : makeLabelTexture(node)),
+    // node identity is stable per card; title/date/type drive the label
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [node.url, node.title, node.isVideo, node.dateLabel],
+  );
+  useEffect(() => () => labelTex?.dispose(), [labelTex]);
 
   useEffect(() => {
     if (!node.url) return;
@@ -126,46 +214,47 @@ function PhotoCard({
       >
         <circleGeometry args={[CARD / 2, 56]} />
         <meshBasicMaterial
-          map={tex ?? null}
-          color={tex ? "#ffffff" : node.isVideo ? "#5b5170" : "#c99a3f"}
+          map={tex ?? labelTex ?? null}
+          color={tex || labelTex ? "#ffffff" : node.isVideo ? "#5b5170" : "#c99a3f"}
           toneMapped={false}
         />
       </mesh>
-      {/* type hint for cards that have no photo/poster to preview */}
-      {!tex && !node.url ? (
-        <Html center distanceFactor={9} zIndexRange={[0, 0]} pointerEvents="none">
-          <span className="showcase-glyph">{node.isVideo ? "🎬" : "✎"}</span>
-        </Html>
-      ) : null}
     </Billboard>
   );
 }
 
 type Marker = { y: number; month: string; year: string; yearStart: boolean };
+// One guide line per memory. `level` controls emphasis: year start > month
+// start > ordinary memory.
+type GuideLine = { y: number; level: "year" | "month" | "day" };
 
-// A thin date axis to the left of the helix: a vertical line with a tick +
-// month (and year) label at each period, aligned with the memories' heights.
-function DateSpine({ height, markers }: { height: number; markers: Marker[] }) {
+const LINE_STYLE = {
+  year: { color: "#e0b45f", opacity: 0.4, thickness: 0.03 },
+  month: { color: "#8f88a6", opacity: 0.22, thickness: 0.018 },
+  day: { color: "#847f96", opacity: 0.17, thickness: 0.013 },
+} as const;
+
+// A thin date axis to the left of the helix: a vertical line, a horizontal
+// guide reaching toward the helix for *every* memory (so each one maps onto a
+// height), plus a tick + month/year label at each period.
+function DateSpine({ height, lines, markers }: { height: number; lines: GuideLine[]; markers: Marker[] }) {
   return (
     <group position={[SPINE_X, 0, 0]}>
       <mesh position={[0, height / 2, 0]}>
         <boxGeometry args={[0.04, height + 1.4, 0.04]} />
         <meshBasicMaterial color="#4c4658" toneMapped={false} />
       </mesh>
+      {lines.map((l, i) => {
+        const s = LINE_STYLE[l.level];
+        return (
+          <mesh key={i} position={[GRID_LEN / 2, l.y, 0]}>
+            <boxGeometry args={[GRID_LEN, s.thickness, 0.012]} />
+            <meshBasicMaterial color={s.color} transparent opacity={s.opacity} depthWrite={false} toneMapped={false} />
+          </mesh>
+        );
+      })}
       {markers.map((m) => (
         <group key={m.month + m.y} position={[0, m.y, 0]}>
-          {/* horizontal guide reaching from the axis toward the helix, so the
-              height of a memory maps onto a date at a glance */}
-          <mesh position={[GRID_LEN / 2, 0, 0]}>
-            <boxGeometry args={[GRID_LEN, m.yearStart ? 0.03 : 0.015, 0.012]} />
-            <meshBasicMaterial
-              color={m.yearStart ? "#e0b45f" : "#8f88a6"}
-              transparent
-              opacity={m.yearStart ? 0.36 : 0.18}
-              depthWrite={false}
-              toneMapped={false}
-            />
-          </mesh>
           <mesh position={[0.28, 0, 0]}>
             <boxGeometry args={[0.56, m.yearStart ? 0.08 : 0.035, 0.035]} />
             <meshBasicMaterial color={m.yearStart ? "#e0b45f" : "#8a8398"} toneMapped={false} />
@@ -195,18 +284,23 @@ function Scene({ nodes, onSelect }: { nodes: ShowcaseNode[]; onSelect: (n: Showc
     });
     const height = Math.max(1, (sorted.length - 1) * Y_STEP);
     const markers: Marker[] = [];
+    const lines: GuideLine[] = [];
     let prevMonth = "";
     let prevYear = "";
     sorted.forEach((n, i) => {
       const ym = n.eventDate.slice(0, 7);
       const year = n.eventDate.slice(0, 4);
-      if (ym !== prevMonth) {
-        markers.push({ y: i * Y_STEP, month: monthShort(n.eventDate), year, yearStart: year !== prevYear });
+      const monthStart = ym !== prevMonth;
+      const yearStart = year !== prevYear;
+      // every memory gets a connector line to the time axis
+      lines.push({ y: i * Y_STEP, level: yearStart ? "year" : monthStart ? "month" : "day" });
+      if (monthStart) {
+        markers.push({ y: i * Y_STEP, month: monthShort(n.eventDate), year, yearStart });
         prevMonth = ym;
         prevYear = year;
       }
     });
-    return { positions, height, markers };
+    return { positions, height, markers, lines };
   }, [sorted]);
 
   const h = layout.height;
@@ -228,7 +322,7 @@ function Scene({ nodes, onSelect }: { nodes: ShowcaseNode[]; onSelect: (n: Showc
       {sorted.map((n, i) => (
         <PhotoCard key={n.id} node={n} position={layout.positions[i]!} onSelect={onSelect} />
       ))}
-      <DateSpine height={h} markers={layout.markers} />
+      <DateSpine height={h} lines={layout.lines} markers={layout.markers} />
       <OrbitControls
         makeDefault
         target={[0, camY, 0]}
