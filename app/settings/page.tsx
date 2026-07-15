@@ -24,6 +24,7 @@ export default async function SettingsPage() {
     { href: "/settings/household", icon: "👪", title: t("nav.household"), desc: t("settings.household_desc") },
     { href: "/guests", icon: "🎁", title: t("nav.guests"), desc: t("settings.guests_desc") },
     { href: "/settings/sharing", icon: "🔗", title: t("nav.sharing"), desc: t("settings.sharing_desc") },
+    { href: "/book", icon: "📖", title: t("nav.book"), desc: t("settings.book_desc") },
     { href: "/settings/notifications", icon: "🔔", title: t("nav.notifications"), desc: t("settings.notifications_desc") },
     { href: "/settings/security", icon: "🔒", title: t("nav.security"), desc: t("settings.security_desc") },
     { href: "/trash", icon: "🗑️", title: t("nav.trash"), desc: t("settings.trash_desc") },

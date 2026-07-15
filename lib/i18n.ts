@@ -296,6 +296,33 @@ const M = {
   },
   "sharing.empty": { de: "Noch keine aktiven Links.", en: "No active links yet.", es: "Aún no hay enlaces activos." },
 
+  // photo book / year in review
+  "nav.book": { de: "Foto-Buch", en: "Photo book", es: "Fotolibro" },
+  "settings.book_desc": {
+    de: "Einen druckbaren Jahresrückblick als PDF erstellen — Geschenk & Sicherung fürs Regal.",
+    en: "Make a printable year-in-review PDF — a gift and a shelf backup.",
+    es: "Crea un resumen anual imprimible en PDF — un regalo y una copia para la estantería.",
+  },
+  "book.cover_eyebrow": { de: "Ein Rückblick", en: "A look back", es: "Un repaso" },
+  "book.save_pdf": { de: "Als PDF speichern", en: "Save as PDF", es: "Guardar como PDF" },
+  "book.period": { de: "Zeitraum", en: "Period", es: "Periodo" },
+  "book.all_time": { de: "Alles", en: "All time", es: "Todo" },
+  "book.print_hint": {
+    de: "Tipp: Im Druckdialog „Als PDF speichern“ wählen und Hintergrundgrafiken/Farben aktivieren, damit Fotos & Design mitkommen. Private Einträge sind nicht enthalten.",
+    en: "Tip: in the print dialog choose “Save as PDF” and enable background graphics so photos & design come through. Private entries are not included.",
+    es: "Consejo: en el diálogo de impresión elige “Guardar como PDF” y activa los gráficos de fondo para que salgan las fotos y el diseño. Las entradas privadas no se incluyen.",
+  },
+  "book.glance": { de: "Auf einen Blick", en: "At a glance", es: "De un vistazo" },
+  "book.stat_memories": { de: "Erinnerungen", en: "Memories", es: "Recuerdos" },
+  "book.stat_photos": { de: "Fotos", en: "Photos", es: "Fotos" },
+  "book.stat_milestones": { de: "Meilensteine", en: "Milestones", es: "Hitos" },
+  "book.stat_age": { de: "So groß geworden", en: "Grown to", es: "Ha crecido hasta" },
+  "book.firsts": { de: "Erste Male & Meilensteine", en: "Firsts & milestones", es: "Primeras veces e hitos" },
+  "book.memories": { de: "Die Erinnerungen", en: "The memories", es: "Los recuerdos" },
+  "book.empty": { de: "In diesem Zeitraum gibt es noch keine Einträge.", en: "There are no entries in this period yet.", es: "Aún no hay entradas en este periodo." },
+  "book.closing": { de: "Für {name} — mit all unserer Liebe.", en: "For {name} — with all our love.", es: "Para {name} — con todo nuestro cariño." },
+  "book.a_parent": { de: "Elternteil", en: "A parent", es: "Madre o padre" },
+
   // change e-mail address
   "em.title": { de: "E-Mail-Adresse ändern", en: "Change e-mail address", es: "Cambiar correo electrónico" },
   "em.current": { de: "Aktuell: {email}", en: "Current: {email}", es: "Actual: {email}" },

@@ -681,3 +681,71 @@ a.brand { text-decoration: none; color: inherit; }
 .cfmcard { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--faint); border-radius: 16px; padding: 22px; box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.7); }
 .cfmtitle { font-size: 1.1rem; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.01em; }
 .cfmbody { color: var(--muted); font-size: 0.9rem; margin: 0 0 18px; }
+
+/* ---- photo book / year in review (screen + print) ---- */
+.bookbar { max-width: 820px; margin: 0 auto; padding: 18px clamp(16px, 4vw, 24px) 0; }
+.bookbar-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bookbar-years { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.bookbar-years .chip { text-decoration: none; }
+.bookbar-years .chip.on { border-style: solid; border-color: var(--gold); color: var(--ink); background: color-mix(in oklab, var(--gold) 15%, var(--surface)); font-weight: 700; }
+.bookbar-hint { font-size: 0.8rem; margin: 12px 0 0; }
+
+.book { max-width: 820px; margin: 0 auto; padding: 16px clamp(16px, 4vw, 24px) 60px; }
+.bookcover {
+  position: relative; border-radius: 18px; overflow: hidden; margin-bottom: 22px;
+  min-height: 340px; display: flex; align-items: flex-end;
+  background-size: cover; background-position: center; background-color: var(--surface-2);
+}
+.bookcover-in {
+  width: 100%; padding: 28px 26px 24px;
+  background: linear-gradient(to top, rgba(6,4,10,0.82) 8%, rgba(6,4,10,0.25) 60%, transparent);
+  color: #fff;
+}
+.bookcover-eyebrow { letter-spacing: 0.16em; text-transform: uppercase; font-size: 12px; margin: 0 0 6px; opacity: 0.85; }
+.bookcover-title { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; line-height: 1.05; }
+.bookcover-period { font-size: 1.1rem; margin: 4px 0 0; opacity: 0.92; }
+
+.booksection { margin: 22px 0; }
+.bookhead { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 14px; padding-left: 12px; position: relative; }
+.bookhead::before { content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 0.95em; border-radius: 3px; background: var(--gold); }
+
+.statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.bstat { background: var(--surface); border: 1px solid var(--faint); border-radius: 14px; padding: 16px; text-align: center; }
+.bstat b { display: block; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.bstat span { font-size: 0.82rem; color: var(--muted); }
+
+.bookfirsts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.bookfirst { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--faint); border-radius: 12px; padding: 10px 12px; }
+.bf-emoji { font-size: 1.2rem; flex: 0 0 auto; }
+.bf-name { font-weight: 600; }
+.bf-date { margin-left: auto; font-size: 0.8rem; color: var(--muted); flex: 0 0 auto; }
+
+.bookmonthwrap { margin-bottom: 10px; }
+.bookmonth { font-size: 0.95rem; font-weight: 700; color: var(--gold); margin: 18px 0 10px; }
+.memory { background: var(--surface); border: 1px solid var(--faint); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+.mem-meta { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
+.mem-star { color: var(--gold); }
+.mem-author { font-weight: 600; }
+.mem-title { font-size: 1.05rem; margin: 6px 0 8px; letter-spacing: -0.01em; }
+.mem-photos { display: grid; gap: 6px; margin: 8px 0; }
+.mem-photos.n1 { grid-template-columns: 1fr; }
+.mem-photos.n2 { grid-template-columns: 1fr 1fr; }
+.mem-photos.n3, .mem-photos.n4 { grid-template-columns: 1fr 1fr; }
+.mem-photos img { width: 100%; max-height: 420px; object-fit: cover; border-radius: 10px; display: block; }
+.mem-body { margin: 6px 0 0; white-space: pre-wrap; }
+.bookclose { text-align: center; color: var(--muted); font-style: italic; padding: 30px 0 8px; }
+
+@media print {
+  .noprint, .topbar, .pagefoot { display: none !important; }
+  html, body { background: #fff; color: #111; }
+  .book { max-width: none; margin: 0; padding: 0; }
+  @page { size: A4; margin: 12mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bookcover { break-after: page; break-inside: avoid; min-height: 60vh; }
+  .booksection { break-inside: auto; }
+  .bookhead { break-after: avoid; }
+  .memory, .bstat, .bookfirst, .bookmonthwrap { break-inside: avoid; }
+  .memory { border-color: #ddd; }
+  .mem-photos img { max-height: 12cm; }
+  .bookclose { break-before: page; }
+}
