@@ -8,6 +8,7 @@ export type MediaInput = {
   mime: string;
   bytes: number;
   position: number;
+  location_clean: boolean;
 };
 
 export type CreateEntryResult = { error?: string; entryId?: string; householdId?: string };

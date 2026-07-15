@@ -187,8 +187,15 @@ export async function recordMedia(
     mime: it.mime,
     bytes: it.bytes,
     position: it.position,
+    location_clean: it.location_clean,
   }));
-  const { error } = await supabase.from("media").insert(rows);
+  let { error } = await supabase.from("media").insert(rows);
+  // Tolerate the window before migration 0028 has run: retry without the newer
+  // column so uploads keep working (videos then default to not-shareable).
+  if (error && /location_clean/.test(error.message)) {
+    const bare = rows.map(({ location_clean, ...rest }) => rest);
+    ({ error } = await supabase.from("media").insert(bare));
+  }
   if (error) return { error: error.message };
   return {};
 }

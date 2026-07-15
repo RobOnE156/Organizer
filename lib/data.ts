@@ -134,6 +134,7 @@ export type Media = {
   kind: string;
   mime: string;
   position: number;
+  location_clean: boolean;
 };
 
 export type SignedMedia = { kind: string; url: string; key: string };
@@ -311,13 +312,38 @@ export async function getEntriesForExport(
 
 export async function getMediaForEntries(supabase: SupabaseClient, entryIds: string[]): Promise<Media[]> {
   if (entryIds.length === 0) return [];
-  const { data } = await supabase
-    .from("media")
-    .select("id, entry_id, storage_key, kind, mime, position")
-    .in("entry_id", entryIds)
-    .is("deleted_at", null)
-    .order("position", { ascending: true });
-  return (data as Media[] | null) ?? [];
+  const base = "id, entry_id, storage_key, kind, mime, position";
+  // location_clean is a newer column (0028); tolerate its absence so media
+  // keeps loading everywhere before the migration has run.
+  let rows: Partial<Media>[] | null = null;
+  {
+    const withCol = await supabase
+      .from("media")
+      .select(base + ", location_clean")
+      .in("entry_id", entryIds)
+      .is("deleted_at", null)
+      .order("position", { ascending: true });
+    if (withCol.error) {
+      const fallback = await supabase
+        .from("media")
+        .select(base)
+        .in("entry_id", entryIds)
+        .is("deleted_at", null)
+        .order("position", { ascending: true });
+      rows = (fallback.data as Partial<Media>[] | null) ?? [];
+    } else {
+      rows = (withCol.data as Partial<Media>[] | null) ?? [];
+    }
+  }
+  return rows.map((r) => ({
+    id: r.id!,
+    entry_id: r.entry_id!,
+    storage_key: r.storage_key!,
+    kind: r.kind!,
+    mime: r.mime!,
+    position: r.position!,
+    location_clean: r.location_clean ?? false,
+  }));
 }
 
 // Build entry_id -> signed media URLs (private bucket → short-lived signed URLs).

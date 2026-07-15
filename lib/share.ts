@@ -132,11 +132,21 @@ export async function getShareView(token: string | undefined | null): Promise<Sh
 
   const ids = entries.map((e) => e.id);
   const media = await getMediaForEntries(admin, ids);
-  // Photos are served through a proxy that strips EXIF. Videos/audio are NOT
-  // served through a share — their container can embed GPS we can't strip on
-  // the server — so we only count them and show a placeholder. `key` is left
-  // empty on purpose: it would otherwise disclose the household/entry UUIDs and
-  // original filename to an anonymous viewer via the client component.
+  // Photos are served through a proxy that strips EXIF. Videos/audio are served
+  // (signed URL) only when they were positively scrubbed of location at upload
+  // (location_clean); anything not verifiably clean is only counted and shown
+  // as a "view in the diary" placeholder. `key` is left empty on purpose: it
+  // would otherwise disclose the household/entry UUIDs and original filename to
+  // an anonymous viewer via the client component.
+  const servableNonImages = media.filter((m) => m.kind !== "image" && m.location_clean);
+  const signedByKey = new Map<string, string>();
+  if (servableNonImages.length > 0) {
+    const { data: signed } = await admin.storage.from("media").createSignedUrls(
+      servableNonImages.map((m) => m.storage_key),
+      3600,
+    );
+    for (const s of signed ?? []) if (s.signedUrl && s.path) signedByKey.set(s.path, s.signedUrl);
+  }
   const mediaByEntry: Record<string, SignedMedia[]> = {};
   const otherCountByEntry: Record<string, number> = {};
   for (const m of media) {
@@ -146,6 +156,8 @@ export async function getShareView(token: string | undefined | null): Promise<Sh
         url: `/share/${encodeURIComponent(token)}/m?id=${m.id}`,
         key: "",
       });
+    } else if (m.location_clean && signedByKey.has(m.storage_key)) {
+      (mediaByEntry[m.entry_id] ??= []).push({ kind: m.kind, url: signedByKey.get(m.storage_key)!, key: "" });
     } else {
       otherCountByEntry[m.entry_id] = (otherCountByEntry[m.entry_id] ?? 0) + 1;
     }

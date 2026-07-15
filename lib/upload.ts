@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { publicEnv } from "@/lib/env";
+import { stripMp4Location } from "@/lib/mp4-strip";
 import type { MediaInput, MediaKind } from "@/app/content-types";
 
 // Browser-side media upload helpers: shrink big phone photos before upload,
@@ -344,6 +345,23 @@ export async function compressVideo(
   }
 }
 
+// Strip a video's embedded GPS location before upload so the stored file — and
+// anything a share serves from it — carries no location. Returns the cleaned
+// file + whether it is now verifiably location-free; on any doubt keeps the
+// original and reports clean:false (the share then won't expose it).
+async function scrubVideoLocation(file: File): Promise<{ file: File; clean: boolean }> {
+  try {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const res = stripMp4Location(buf);
+    if (!res.cleaned) return { file, clean: false };
+    if (res.bytes === buf) return { file, clean: true }; // no location present — original is fine
+    const blob = new Blob([res.bytes as unknown as BlobPart], { type: file.type });
+    return { file: new File([blob], file.name, { type: file.type, lastModified: file.lastModified }), clean: true };
+  } catch {
+    return { file, clean: false };
+  }
+}
+
 // ---- upload with progress ---------------------------------------------
 // supabase-js .upload() gives no progress events, so POST straight to the
 // Storage REST endpoint with the session token via XHR — the server still sets
@@ -441,6 +459,7 @@ export async function uploadEntryMedia(opts: {
   // Prepare phase: shrink images (fast) and transcode big videos (realtime).
   // Reported as a "prepare" phase so the UI shows activity meanwhile.
   const prepared: File[] = [];
+  const locationClean: boolean[] = [];
   for (let i = 0; i < files.length; i++) {
     if (signal?.aborted) return { items: [], aborted: true };
     const f = files[i]!;
@@ -455,9 +474,19 @@ export async function uploadEntryMedia(opts: {
       });
     emit(0);
     let out = f;
-    if (f.type.startsWith("image/")) out = await compressImage(f);
-    else if (f.type.startsWith("video/")) out = await compressVideo(f, (vf) => emit(vf), signal);
+    // Images are served through the EXIF-stripping share proxy, and audio has
+    // no realistic location vector — both are "location clean" for sharing.
+    let clean = true;
+    if (f.type.startsWith("image/")) {
+      out = await compressImage(f);
+    } else if (f.type.startsWith("video/")) {
+      out = await compressVideo(f, (vf) => emit(vf), signal);
+      const scrubbed = await scrubVideoLocation(out);
+      out = scrubbed.file;
+      clean = scrubbed.clean;
+    }
     prepared.push(out);
+    locationClean.push(clean);
   }
 
   const totalBytes = prepared.reduce((s, f) => s + f.size, 0) || 1;
@@ -514,6 +543,7 @@ export async function uploadEntryMedia(opts: {
         mime: file.type,
         bytes: file.size,
         position: startPosition + i,
+        location_clean: locationClean[i] ?? true,
       };
     }
   }
