@@ -15,8 +15,10 @@ import {
   getBackupStatus,
 } from "@/lib/data";
 import { translator } from "@/lib/i18n";
+import { backupConfigured } from "@/lib/backup-s3";
 import ExportPanel from "./ExportPanel";
 import BackupStatus from "./BackupStatus";
+import OffsiteBackup from "./OffsiteBackup";
 
 import PageHeader from "@/app/PageHeader";
 import PageFooter from "@/app/PageFooter";
@@ -53,6 +55,21 @@ export default async function ExportPage() {
   const householdName = (hh as { name: string } | null)?.name ?? "Tagebuch";
   const backup = await getBackupStatus(supabase, membership.household_id);
 
+  // Latest off-site backup run (RLS-scoped select) for the status panel.
+  const { data: lastRunRow } = await supabase
+    .from("backup_runs")
+    .select("status, files_total, bytes_total, finished_at")
+    .eq("household_id", membership.household_id)
+    .order("finished_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  const lastRun = (lastRunRow as {
+    status: "ok" | "partial" | "error";
+    files_total: number;
+    bytes_total: number;
+    finished_at: string | null;
+  } | null) ?? null;
+
   const media = mediaRows.map((m) => ({
     entry_id: m.entry_id,
     storage_key: m.storage_key,
@@ -70,6 +87,10 @@ export default async function ExportPage() {
 
       <h2 style={{ fontSize: "1.05rem", margin: "6px 0 10px" }}>{t("backup.head")}</h2>
       <BackupStatus lastBackupAt={backup.lastBackupAt} intervalDays={backup.intervalDays} />
+
+      <div style={{ marginTop: 14 }}>
+        <OffsiteBackup configured={backupConfigured()} lastRun={lastRun} />
+      </div>
 
       <div style={{ marginTop: 20 }}>
         <ExportPanel

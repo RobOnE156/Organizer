@@ -9,6 +9,8 @@ import { escapeLike } from "@/lib/search-format";
 import { queueNotificationEmails } from "@/lib/notify-email";
 import { emailEnabled, sendEmail, appUrl } from "@/lib/email";
 import { buildBackupJson, buildBackupEmail } from "@/lib/backup";
+import { syncHouseholdBackup, backupConfigured } from "@/lib/backup-sync";
+import { hasServiceRole } from "@/lib/supabase/admin";
 import { getShellPrefs, getBackupStatus } from "@/lib/data";
 import { translator } from "@/lib/i18n";
 import { normalizeTheme } from "@/lib/themes";
@@ -929,6 +931,45 @@ export async function recordBackup(
     .insert({ household_id: membership.household_id, actor_id: user.id, kind });
   if (error) return { error: error.message };
   return {};
+}
+
+// Run one incremental off-site backup pass right now (a chunk of media +
+// the metadata snapshot). Lets a parent kick off / catch up the backup and
+// verify the whole pipeline without waiting for the nightly cron.
+export async function runBackupNow(): Promise<{
+  error?: string;
+  status?: "ok" | "partial" | "error";
+  filesNew?: number;
+  filesTotal?: number;
+  bytesTotal?: number;
+  note?: string | null;
+}> {
+  if (!hasSupabaseEnv()) return { error: NOT_CONFIGURED };
+  const membership = await getMembership();
+  if (!membership) return { error: "Kein Haushalt gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  if (!hasServiceRole()) return { error: "Service-Role-Schlüssel fehlt (SUPABASE_SERVICE_ROLE_KEY in Vercel)." };
+  if (!backupConfigured()) return { error: "Kein Backup-Ziel konfiguriert (BACKUP_S3_* in Vercel)." };
+
+  const { data: hh } = await supabase
+    .from("households")
+    .select("name")
+    .eq("id", membership.household_id)
+    .maybeSingle();
+  const householdName = (hh as { name: string } | null)?.name ?? "Tagebuch";
+  const deadline = Date.now() + 40_000; // stay within the server-action time budget
+  const run = await syncHouseholdBackup(membership.household_id, householdName, deadline);
+  return {
+    status: run.status,
+    filesNew: run.files_new,
+    filesTotal: run.files_total,
+    bytesTotal: run.bytes_total,
+    note: run.note,
+  };
 }
 
 // Send the reminder e-mail (with the JSON snapshot) to the current user right
