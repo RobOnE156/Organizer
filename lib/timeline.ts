@@ -59,3 +59,53 @@ export function ageLabel(birthISO: string | null, atISO: string): string {
 export function initial(name: string): string {
   return (name.trim()[0] ?? "?").toUpperCase();
 }
+
+// Day + month, no year (for "on this day" cards): "16. Juli".
+export function dayMonth(iso: string): string {
+  const d = new Date((iso.length > 10 ? iso : iso + "T00:00:00"));
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("de-DE", { day: "numeric", month: "long" }).format(d);
+}
+
+function dayOfYear(iso: string): number {
+  const d = new Date(iso.slice(0, 10) + "T00:00:00");
+  const start = new Date(d.getFullYear() + "-01-01T00:00:00");
+  return Math.floor((d.getTime() - start.getTime()) / 86400000);
+}
+
+// Circular distance (in days) between two day-of-year values, so late Dec and
+// early Jan count as close.
+function doyDistance(a: number, b: number): number {
+  const raw = Math.abs(a - b);
+  return Math.min(raw, 365 - raw);
+}
+
+// Memories to resurface as "On this day": entries from PREVIOUS years matched to
+// today — the exact calendar day if any exist, else within a few days, else the
+// same calendar month. Returns the tightest non-empty scope so the section
+// rarely sits empty once there's a year or two of history.
+export function resurfacedMemories<T extends { event_date: string }>(
+  entries: T[],
+  todayIso: string,
+): { scope: "day" | "week" | "month"; items: T[] } {
+  const curYear = todayIso.slice(0, 4);
+  const todayMd = todayIso.slice(5, 10);
+  const todayMonth = todayIso.slice(5, 7);
+  const todayDoy = dayOfYear(todayIso);
+  const past = entries.filter((e) => e.event_date.slice(0, 4) < curYear);
+
+  const exact = past.filter((e) => e.event_date.slice(5, 10) === todayMd);
+  if (exact.length) return { scope: "day", items: exact };
+
+  const near = past
+    .map((e) => ({ e, d: doyDistance(dayOfYear(e.event_date), todayDoy) }))
+    .filter((x) => x.d <= 3)
+    .sort((a, b) => a.d - b.d || (a.e.event_date < b.e.event_date ? 1 : -1))
+    .map((x) => x.e);
+  if (near.length) return { scope: "week", items: near };
+
+  const month = past
+    .filter((e) => e.event_date.slice(5, 7) === todayMonth)
+    .sort((a, b) => (a.event_date < b.event_date ? 1 : -1));
+  return { scope: "month", items: month };
+}

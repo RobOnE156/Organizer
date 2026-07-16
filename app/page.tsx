@@ -22,7 +22,7 @@ import {
   type Reaction,
   type SignedMedia,
 } from "@/lib/data";
-import { ageLabel, fmtDate, monthKey, monthLabel, monthName } from "@/lib/timeline";
+import { ageLabel, dayMonth, fmtDate, monthKey, monthLabel, monthName, resurfacedMemories } from "@/lib/timeline";
 import { translator, type T } from "@/lib/i18n";
 import TopNav from "@/app/TopNav";
 import EntryMenu from "@/app/EntryMenu";
@@ -214,10 +214,13 @@ export default async function Home() {
     group.entries.push(e);
   }
 
-  // "An diesem Tag": entries from the same calendar day in previous years.
-  const onThisDay = entries.filter(
-    (e) => e.event_date.slice(5, 10) === today.slice(5, 10) && e.event_date.slice(0, 4) < today.slice(0, 4),
-  );
+  // "An diesem Tag": memories from previous years, matched to today — exact day
+  // if any, else within a few days, else this month. Capped so the strip stays
+  // tidy; newest anniversaries first.
+  const resurfaced = resurfacedMemories(entries, today);
+  const onThisDay = resurfaced.items.slice(0, 8);
+  const otdHeadingKey =
+    resurfaced.scope === "day" ? "home.on_this_day" : resurfaced.scope === "week" ? "home.these_days" : "home.this_month";
 
   return (
     <>
@@ -235,12 +238,15 @@ export default async function Home() {
         />
         {onThisDay.length > 0 ? (
           <section className="otd">
-            <h2 className="otdhead">{t("home.on_this_day")}</h2>
+            <h2 className="otdhead">{t(otdHeadingKey)}</h2>
             <div className="otdrow">
               {onThisDay.map((e) => {
                 const years = Number(today.slice(0, 4)) - Number(e.event_date.slice(0, 4));
                 const thumb = (mediaByEntry[e.id] ?? []).find((m) => m.kind === "image")?.url;
                 const label = e.title || (e.body ? e.body.slice(0, 70) : t("home.memory"));
+                const yearsText = years === 1 ? t("home.year_one", { n: years }) : t("home.year_many", { n: years });
+                // For non-exact-day memories, also show which day it was.
+                const meta = resurfaced.scope === "day" ? yearsText : `${dayMonth(e.event_date)} · ${yearsText}`;
                 return (
                   <a
                     key={e.id}
@@ -249,9 +255,7 @@ export default async function Home() {
                     style={thumb ? { backgroundImage: `url("${thumb}")` } : undefined}
                   >
                     <div className="otdgrad">
-                      <span className="otdyears">
-                        {years === 1 ? t("home.year_one", { n: years }) : t("home.year_many", { n: years })}
-                      </span>
+                      <span className="otdyears">{meta}</span>
                       <b className="otdtitle">{label}</b>
                     </div>
                   </a>

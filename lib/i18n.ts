@@ -131,6 +131,8 @@ const M = {
   },
   "home.fab_add": { de: "＋ Hinzufügen", en: "＋ Add", es: "＋ Añadir" },
   "home.on_this_day": { de: "✨ An diesem Tag", en: "✨ On this day", es: "✨ En este día" },
+  "home.these_days": { de: "✨ Um diese Zeit", en: "✨ Around this time", es: "✨ Por estas fechas" },
+  "home.this_month": { de: "✨ In diesem Monat", en: "✨ This month", es: "✨ Este mes" },
   "home.year_one": { de: "vor {n} Jahr", en: "{n} year ago", es: "hace {n} año" },
   "home.year_many": { de: "vor {n} Jahren", en: "{n} years ago", es: "hace {n} años" },
   "home.memory": { de: "Erinnerung", en: "Memory", es: "Recuerdo" },
