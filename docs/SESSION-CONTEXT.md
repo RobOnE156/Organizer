@@ -234,13 +234,24 @@ zurückgesetzt → nächster Vorfall alarmiert sofort). **Kein dritter Vercel‑
 bestehenden 09:00‑Cron `/api/backup-reminder` (Guard: läuft nur, wenn `backupConfigured()`).
 
 **Stufe 1 — In‑App‑Alarm‑Mail (Cron):**
-- `lib/backup-alert.ts`: `classifyBackupRun` (pure, unit‑getestet) + `evaluateHouseholdBackupHealth`
+- `lib/backup-alert.ts`: `classifyBackupRun` (pure Klassifikation; per Stub‑Testskript in der Session
+  verifiziert — Tests liegen im Scratchpad, **nicht** committet) + `evaluateHouseholdBackupHealth`
   (`{ ok, reason: 'ok'|'error'|'overdue'|'no-run', daysSince }`) + `runBackupAlerts` (Alarm‑Versand +
-  Cooldown in `backup_settings.last_alert_at`). **„Nie gelaufen“ löst in Stufe 1 bewusst KEINEN Alarm aus**
-  (Aktivierungsfenster vor dem ersten Nachtlauf); das deckt Stufe 2 ab.
+  Cooldown in `backup_settings.last_alert_at`; `backupConfigured()`‑Guard liegt **in** der Funktion).
+  **„Nie gelaufen“ löst in Stufe 1 bewusst KEINEN Alarm aus** (Aktivierungsfenster vor dem ersten
+  Nachtlauf); das deckt Stufe 2 ab.
+- **Robustheits‑Regeln (aus dem Code‑Review):** Alarm‑Pass läuft **vor** der Reminder‑Schleife und
+  exception‑isoliert (try/catch); `last_alert_at` wird **nur gestempelt, wenn mind. eine Mail wirklich
+  raus ist** (Resend‑Ausfall ⇒ Retry am Folgetag statt 3 Tage Stille); Cooldown‑Reset **nur** bei
+  `reason==='ok'` (nicht bei `no-run`, das auch ein transienter Lesefehler sein kann); DB‑Fehler beim
+  Cooldown‑Lesen/Schreiben werden geloggt und der Alarm bleibt **fail‑loud** (fehlt Migration 0031,
+  alarmiert er täglich ohne Cooldown, statt still auszufallen).
+- **Bewusst KEIN Opt‑out** für Alarm‑Mails: `interval_days = 0` schaltet nur die Routine‑Erinnerung ab;
+  ein kaputtes Offsite‑Backup ist ein Sicherheitsvorfall und alarmiert immer.
 - `householdRecipients()` (ebd.) = gemeinsamer Empfänger‑Helper (memberships → `auth.admin.getUserById`
   → `profiles.ui_language`), genutzt von Reminder **und** Alarm.
-- `buildBackupAlertEmail` (`lib/backup.ts`) mit Warn‑Akzent (`#b23b2e` statt Gold); i18n `alert.*` (de/en/es).
+- `buildBackupAlertEmail` (`lib/backup.ts`) mit Warn‑Akzent (`#b23b2e` statt Gold); gemeinsames
+  HTML‑Gerüst `buildBackupMailHtml` für Reminder‑ und Alarm‑Mail; i18n `alert.*` (de/en/es).
   **Sicherheit:** In die Mail geht **nur** Kategorie + Tage — **niemals `backup_runs.note`**
   (kann interne Fehlerdetails/Pfade/Storage‑Keys enthalten).
 - Cron‑Antwort ist jetzt `{ ok, sent, alerted }`.
@@ -248,11 +259,19 @@ bestehenden 09:00‑Cron `/api/backup-reminder` (Guard: läuft nur, wenn `backup
 **Stufe 2 — externer Wächter:** `GET /api/backup-health` (kein Vercel‑Cron; `force-dynamic`, Node‑Runtime).
 Token‑Schutz optional via `BACKUP_HEALTH_TOKEN` (`?token=…` oder `Authorization: Bearer`; Env gesetzt +
 falsches Token → 401; Env leer → offen). Antworten: ohne Service‑Role → 500; Backup nicht konfiguriert →
-200 `{ok:true, reason:'not-configured'}`; irgendein Haushalt ungesund (**hier zählt auch `no-run`**) →
+200 `{ok:true, reason:'not-configured'}`; DB nicht lesbar → **503 `{ok:false, reason:'db-error'}`
+(fail‑closed — genau der „App tot“-Fall)**; irgendein Haushalt ungesund (**hier zählt auch `no-run`**) →
 **503** `{ok:false, reason}` (nur Kategorie, keine IDs/Keys); sonst 200 `{ok:true}`. Ein externer Monitor
 (Cloudflare Worker Cron / UptimeRobot / healthchecks.io) pollt und alarmiert unabhängig — fängt auch
 „App tot / Cron läuft nicht / Backup nie gestartet“. Einrichtungs‑Anleitung wurde im Chat geliefert
 (nicht committet, gemäß Regel).
+
+**Bekannte, bewusst akzeptierte Grenzen:** (a) Ein brandneuer Haushalt (oder frisch gesetzte
+`BACKUP_S3_*`) liefert bis zum ersten Nachtlauf `no-run` → 503 — der Monitor „pagt“ dann einmal
+bis ~24 h; (b) `not-configured` bleibt 200 (Spec‑Entscheidung; ein Monitor kann zusätzlich auf das
+`reason`‑Feld prüfen, wenn er den Wegfall der Konfiguration melden soll); (c) die Ampel auf der
+Export‑Seite (`OffsiteBackup.tsx`, gelb bis 10 Tage) nutzt noch **nicht** `classifyBackupRun`
+(Alarm‑Schwelle 3 Tage) → kleiner Konsistenz‑Punkt, siehe §10.
 
 ---
 
@@ -278,8 +297,12 @@ falsches Token → 401; Env leer → offen). Antworten: ohne Service‑Role → 
    `/api/backup-health` zeigen lassen (Anleitung im Chat geliefert).
 3. **Migration 0029 prüfen/ausführen** (Video‑Poster); sonst funktionieren Standbilder nur eingeschränkt.
 4. **3D‑Ansicht frisch neu laden** und bestätigen, dass alle Fotos erscheinen (weiße Kugeln = alter Cache).
-5. **Kopfumfang‑WHO‑Kurve** nachziehen (Datenquelle klären).
-6. Weitere Plan‑Punkte (nicht begonnen): **Passkeys** (aktuell TOTP), **native App (Capacitor)**
+5. **Status‑Ampel an Alarm‑Logik angleichen:** `app/export/OffsiteBackup.tsx` klassifiziert die Frische
+   selbst (gelb bis 10 Tage), der Alarm nutzt `classifyBackupRun` (überfällig > 3 Tage). Am besten
+   `classifyBackupRun` serverseitig in `app/export/page.tsx` auswerten und als Prop durchreichen,
+   damit Mail („braucht Aufmerksamkeit“) und Seite (Ampelfarbe) nie widersprechen.
+6. **Kopfumfang‑WHO‑Kurve** nachziehen (Datenquelle klären).
+7. Weitere Plan‑Punkte (nicht begonnen): **Passkeys** (aktuell TOTP), **native App (Capacitor)**
    (Hintergrund‑Upload/Share‑Sheet), **On‑Device‑Sprachnotiz‑Transkription** (Whisper), **Schreib‑Impulse /
    Entwurfs‑Posteingang / „E‑Mail ans Tagebuch"** (gegen das leere Tagebuch), **Jahres‑Rückblick als
    Video‑Montage**, **Mehrere‑Kinder‑Umschalter** (Datenmodell unterstützt es bereits).
@@ -318,8 +341,12 @@ falsches Token → 401; Env leer → offen). Antworten: ohne Service‑Role → 
 ---
 
 ## 13. Claude Skills — verwendet & empfohlen
-**Bisher genutzt:** `artifact-design` (früh, für den anfänglichen 3D‑Design‑Prototyp als HTML‑Artifact).
-Der Großteil der Arbeit lief direkt (manuelle Verifikation über standalone‑Renders, Route‑Tests, Diagnose‑Endpunkte).
+**Bisher genutzt:** `artifact-design` (früh, für den anfänglichen 3D‑Design‑Prototyp als HTML‑Artifact);
+`security-review` + `code-review` (Backup‑Alarm‑Feature: Security‑Pass fand nur einen Grants‑Härtungs‑
+Punkt → in Migration 0031 eingebaut; Code‑Review‑Pass fand u. a. fail‑open im Health‑Endpunkt und
+Cooldown‑Stempeln trotz Mail‑Fehlschlag → gefixt). Der Großteil der Arbeit lief direkt (manuelle
+Verifikation über standalone‑Renders, Route‑Tests mit `npx next start` + `curl`, Stub‑Logiktests,
+Diagnose‑Endpunkte).
 
 **Für die Weiterarbeit empfohlen (im neuen Chat aktivieren/laden):**
 - **`security-review`** — das Backup‑Feature verarbeitet Zugangsdaten + Service‑Role‑Downloads + RLS;

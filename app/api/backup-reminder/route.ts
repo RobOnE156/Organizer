@@ -2,14 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { sendEmail, emailEnabled, appUrl } from "@/lib/email";
 import { buildBackupJson, buildBackupEmail } from "@/lib/backup";
-import { runBackupAlerts, householdRecipients } from "@/lib/backup-alert";
-import { backupConfigured } from "@/lib/backup-s3";
+import { runBackupAlerts, householdRecipients, DAY } from "@/lib/backup-alert";
 import { translator, normalizeLang } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const DAY = 86_400_000;
 
 // Scheduled by Vercel Cron (see vercel.json). For each household whose reminder
 // interval is due, e-mails the members an automatic JSON snapshot of the diary
@@ -26,6 +23,17 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   const now = Date.now();
   const nowISO = new Date(now).toISOString();
+
+  // Dead-man's-switch check for the off-site backup, piggy-backed on this cron
+  // (Vercel Hobby crons are daily-only; no separate schedule needed). Runs
+  // FIRST and exception-isolated: the safety alert must go out even if the
+  // routine reminder pass below breaks. Dormant until BACKUP_S3_* is set.
+  let alerted = 0;
+  try {
+    ({ alerted } = await runBackupAlerts(admin, now));
+  } catch (e) {
+    console.error("[backup-reminder] alert pass failed", e);
+  }
 
   const { data: households } = await admin.from("households").select("id, name, created_at");
   let sent = 0;
@@ -79,13 +87,6 @@ export async function GET(request: Request) {
       .from("backup_settings")
       .upsert({ household_id: h.id, interval_days: interval, last_sent_at: nowISO }, { onConflict: "household_id" });
     sent += 1;
-  }
-
-  // Piggy-backed dead-man's-switch check for the off-site backup (no third
-  // Vercel cron available on the Hobby plan). Dormant until BACKUP_S3_* is set.
-  let alerted = 0;
-  if (backupConfigured()) {
-    ({ alerted } = await runBackupAlerts(admin, now));
   }
 
   return NextResponse.json({ ok: true, sent, alerted });

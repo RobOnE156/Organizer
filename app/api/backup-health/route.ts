@@ -38,7 +38,12 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   const now = Date.now();
-  const { data: households } = await admin.from("households").select("id");
+  const { data: households, error } = await admin.from("households").select("id");
+  // Fail closed: an unreadable database is exactly the "dead app" case an
+  // external watcher exists to catch — it must trip the alarm, not pass it.
+  if (error) {
+    return NextResponse.json({ ok: false, reason: "db-error" }, { status: 503 });
+  }
 
   const rank: Record<"error" | "overdue" | "no-run", number> = { error: 3, overdue: 2, "no-run": 1 };
   let worst: "error" | "overdue" | "no-run" | null = null;
