@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { sendEmail, emailEnabled, appUrl } from "@/lib/email";
 import { buildBackupJson, buildBackupEmail } from "@/lib/backup";
+import { runBackupAlerts, householdRecipients } from "@/lib/backup-alert";
+import { backupConfigured } from "@/lib/backup-s3";
 import { translator, normalizeLang } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -52,16 +54,7 @@ export async function GET(request: Request) {
     const lastAt = (lastB as { created_at: string } | null)?.created_at ?? null;
     const daysSince = lastAt ? Math.floor((now - new Date(lastAt).getTime()) / DAY) : null;
 
-    // recipients: each member's e-mail + UI language
-    const { data: members } = await admin.from("memberships").select("user_id").eq("household_id", h.id);
-    const recipients: { email: string; lang: string }[] = [];
-    for (const m of (members as { user_id: string }[] | null) ?? []) {
-      const { data: ud } = await admin.auth.admin.getUserById(m.user_id);
-      const email = ud?.user?.email;
-      if (!email) continue;
-      const { data: pr } = await admin.from("profiles").select("ui_language").eq("user_id", m.user_id).maybeSingle();
-      recipients.push({ email, lang: (pr as { ui_language: string } | null)?.ui_language ?? "en" });
-    }
+    const recipients = await householdRecipients(admin, h.id);
     if (recipients.length === 0) continue;
 
     // the automatic JSON snapshot (best-effort — still send the reminder if it fails)
@@ -88,5 +81,12 @@ export async function GET(request: Request) {
     sent += 1;
   }
 
-  return NextResponse.json({ ok: true, sent });
+  // Piggy-backed dead-man's-switch check for the off-site backup (no third
+  // Vercel cron available on the Hobby plan). Dormant until BACKUP_S3_* is set.
+  let alerted = 0;
+  if (backupConfigured()) {
+    ({ alerted } = await runBackupAlerts(admin, now));
+  }
+
+  return NextResponse.json({ ok: true, sent, alerted });
 }

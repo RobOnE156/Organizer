@@ -1,6 +1,6 @@
 # Benni‑Tagebuch — Projekt‑Kontext & Übergabe
 
-> **Stand: 2026‑07‑16.** Diese Datei ist die zentrale Wissens‑ und Übergabe‑Quelle für die
+> **Stand: 2026‑07‑17.** Diese Datei ist die zentrale Wissens‑ und Übergabe‑Quelle für die
 > Weiterarbeit in neuen Chats. **Immer zuerst vollständig lesen, bevor du antwortest oder
 > arbeitest.** Nach jeder größeren Änderung / jedem Feature aktualisieren, damit nichts an
 > Kontext verloren geht (auch nicht beim automatischen „Compacting" langer Chats).
@@ -81,8 +81,17 @@
   `APP_URL`, `EMAIL_FROM`, `RESEND_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - **Neu benötigt (noch NICHT gesetzt) fürs Offsite‑Backup:** `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION`,
   `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`.
+- **Neu benötigt (noch NICHT gesetzt) für den externen Backup‑Wächter:** `BACKUP_HEALTH_TOKEN` —
+  schützt `GET /api/backup-health` (`?token=…` oder `Authorization: Bearer`). **Bewusst ein separates
+  Secret** (NICHT `CRON_SECRET` wiederverwenden — das Token landet in den Logs des externen Monitors).
+  Ohne gesetzte Env ist der Endpunkt offen (gibt aber nur `ok` + Fehlerkategorie preis, keine IDs/Keys).
 - **Vercel‑Crons** (`vercel.json`): `/api/backup-reminder` täglich 09:00, `/api/backup-sync` täglich 03:00.
   Vercel injiziert bei Cron‑Aufrufen automatisch den Header `Authorization: Bearer $CRON_SECRET`.
+  **Hobby‑Plan‑Limits (Stand 07/2026):** Crons dürfen nur **täglich** laufen (Auslösung irgendwann
+  innerhalb der geplanten Stunde); seit 01/2026 sind bis zu 100 Cron‑Jobs/Projekt erlaubt. Entschieden:
+  **kein dritter Cron** — die Backup‑Alarm‑Prüfung ist in den bestehenden 09:00‑Cron
+  `/api/backup-reminder` eingehängt (gleicher Mail‑Kontext, ein Guard‑Satz), und `/api/backup-health`
+  ist **kein** Vercel‑Cron, sondern wird **extern** gepollt (Stufe 2, echter Totmann‑Schalter).
 
 ---
 
@@ -95,6 +104,13 @@
   (Poster) erscheinen erst, wenn 0029 wirklich läuft.** → **Nutzer bitten, 0029 zu prüfen/auszuführen.**
 - **0030_backup_offsite (`backup_runs` + `backup_objects`):** **NEU, noch NICHT ausgeführt.** Nötig fürs
   automatische Offsite‑Backup. SQL wurde im Chat geliefert (siehe auch die Migrationsdatei im Repo).
+- **0031_backup_alert (`backup_settings.last_alert_at` + Spalten‑Grants):** **NEU, noch NICHT ausgeführt.**
+  Nötig für den E‑Mail‑Alarm (Totmann‑Schalter). Ohne 0031 verschickt der Alarm zwar (Cooldown‑Select
+  schlägt fehl → wird wie „nie alarmiert“ behandelt), aber **täglich ohne Cooldown** — 0031 also zeitnah
+  mit der Backup‑Aktivierung ausführen. Härtet zusätzlich die Grants: Mitglieder dürfen nur noch
+  `household_id, interval_days, updated_at` schreiben (der Client‑Upsert braucht alle drei auf dem
+  Konfliktpfad); `last_sent_at`/`last_alert_at` schreibt allein die Service‑Role (sonst könnte ein
+  kompromittiertes Mitglieds‑Konto den Alarm still unterdrücken).
 
 ---
 
@@ -131,6 +147,11 @@ kontolos), **Weltkarte** aus EXIF‑Geodaten, **Suche**, **Foto‑Buch/Jahresrü
 14. **WHO‑Perzentilkurven** für **Gewicht + Größe** (siehe §9).
 15. **„An diesem Tag"** gestuft (exakt → ±3 Tage → Monat) statt nur exakt‑tagesgenau.
 16. **Automatisches Offsite‑Backup (3‑2‑1)** in S3‑kompatiblen Speicher (siehe §8, **aktueller Fokus**).
+17. **E‑Mail‑Alarm / Totmann‑Schalter fürs Offsite‑Backup** (2 Stufen, siehe §8a): Stufe 1 =
+    Alarm‑Mail aus dem 09:00‑Cron bei `error` sofort bzw. „überfällig“ (> 3 Tage), Wiederholung
+    frühestens alle 3 Tage bis das Backup wieder gesund ist; Stufe 2 = `GET /api/backup-health`
+    für einen externen Wächter (deckt auch „App/Cron komplett tot“ und „nie gelaufen“ ab).
+    Migration 0031 + Env `BACKUP_HEALTH_TOKEN` nötig (noch offen, siehe §4/§5).
 
 ---
 
@@ -201,9 +222,37 @@ BACKUP_S3_SECRET_ACCESS_KEY = <secret>
 **Test:** Menü → Export/Backup → „Automatisches Offsite‑Backup" → „Jetzt sichern". Bei vielen Dateien
 mehrfach klicken oder auf den nächtlichen Lauf warten (inkrementell + zeitgeboxt).
 
-**Empfohlener nächster kleiner Schritt (vom Nutzer noch offen):** **Totmann‑Schalter / E‑Mail‑Alarm**,
-wenn ein Backup **fehlschlägt** (Status `error`) oder **überfällig** ist. Die Status‑Ampel (rot) ist bereits
-die passive Anzeige; die aktive E‑Mail‑Eskalation fehlt noch.
+**Nächster Schritt wurde umgesetzt:** der Totmann‑Schalter / E‑Mail‑Alarm (siehe §8a).
+
+---
+
+## 8a. Totmann‑Schalter / E‑Mail‑Alarm fürs Offsite‑Backup (2 Stufen)
+**Entscheidungen (fix):** Alarm bei Lauf‑Status `error` sofort; „überfällig“, wenn der letzte
+abgeschlossene Lauf > **3 Tage** her ist (`OVERDUE_DAYS`); Wiederhol‑Alarm frühestens alle **3 Tage**
+(`ALERT_COOLDOWN_DAYS`), bis das Backup wieder gesund ist (dann wird `last_alert_at` auf `null`
+zurückgesetzt → nächster Vorfall alarmiert sofort). **Kein dritter Vercel‑Cron** — die Prüfung hängt im
+bestehenden 09:00‑Cron `/api/backup-reminder` (Guard: läuft nur, wenn `backupConfigured()`).
+
+**Stufe 1 — In‑App‑Alarm‑Mail (Cron):**
+- `lib/backup-alert.ts`: `classifyBackupRun` (pure, unit‑getestet) + `evaluateHouseholdBackupHealth`
+  (`{ ok, reason: 'ok'|'error'|'overdue'|'no-run', daysSince }`) + `runBackupAlerts` (Alarm‑Versand +
+  Cooldown in `backup_settings.last_alert_at`). **„Nie gelaufen“ löst in Stufe 1 bewusst KEINEN Alarm aus**
+  (Aktivierungsfenster vor dem ersten Nachtlauf); das deckt Stufe 2 ab.
+- `householdRecipients()` (ebd.) = gemeinsamer Empfänger‑Helper (memberships → `auth.admin.getUserById`
+  → `profiles.ui_language`), genutzt von Reminder **und** Alarm.
+- `buildBackupAlertEmail` (`lib/backup.ts`) mit Warn‑Akzent (`#b23b2e` statt Gold); i18n `alert.*` (de/en/es).
+  **Sicherheit:** In die Mail geht **nur** Kategorie + Tage — **niemals `backup_runs.note`**
+  (kann interne Fehlerdetails/Pfade/Storage‑Keys enthalten).
+- Cron‑Antwort ist jetzt `{ ok, sent, alerted }`.
+
+**Stufe 2 — externer Wächter:** `GET /api/backup-health` (kein Vercel‑Cron; `force-dynamic`, Node‑Runtime).
+Token‑Schutz optional via `BACKUP_HEALTH_TOKEN` (`?token=…` oder `Authorization: Bearer`; Env gesetzt +
+falsches Token → 401; Env leer → offen). Antworten: ohne Service‑Role → 500; Backup nicht konfiguriert →
+200 `{ok:true, reason:'not-configured'}`; irgendein Haushalt ungesund (**hier zählt auch `no-run`**) →
+**503** `{ok:false, reason}` (nur Kategorie, keine IDs/Keys); sonst 200 `{ok:true}`. Ein externer Monitor
+(Cloudflare Worker Cron / UptimeRobot / healthchecks.io) pollt und alarmiert unabhängig — fängt auch
+„App tot / Cron läuft nicht / Backup nie gestartet“. Einrichtungs‑Anleitung wurde im Chat geliefert
+(nicht committet, gemäß Regel).
 
 ---
 
@@ -224,9 +273,11 @@ die passive Anzeige; die aktive E‑Mail‑Eskalation fehlt noch.
 
 ## 10. Offene Punkte / To‑Do (priorisiert)
 1. **Offsite‑Backup aktivieren** (Nutzer): Migration 0030 + BACKUP_S3_* + „Jetzt sichern" testen.
-2. **Migration 0029 prüfen/ausführen** (Video‑Poster); sonst funktionieren Standbilder nur eingeschränkt.
-3. **3D‑Ansicht frisch neu laden** und bestätigen, dass alle Fotos erscheinen (weiße Kugeln = alter Cache).
-4. **Totmann‑Schalter / E‑Mail‑Alarm** fürs Backup (empfohlen als nächster Schritt).
+2. **Backup‑Alarm aktivieren** (Nutzer): Migration **0031** ausführen; für Stufe 2 `BACKUP_HEALTH_TOKEN`
+   in Vercel setzen und den externen Wächter (Cloudflare Worker / UptimeRobot / healthchecks.io) auf
+   `/api/backup-health` zeigen lassen (Anleitung im Chat geliefert).
+3. **Migration 0029 prüfen/ausführen** (Video‑Poster); sonst funktionieren Standbilder nur eingeschränkt.
+4. **3D‑Ansicht frisch neu laden** und bestätigen, dass alle Fotos erscheinen (weiße Kugeln = alter Cache).
 5. **Kopfumfang‑WHO‑Kurve** nachziehen (Datenquelle klären).
 6. Weitere Plan‑Punkte (nicht begonnen): **Passkeys** (aktuell TOTP), **native App (Capacitor)**
    (Hintergrund‑Upload/Share‑Sheet), **On‑Device‑Sprachnotiz‑Transkription** (Whisper), **Schreib‑Impulse /

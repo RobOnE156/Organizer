@@ -656,6 +656,43 @@ const M = {
     es: "Recibes esto porque el recordatorio de copia está activo. Cambia el intervalo o desactívalo en Ajustes, en Copia de seguridad.",
   },
 
+  // off-site backup alert e-mail (dead-man's switch)
+  "alert.mail_subject": {
+    de: "⚠️ Benni-Tagebuch: Offsite-Backup braucht Aufmerksamkeit",
+    en: "⚠️ Benni's diary: off-site backup needs attention",
+    es: "⚠️ Diario de Benni: la copia externa necesita atención",
+  },
+  "alert.mail_headline": {
+    de: "Das automatische Offsite-Backup meldet ein Problem",
+    en: "The automatic off-site backup reports a problem",
+    es: "La copia externa automática informa de un problema",
+  },
+  "alert.mail_reason_error": {
+    de: "Der letzte Backup-Lauf ist mit einem Fehler abgebrochen.",
+    en: "The last backup run stopped with an error.",
+    es: "La última ejecución de la copia terminó con un error.",
+  },
+  "alert.mail_reason_overdue": {
+    de: "Das letzte erfolgreiche Offsite-Backup ist über {n} Tage her.",
+    en: "The last successful off-site backup was more than {n} days ago.",
+    es: "La última copia externa correcta fue hace más de {n} días.",
+  },
+  "alert.mail_body": {
+    de: "{reason} Bitte prüfe das Backup, damit Bennis Erinnerungen sicher extern gespiegelt bleiben.",
+    en: "{reason} Please check the backup so Benni's memories stay safely mirrored off-site.",
+    es: "{reason} Revisa la copia para que los recuerdos de Benni sigan replicados de forma segura en otro sitio.",
+  },
+  "alert.mail_cta": {
+    de: "Backup-Status öffnen",
+    en: "Open backup status",
+    es: "Abrir estado de la copia",
+  },
+  "alert.mail_footer": {
+    de: "Automatische Sicherheits-Warnung deines Benni-Tagebuchs.",
+    en: "Automatic safety alert from your Benni diary.",
+    es: "Aviso de seguridad automático de tu diario de Benni.",
+  },
+
   // common form words
   "common.date": { de: "Datum", en: "Date", es: "Fecha" },
   "common.add": { de: "Hinzufügen", en: "Add", es: "Añadir" },
